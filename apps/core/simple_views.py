@@ -512,15 +512,28 @@ class RegistrarOperadorAjax(View):
 
         label = persona.get_full_name()
         extra = ''
+        tipo_asistente = 'Persona'
+        nombre_proyecto = ''
+        ficha_codigo = ''
         try:
-            if persona.tipo_persona == 'APRENDIZ' and hasattr(persona, 'perfil_aprendiz'):
-                extra = ' · ' + (persona.perfil_aprendiz.proyecto.nombre if persona.perfil_aprendiz and persona.perfil_aprendiz.proyecto else 'Aprendiz')
+            if persona.tipo_persona == 'APRENDIZ':
+                tipo_asistente = 'Aprendiz Con Proyecto'
+                if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz:
+                    nombre_proyecto = persona.perfil_aprendiz.proyecto.nombre if persona.perfil_aprendiz.proyecto else ''
+                    ficha_codigo = persona.perfil_aprendiz.proyecto.ficha.numero if (persona.perfil_aprendiz.proyecto and persona.perfil_aprendiz.proyecto.ficha) else ''
+                    extra = ' · Proyecto: ' + (nombre_proyecto or 'Sin asignar')
+                    if ficha_codigo:
+                        extra += ' · Ficha: ' + ficha_codigo
             elif persona.tipo_persona == 'INSTRUCTOR':
-                extra = ' · Instructor'
+                tipo_asistente = 'Instructor'
+                extra = ' · Instructor SENA'
             elif persona.tipo_persona == 'INVITADO':
-                extra = ' · Invitado'
+                tipo_asistente = 'Invitado Especial'
+                extra = ' · Invitado a la feria'
         except Exception:
             pass
+        tipo_doc = persona.tipo_identificacion.abreviatura if persona.tipo_identificacion else 'CC'
+        numero_doc = persona.numero_identificacion or ''
 
         operador = _operador_para_guardar(request)
         if not operador:
@@ -566,6 +579,11 @@ class RegistrarOperadorAjax(View):
             'nombre': label,
             'rol': (persona.tipo_persona or '').title(),
             'extra': extra,
+            'tipo_asistente': tipo_asistente,
+            'tipo_documento': tipo_doc,
+            'numero_documento': numero_doc,
+            'nombre_proyecto': nombre_proyecto,
+            'codigo_ficha': ficha_codigo,
         })
 
 

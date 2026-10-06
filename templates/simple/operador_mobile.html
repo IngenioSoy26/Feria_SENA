@@ -72,15 +72,19 @@
   </div>
 
   <div id="panel-resultado" class="op-panel d-none">
-    <div class="d-flex gap-3 align-items-center">
-      <div id="panel-icon" style="font-size:2.4rem;">✅</div>
+    <div class="d-flex gap-3 align-items-start">
+      <div id="panel-icon" style="font-size:3rem;line-height:1;">✅</div>
       <div class="flex-grow-1 min-0">
-        <div id="panel-nombre" class="fw-bold" style="font-size:1.08rem;"></div>
-        <div class="small mt-1">
-          <span id="panel-rol" class="badge badge-azul me-1" style="background:var(--sena-azul);color:white;padding:3px 8px;border-radius:999px;"></span>
-          <span id="panel-extra"></span>
+        <div id="panel-tipo-asistente" class="fw-bold mb-2" style="font-size:1.15rem;color:var(--sena-azul);letter-spacing:0.2px;"></div>
+        <div id="panel-nombre" class="fw-bold text-uppercase" style="font-size:1.25rem;line-height:1.25;"></div>
+        <div class="mt-2 p-2 rounded-3" style="background:rgba(0,0,0,0.06);font-size:1.05rem;">
+          <div class="d-flex gap-2 align-items-baseline">
+            <span class="fw-bold opacity-75" id="panel-tipo-documento"></span>
+            <span id="panel-numero-documento" class="fw-bold" style="font-family:ui-monospace,Consolas,monospace;letter-spacing:0.5px;"></span>
+          </div>
         </div>
-        <div id="panel-mensaje" class="fw-bold mt-2"></div>
+        <div id="panel-detalles" class="small mt-2 opacity-90 lh-base"></div>
+        <div id="panel-mensaje" class="fw-bold mt-3 p-3 rounded-3 text-center" style="font-size:1.05rem;"></div>
       </div>
       <button id="panel-cerrar" class="btn btn-sm" style="min-height:38px;background:rgba(0,0,0,.1);border-radius:10px;">✖</button>
     </div>
@@ -102,9 +106,11 @@
   })();
   const panel=document.getElementById('panel-resultado');
   const pIcon=document.getElementById('panel-icon');
+  const pTipoAsistente=document.getElementById('panel-tipo-asistente');
   const pNombre=document.getElementById('panel-nombre');
-  const pRol=document.getElementById('panel-rol');
-  const pExtra=document.getElementById('panel-extra');
+  const pTipoDoc=document.getElementById('panel-tipo-documento');
+  const pNumDoc=document.getElementById('panel-numero-documento');
+  const pDetalles=document.getElementById('panel-detalles');
   const pMensaje=document.getElementById('panel-mensaje');
   const cntV=document.getElementById('cnt-verde');
   const cntA=document.getElementById('cnt-amarillo');
@@ -115,19 +121,24 @@
   document.getElementById('panel-cerrar').addEventListener('click',()=>{panel.classList.add('d-none');if(scanner && escaneando){try{scanner.resume();}catch(e){}}});
 
   function mostrarPanel(data){
+    pTipoAsistente.textContent=data.tipo_asistente||data.rol||'';
     pNombre.textContent=data.nombre||'';
-    pRol.textContent=data.rol||'';
-    pExtra.textContent=data.extra||'';
+    pTipoDoc.textContent=(data.tipo_documento||'CC')+':';
+    pNumDoc.textContent=data.numero_documento||'';
+    let detalleHtml=data.extra||'';
+    if(data.nombre_proyecto){detalleHtml=detalleHtml||'<b>Proyecto:</b> '+data.nombre_proyecto;}
+    if(data.codigo_ficha){detalleHtml+=detalleHtml?' · ':'<b>Ficha:</b> ';detalleHtml+=data.codigo_ficha;}
+    pDetalles.innerHTML=detalleHtml;
     pMensaje.textContent=data.mensaje||'';
     panel.classList.remove('ok','warn','err','d-none');
-    if(data.status==='VERDE'){pIcon.textContent='✅';panel.classList.add('ok');cntVn++;cntV.textContent=cntVn;}
-    else if(data.status==='AMARILLO'){pIcon.textContent='⚠';panel.classList.add('warn');cntAn++;cntA.textContent=cntAn;}
-    else{pIcon.textContent='❌';panel.classList.add('err');cntRn++;cntR.textContent=cntRn;}
+    if(data.status==='VERDE'){pIcon.textContent='✅';panel.classList.add('ok');pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';cntVn++;cntV.textContent=cntVn;}
+    else if(data.status==='AMARILLO'){pIcon.textContent='⚠';panel.classList.add('warn');pMensaje.style.background='rgba(245,124,0,.12)';pMensaje.style.color='var(--sena-naranja)';cntAn++;cntA.textContent=cntAn;}
+    else{pIcon.textContent='❌';panel.classList.add('err');pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';cntRn++;cntR.textContent=cntRn;}
     if(scanner && escaneando)try{scanner.pause();}catch(e){}
     setTimeout(()=>{
       panel.classList.add('d-none');
       if(scanner && escaneando){try{scanner.resume();}catch(e){}}
-    },1700);
+    },4000);
   }
 
   async function registrar(token){
@@ -138,7 +149,7 @@
       const r=await fetchJSON(ENDPOINT,{method:'POST',body:{token:token,tipo:TIPO_OP,medio:'QR'}});
       mostrarPanel(r);
     }catch(err){
-      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+err,nombre:'',rol:'',extra:''});
+      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+err,nombre:'',rol:'',extra:'',tipo_asistente:'Error',tipo_documento:'-',numero_documento:'',nombre_proyecto:'',codigo_ficha:''});
     }
   }
 
