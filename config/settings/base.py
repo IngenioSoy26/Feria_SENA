@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     'apps.refrigerios',
     'apps.certificados',
     'apps.dashboard',
-    'apps.reportes',
     'apps.auditoria',
 ]
 
