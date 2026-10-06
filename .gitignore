@@ -94,9 +94,14 @@ INSTRUCTORES ARTICULACION.xlsx
 POR_FICHAS.xlsx
 PROGRAMAS.xlsx
 
-# Manuales y documentos fuente originales
+# Manuales y documentos fuente originales / notas de trabajo / actas
 MANUAL_IDENTIDAD_VISUAL_SENA_2024.pdf
 Prompt_Maestro_Sistema_Feria_Proyectos_Productivos_SENA.docx
+reunion_*.docx
+acta_*.docx
+minuta_*.docx
+notas_*.txt
+notas_*.md
 
 # Scripts y archivos auxiliares de una sola ejecución
 extraer_contenido.py
