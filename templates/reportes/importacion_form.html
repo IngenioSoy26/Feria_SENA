@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Importación Excel — Paso 1/4{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'reportes:index' %}">Reportes</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Importación Excel</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="mb-1 fw-bold text-sena-verde">
+                <i class="bi bi-cloud-upload me-2"></i>Paso 1 — Cargar Archivo Excel
+            </h2>
+            <p class="text-muted mb-0">Seleccione tipo de importación y archivo .xlsx</p>
+        </div>
+    </div>
+
+    <div class="d-flex mb-2 overflow-x-auto flex-nowrap">
+        {% include 'reportes/_steps.html' with paso_activo=1 %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Tipo de Importación</label>
+                            <div class="d-flex flex-column gap-2">
+                                {% for valor, etiqueta in tipos_importacion %}
+                                    <label class="border rounded p-3 d-flex align-items-start gap-3 cursor-pointer hover-bg-light">
+                                        <input type="radio" name="tipo_importacion" value="{{ valor }}"
+                                               class="form-check-input mt-1"
+                                               {% if forloop.first %}checked{% endif %} required>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold mb-1">{{ etiqueta }}</div>
+                                            <div class="small text-muted">
+                                                {% if valor == 'instituciones' %}
+                                                    Columnas: código, nombre, municipio, secretaria_educacion (opcional)
+                                                {% elif valor == 'programas' %}
+                                                    Columnas: código, nombre
+                                                {% elif valor == 'instructores' %}
+                                                    Columnas: tipo_identificacion, numero_identificacion, nombres, apellidos, correo, telefono, programas_codigos (separados por coma)
+                                                {% elif valor == 'proyectos' %}
+                                                    Columnas: código, nombre, descripcion, institucion_codigo, programa_codigo, instructor_identificacion, evento_nombre
+                                                {% elif valor == 'participantes' %}
+                                                    Columnas: tipo_identificacion, numero_identificacion, nombres, apellidos, correo, telefono, tipo_persona, proyecto_codigo, grado, entidad, cargo
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="archivo_excel" class="form-label fw-semibold">Archivo Excel (.xlsx)</label>
+                            <input class="form-control form-control-lg" type="file" id="archivo_excel"
+                                   name="archivo_excel" accept=".xlsx" required>
+                            <div class="form-text small">
+                                Tamaño máximo recomendado: 5 MB. Use encabezados en la fila 1.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'reportes:index' %}" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" formaction="{% url 'reportes:importacion_validar' %}"
+                                    class="btn btn-sena-verde fw-semibold shadow-sm">
+                                <i class="bi bi-check2-circle me-2"></i>Validar Archivo →
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold text-sena-verde">
+                    <i class="bi bi-lightbulb me-2"></i>Recomendaciones
+                </div>
+                <div class="card-body small text-muted lh-lg">
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <i class="bi bi-check2-circle text-sena-verde me-1"></i>
+                            <strong>Orden sugerido:</strong> Instituciones → Programas → Instructores → Proyectos → Participantes.
+                        </li>
+                        <li class="mb-3">
+                            <i class="bi bi-check2-circle text-sena-verde me-1"></i>
+                            La primera fila del Excel debe contener los <strong>nombres de columna</strong> exactos.
+                        </li>
+                        <li class="mb-3">
+                            <i class="bi bi-check2-circle text-sena-verde me-1"></i>
+                            No deje filas vacías en medio de los datos.
+                        </li>
+                        <li class="mb-3">
+                            <i class="bi bi-check2-circle text-sena-verde me-1"></i>
+                            Las filas marcadas como <span class="badge text-bg-secondary">DUPLICADO</span> se
+                            <strong>actualizarán</strong> (no se crearán de nuevo).
+                        </li>
+                        <li class="mb-3">
+                            <i class="bi bi-x-circle text-danger me-1"></i>
+                            Las filas con <span class="badge text-bg-danger">ERROR</span> NO se importan.
+                            Descargue el reporte de errores en el paso 3.
+                        </li>
+                        <li class="mb-0">
+                            <i class="bi bi-info-circle text-primary me-1"></i>
+                            Todas las importaciones quedan registradas en Auditoría.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-sena-verde { background-color: #39A900; border-color: #39A900; color: white; }
+    .btn-sena-verde:hover { background-color: #2e8a00; border-color: #2e8a00; color: white; }
+    .text-sena-verde { color: #39A900 !important; }
+    .cursor-pointer { cursor: pointer; }
+    .hover-bg-light:hover { background-color: #f8f9fa; }
+</style>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% load tz %}
+{% now "Y" as _anio %}
+<div class="d-inline-flex align-items-center border rounded-pill bg-white shadow-sm px-3 py-2 flex-wrap">
+    <span class="d-inline-flex align-items-center {% if paso_activo >= 1 %}{% if paso_activo == 1 %}fw-semibold text-sena-verde{% else %}text-muted{% endif %}{% else %}text-muted opacity-75{% endif %}">
+        {% if paso_activo > 1 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:24px;height:24px;background-color:#6c757d;font-weight:600;">
+                <span style="font-size:14px;">&#10003;</span>
+            </span>
+        {% elif paso_activo == 1 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:28px;height:28px;background-color:#39A900;font-weight:600;">1</span>
+        {% else %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center border border-2 border-muted"
+                  style="width:24px;height:24px;font-weight:600;">1</span>
+        {% endif %}
+        <span class="ms-2 {% if paso_activo == 1 %}fw-semibold{% else %}small{% endif %}">Cargar</span>
+    </span>
+    <span class="mx-3 text-muted">&#8594;</span>
+
+    <span class="d-inline-flex align-items-center {% if paso_activo >= 2 %}{% if paso_activo == 2 %}fw-semibold text-sena-verde{% else %}text-muted{% endif %}{% else %}text-muted opacity-75{% endif %}">
+        {% if paso_activo > 2 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:24px;height:24px;background-color:#6c757d;font-weight:600;">
+                <span style="font-size:14px;">&#10003;</span>
+            </span>
+        {% elif paso_activo == 2 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:28px;height:28px;background-color:#39A900;font-weight:600;">2</span>
+        {% else %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center border border-2 border-muted"
+                  style="width:24px;height:24px;font-weight:600;">2</span>
+        {% endif %}
+        <span class="ms-2 {% if paso_activo == 2 %}fw-semibold{% else %}small{% endif %}">Validar</span>
+    </span>
+    <span class="mx-3 text-muted">&#8594;</span>
+
+    <span class="d-inline-flex align-items-center {% if paso_activo >= 3 %}{% if paso_activo == 3 %}fw-semibold text-sena-verde{% else %}text-muted{% endif %}{% else %}text-muted opacity-75{% endif %}">
+        {% if paso_activo > 3 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:24px;height:24px;background-color:#6c757d;font-weight:600;">
+                <span style="font-size:14px;">&#10003;</span>
+            </span>
+        {% elif paso_activo == 3 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:28px;height:28px;background-color:#39A900;font-weight:600;">3</span>
+        {% else %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center border border-2 border-muted"
+                  style="width:24px;height:24px;font-weight:600;">3</span>
+        {% endif %}
+        <span class="ms-2 {% if paso_activo == 3 %}fw-semibold{% else %}small{% endif %}">Revisar</span>
+    </span>
+    <span class="mx-3 text-muted">&#8594;</span>
+
+    <span class="d-inline-flex align-items-center {% if paso_activo >= 4 %}fw-semibold text-sena-verde{% else %}text-muted opacity-75{% endif %}">
+        {% if paso_activo >= 4 %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:28px;height:28px;background-color:#39A900;font-weight:600;">4</span>
+        {% else %}
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center border border-2 border-muted"
+                  style="width:24px;height:24px;font-weight:600;">4</span>
+        {% endif %}
+        <span class="ms-2 {% if paso_activo == 4 %}fw-semibold{% else %}small{% endif %}">Confirmar</span>
+    </span>
+</div>

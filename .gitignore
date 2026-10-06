@@ -109,10 +109,13 @@ _tmp_*.py
 00_*.txt
 
 # Capturas y salidas de reportes locales (generados bajo demanda)
-reportes/
-salidas_pdf/
-_salida_pdfs_prueba/
-salidas_pdfs/
+# NOTA: solo ignorar la carpeta /reportes EN LA RAIZ DEL PROYECTO (descargas/exports de usuario final).
+# NUNCA ignorar 'apps/reportes/' (app Django) ni 'templates/reportes/' (plantillas HTML) —
+# para eso usamos prefijo '/' que ancla al inicio del arbol.
+/reportes/
+/salidas_pdf/
+/_salida_pdfs_prueba/
+/salidas_pdfs/
 *.local.pdf
 
 # Archivos generados por collectstatic (despliegue)

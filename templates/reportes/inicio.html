@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes — Sistema Feria SENA{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <div>
+        <h2 class="mb-1 fw-bold" style="color:#39A900;">
+            <i class="bi bi-bar-chart-line me-2"></i>Reportes e Importación
+        </h2>
+        <p class="text-muted mb-0">Descargue reportes del evento en Excel y PDF, o cargue información masiva desde Excel.</p>
+    </div>
+
+    <div class="card shadow-sm border border-start border-4" style="border-color:#39A900;">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2"
+             style="background-color:#39A900; color:white;">
+            <h4 class="h6 fw-bold mb-0">
+                <i class="bi bi-file-earmark-spreadsheet me-2"></i>Reportes en Excel
+            </h4>
+            <span class="small opacity-90">Descargue reportes para el evento seleccionado</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:participantes_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-people fs-4"></i>
+                        <div>
+                            <div>Participantes</div>
+                            <small class="text-muted fw-normal">Listado completo</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:asistentes_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-check-square fs-4"></i>
+                        <div>
+                            <div>Asistentes</div>
+                            <small class="text-muted fw-normal">Fecha / hora / operador</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:ausentes_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-x-square fs-4"></i>
+                        <div>
+                            <div>Ausentes</div>
+                            <small class="text-muted fw-normal">Nunca registraron ingreso</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:refrigerios_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-cup-hot fs-4"></i>
+                        <div>
+                            <div>Refrigerios</div>
+                            <small class="text-muted fw-normal">Por tipo servicio</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:certificados_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-award fs-4"></i>
+                        <div>
+                            <div>Certificados</div>
+                            <small class="text-muted fw-normal">Código + token verificación</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:instituciones_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-building fs-4"></i>
+                        <div>
+                            <div>Instituciones</div>
+                            <small class="text-muted fw-normal">Consolidado IE</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:programas_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-journal-code fs-4"></i>
+                        <div>
+                            <div>Programas</div>
+                            <small class="text-muted fw-normal">Técnicos consolidado</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:proyectos_detalle_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-diagram-3 fs-4"></i>
+                        <div>
+                            <div>Proyectos Detalle</div>
+                            <small class="text-muted fw-normal">+ listado aprendices</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:instructores_consolidado_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-outline-success w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2">
+                        <i class="bi bi-person-badge fs-4"></i>
+                        <div>
+                            <div>Instructores</div>
+                            <small class="text-muted fw-normal">Consolidado + proyectos</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-3">
+                    <a href="{% url 'reportes:reporte_general_excel' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn w-100 py-3 fw-semibold text-start d-flex align-items-center gap-2 shadow-sm"
+                       style="background-color:#39A900; color:white;">
+                        <i class="bi bi-file-earmark-spreadsheet-fill fs-4"></i>
+                        <div>
+                            <div>Reporte General Excel</div>
+                            <small class="fw-normal opacity-90">KPIs + Institución + Programa</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border border-start border-4" style="border-color:#0067B1;">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2"
+             style="background-color:#0067B1; color:white;">
+            <h4 class="h6 fw-bold mb-0">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Reportes en PDF
+            </h4>
+            <span class="small opacity-90">Formato ejecutivo listo para impresión</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-4">
+                    <a href="{% url 'reportes:reporte_general_pdf' %}{% if request.GET.evento %}?evento={{ request.GET.evento }}{% endif %}"
+                       class="btn btn-primary w-100 py-4 fw-semibold text-start d-flex align-items-center gap-3 shadow-sm"
+                       style="background-color:#0067B1; border-color:#0067B1;">
+                        <i class="bi bi-file-earmark-pdf-fill fs-3"></i>
+                        <div>
+                            <div class="fw-bold">Reporte General Ejecutivo PDF</div>
+                            <small class="opacity-90 fw-normal">
+                                Portada · KPIs · Institución · Programa · Proyectos · Top 10
+                            </small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100 border border-sena-verde">
+                <div class="card-header bg-sena-verde text-white fw-semibold">
+                    <i class="bi bi-cloud-upload me-2"></i>Importación Masiva Excel
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Cargue información desde archivos Excel (xlsx). Proceso en 4 pasos:
+                        <strong>Cargar → Validar → Previsualizar → Confirmar</strong>.
+                    </p>
+                    <ul class="small text-muted mb-3">
+                        <li>Instituciones Educativas</li>
+                        <li>Programas Técnicos</li>
+                        <li>Instructores</li>
+                        <li>Proyectos</li>
+                        <li>Participantes (Aprendices, Invitados, Organizadores)</li>
+                    </ul>
+                    <div class="d-grid">
+                        <a href="{% url 'reportes:importacion_form' %}"
+                           class="btn fw-semibold shadow-sm" style="background-color:#39A900; color:white;">
+                            <i class="bi bi-cloud-upload me-2"></i>Iniciar Importación
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100" style="border-color:#F57C00;">
+                <div class="card-header fw-semibold" style="background-color:#F57C00; color:white;">
+                    <i class="bi bi-info-circle me-2"></i>Instructivo y Notas
+                </div>
+                <div class="card-body small text-muted">
+                    <ol class="mb-0 lh-lg ps-3">
+                        <li><strong>Filtro Evento:</strong> todos los reportes usan el evento activo por defecto.
+                            Puede especificar otro añadiendo <code>?evento=ID</code> a la URL.</li>
+                        <li><strong>Formato Excel:</strong> encabezado verde institucional, letras blancas negrita,
+                            anchos automáticos, filtros y paneles congelados en la fila 4.</li>
+                        <li><strong>Formato PDF:</strong> portada, tabla KPIs, tablas por Institución/Programa/Proyecto
+                            y Top 10 proyectos por participación.</li>
+                        <li><strong>Importación:</strong> valide siempre antes de confirmar; descargue
+                            <em>errores_importacion.xlsx</em> para corregir inconsistencias.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-outline-success {
+        border-color: #39A900;
+        color: #39A900;
+    }
+    .btn-outline-success:hover, .btn-outline-success:active, .btn-outline-success:focus {
+        background-color: #39A900 !important;
+        border-color: #39A900 !important;
+        color: white !important;
+    }
+    .btn-outline-success small {
+        color: #6c757d;
+    }
+    .btn-outline-success:hover small {
+        color: rgba(255,255,255,0.85);
+    }
+</style>
+{% endblock %}
