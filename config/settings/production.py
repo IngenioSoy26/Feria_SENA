@@ -8,7 +8,8 @@ from .base import *
 # Última revisión: 2026-10-06
 # ============================================================
 
-DEBUG = False
+_debug_raw = str(os.environ.get('DJANGO_DEBUG', '')).strip().lower()
+DEBUG = _debug_raw in ('1', 'true', 'on', 'yes')
 
 # ------------------------------------------------------------
 # HOSTS PERMITIDOS (separados por coma sin espacios)
@@ -101,8 +102,15 @@ elif _db_engine_explicit:
         'ATOMIC_REQUESTS': True,
     }
 else:
-    # Fallback de seguridad: SQLite (NO recomendado para más de 2 celulares
-    # simultáneos en escritura). Se usa solo en entornos de prueba sin vars.
+    # Detección entorno Railway: NUNCA usar fallback SQLite
+    _es_railway = any(os.environ.get(k, '') for k in ('RAILWAY_PUBLIC_DOMAIN', 'RAILWAY_STATIC_URL', 'RAILWAY_PROJECT_ID', 'RAILWAY_SERVICE_ID'))
+    if _es_railway:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            "Railway detectado pero DATABASE_URL no está compartido. "
+            "Vaya al panel de Postgres → Connect → Share Variable → seleccione DATABASE_PRIVATE_URL hacia el servicio Web."
+        )
+    # Fallback de seguridad: SQLite (solo entornos locales sin vars)
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',

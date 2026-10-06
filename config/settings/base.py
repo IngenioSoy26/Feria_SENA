@@ -73,6 +73,9 @@ TEMPLATES = [
                 'config.context_processors.evento_activo',
                 'config.context_processors.menu_dinamico_por_rol',
             ],
+            'builtins': [
+                'django.templatetags.i18n',
+            ],
         },
     },
 ]
