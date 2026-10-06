@@ -1,0 +1,118 @@
+# Archivos de bytecode compilado de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribuciones
+*.egg-info/
+dist/
+build/
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+.virtualenv/
+
+# Variables de entorno y secretos
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Base de datos SQLite (desarrollo)
+db.sqlite3
+db.sqlite3-journal
+
+# Archivos de medios subidos
+media/*
+!media/.gitkeep
+
+# Archivos estáticos recolectados
+staticfiles/
+static/collected/
+
+# Archivos de registro
+*.log
+logs/
+
+# Archivos del sistema macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Archivos temporales de Office (Word/Excel abiertos)
+~$*.docx
+~$*.xlsx
+~$*.pptx
+~$*.doc
+~$*.xls
+
+# Directorio de subidas temporal
+uploads/
+
+# IDEs y editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Pruebas y cobertura
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ============================================================
+# ARCHIVOS DE TRABAJO LOCAL / DATOS BRUTOS / PRIVADOS
+# NO SUBIR estos archivos al repositorio público GitHub:
+# ============================================================
+
+# Archivos de configuración local del editor / workspace
+*.code-workspace
+run_local.bat
+Feria_2026.code-workspace
+
+# Datos brutos de fichas, aprendices e instructores (Excel)
+I.E_BD.xlsx
+INFORMACIÓN_POR_FICHA.xlsx
+INSTRUCTORES ARTICULACION.xlsx
+POR_FICHAS.xlsx
+PROGRAMAS.xlsx
+
+# Manuales y documentos fuente originales
+MANUAL_IDENTIDAD_VISUAL_SENA_2024.pdf
+Prompt_Maestro_Sistema_Feria_Proyectos_Productivos_SENA.docx
+
+# Scripts y archivos auxiliares de una sola ejecución
+extraer_contenido.py
+_tmp_*.py
+00_*.txt
+
+# Capturas y salidas de reportes locales (generados bajo demanda)
+reportes/
+salidas_pdf/
+_salida_pdfs_prueba/
+salidas_pdfs/
+*.local.pdf
+
+# Archivos generados por collectstatic (despliegue)
+static_collected/
+staticfiles/
+
+# Meta-datos y especificaciones del IDE (no son parte del sistema)
+.trae/

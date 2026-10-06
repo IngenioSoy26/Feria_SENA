@@ -1,0 +1,441 @@
+{% extends 'base_operador.html' %}
+{% load static %}
+
+{% block title %}Refrigerios · Entrega{% endblock %}
+
+{% block extra_css %}
+<style>
+  html, body { height: 100%; }
+  .pagina-operador {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #fff8e1 0%, #f5f5f5 40%);
+    overflow: hidden;
+  }
+  .zona-superior {
+    padding: 1rem 1rem 0.5rem 1rem;
+    flex-shrink: 0;
+  }
+  .contador-box {
+    background: #fff;
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    box-shadow: 0 6px 18px rgba(249, 168, 37, 0.1);
+    border: 1px solid rgba(249, 168, 37, 0.18);
+  }
+  .contador-valor {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #F57C00;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .contador-sub {
+    font-size: 0.95rem;
+    color: #E65100;
+    font-weight: 600;
+  }
+  .contador-total {
+    color: #616161;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .servicio-activo-badge {
+    background: linear-gradient(135deg, #F9A825 0%, #F57C00 100%);
+    color: #fff;
+    border-radius: 0.85rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(249, 168, 37, 0.25);
+  }
+  .servicio-activo-badge small {
+    opacity: 0.95;
+    font-weight: 600;
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .servicio-activo-badge .nombre {
+    font-size: 1.1rem;
+  }
+  .zona-lector {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem 1rem 1rem;
+    overflow-y: auto;
+    gap: 0.75rem;
+  }
+  .btn-activar-camara {
+    background-color: #F57C00;
+    color: #fff;
+    border: none;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    font-weight: 700;
+    font-size: 1.25rem;
+    box-shadow: 0 8px 24px rgba(245, 124, 0, 0.25);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 68px;
+  }
+  .btn-activar-camara:hover {
+    background-color: #E65100;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(230, 81, 0, 0.3);
+  }
+  .btn-activar-camara:active { transform: translateY(0); }
+  .btn-activar-camara svg {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+  .btn-detener-camara {
+    background-color: #C62828;
+    color: #fff;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.875rem;
+    font-weight: 600;
+    width: 100%;
+  }
+  #reader {
+    width: 100%;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  #reader video {
+    border-radius: 1rem;
+    object-fit: cover;
+  }
+  #reader:empty { display: none; }
+  .panel-resultado {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1.25rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+  .panel-resultado.mostrar { opacity: 1; pointer-events: auto; }
+  .panel-resultado .tarjeta {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    transform: translateY(24px) scale(0.96);
+    transition: transform 0.28s cubic-bezier(.2,.8,.2,1);
+    border-top: 8px solid #2E7D32;
+  }
+  .panel-resultado.mostrar .tarjeta { transform: translateY(0) scale(1); }
+  .panel-resultado.tipo-amarillo .tarjeta { border-top-color: #F9A825; }
+  .panel-resultado.tipo-rojo .tarjeta { border-top-color: #C62828; }
+  .panel-resultado.tipo-verde .tarjeta { border-top-color: #2E7D32; }
+  .estado-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #fff;
+    margin-bottom: 0.75rem;
+  }
+  .estado-verde { background-color: #2E7D32; }
+  .estado-amarillo { background-color: #F9A825; }
+  .estado-rojo { background-color: #C62828; }
+  .nombre-persona {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #212121;
+    margin: 0.5rem 0 0.35rem;
+    line-height: 1.2;
+  }
+  .rol-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.5rem;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .meta-line {
+    color: #616161;
+    font-size: 0.92rem;
+    margin: 0.25rem 0;
+  }
+  .meta-line strong { color: #424242; font-weight: 600; }
+  .hora-info {
+    margin-top: 0.85rem;
+    padding: 0.75rem 1rem;
+    background: #fff3e0;
+    border-radius: 0.75rem;
+    color: #BF360C;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .btn-secundario {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 2px solid #F57C00;
+    color: #E65100;
+    font-weight: 600;
+    padding: 0.85rem 1.1rem;
+    border-radius: 0.85rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+  .btn-secundario:hover {
+    background: #F57C00;
+    color: #fff;
+  }
+  @media (min-width: 768px) {
+    .zona-superior, .zona-lector { padding-left: 2rem; padding-right: 2rem; }
+    .zona-superior { padding-top: 1.5rem; }
+    .contador-valor { font-size: 4rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pagina-operador">
+  <div class="zona-superior">
+    <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+      <div>
+        <h1 class="h4 fw-bold mb-1" style="color:#E65100">Entrega de Refrigerios</h1>
+        {% if evento_activo %}
+          <span class="badge rounded-pill text-white" style="background:#F57C00">{{ evento_activo.nombre }}</span>
+        {% else %}
+          <span class="badge rounded-pill bg-danger">Sin evento activo</span>
+        {% endif %}
+      </div>
+      <small class="text-muted fw-semibold">{{ nombre_operador }}</small>
+    </div>
+
+    <div class="servicio-activo-badge">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+        <line x1="6" y1="1" x2="6" y2="4"/>
+        <line x1="10" y1="1" x2="10" y2="4"/>
+        <line x1="14" y1="1" x2="14" y2="4"/>
+      </svg>
+      <div style="flex-grow:1;min-width:0">
+        <small>Servicio activo</small>
+        <div class="nombre text-truncate">{{ servicio_nombre }}</div>
+      </div>
+    </div>
+
+    <div class="contador-box">
+      <div class="d-flex align-items-end justify-content-between">
+        <div>
+          <div class="contador-sub">Entregados hoy</div>
+          <div class="contador-valor" id="contador-hoy">{{ contador_ingresados_hoy }}</div>
+          <div class="contador-total">Total servicio: <strong id="contador-total">{{ contador_total_registrados }}</strong></div>
+        </div>
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F57C00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.85">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="zona-lector">
+    <button id="btn-activar-camara" class="btn-activar-camara" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <span>ACTIVAR CÁMARA</span>
+    </button>
+
+    <div id="reader"></div>
+
+    <button id="btn-detener-camara" class="btn-detener-camara d-none" type="button">
+      DETENER CÁMARA
+    </button>
+
+    <a href="{% url 'refrigerios:buscar_manual' %}" class="btn-secundario">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      BUSCAR PERSONA
+    </a>
+  </div>
+</div>
+
+<div id="panel-resultado" class="panel-resultado" role="alert" aria-live="polite">
+  <div class="tarjeta">
+    <span id="estado-pill" class="estado-pill estado-verde">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span id="estado-texto">ENTREGA REGISTRADA</span>
+    </span>
+    <div id="resultado-servicio" class="text-muted small fw-semibold mb-2" style="color:#E65100 !important"></div>
+    <div id="resultado-nombre" class="nombre-persona">—</div>
+    <div id="resultado-rol-badge" class="rol-badge" style="background:#424242">—</div>
+    <div class="mt-3">
+      <div class="meta-line" id="resultado-institucion"><strong>Institución:</strong> —</div>
+      <div class="meta-line" id="resultado-programa"><strong>Programa:</strong> —</div>
+      <div class="meta-line" id="resultado-proyecto"><strong>Proyecto:</strong> —</div>
+    </div>
+    <div class="hora-info" id="resultado-hora">
+      <div><strong>Fecha y hora:</strong> <span id="resultado-fecha">—</span></div>
+      <div id="resultado-operador-fila" style="margin-top:0.35rem"><strong>Operador:</strong> <span id="resultado-operador">—</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/lector_qr.js' %}"></script>
+<script>
+(function () {
+  var EVENTO_ID = {{ evento_id|default:'null' }};
+  var TIPO_SERVICIO_ID = {{ tipo_servicio_id|default:'null' }};
+  var SERVICIO_NOMBRE = {{ servicio_nombre|default:"''"|safe }};
+  var ENDPOINT_VALIDAR = "{% url 'refrigerios:api_validar' %}";
+  var ENDPOINT_REGISTRAR = "{% url 'refrigerios:api_registrar' %}";
+
+  function actualizarContadores() {
+    var hoy = document.getElementById('contador-hoy');
+    var total = document.getElementById('contador-total');
+    if (hoy) {
+      var h = parseInt(hoy.textContent || '0', 10) || 0;
+      hoy.textContent = String(h + 1);
+    }
+    if (total) {
+      var t = parseInt(total.textContent || '0', 10) || 0;
+      total.textContent = String(t + 1);
+    }
+  }
+
+  function llenarPanel(resultado) {
+    var panel = document.getElementById('panel-resultado');
+    var pill = document.getElementById('estado-pill');
+    var texto = document.getElementById('estado-texto');
+    var servicioTag = document.getElementById('resultado-servicio');
+    var nombre = document.getElementById('resultado-nombre');
+    var rolBadge = document.getElementById('resultado-rol-badge');
+    var institucion = document.getElementById('resultado-institucion');
+    var programa = document.getElementById('resultado-programa');
+    var proyecto = document.getElementById('resultado-proyecto');
+    var fecha = document.getElementById('resultado-fecha');
+    var operador = document.getElementById('resultado-operador');
+    var operadorFila = document.getElementById('resultado-operador-fila');
+
+    panel.classList.remove('tipo-verde', 'tipo-amarillo', 'tipo-rojo');
+    pill.classList.remove('estado-verde', 'estado-amarillo', 'estado-rojo');
+
+    var status = (resultado.status || 'ROJO').toUpperCase();
+    panel.classList.add('tipo-' + status.toLowerCase());
+    pill.classList.add('estado-' + status.toLowerCase());
+    texto.textContent = resultado.mensaje || '';
+
+    servicioTag.textContent = (resultado.servicio_nombre || SERVICIO_NOMBRE) ? '🍽️ ' + (resultado.servicio_nombre || SERVICIO_NOMBRE) : '';
+
+    var p = resultado.persona || {};
+    nombre.textContent = p.nombre || '—';
+    rolBadge.style.background = p.rol_color || '#424242';
+    rolBadge.textContent = p.rol_texto || '—';
+    institucion.innerHTML = '<strong>Institución:</strong> ' + (p.institucion || '—');
+    programa.innerHTML = '<strong>Programa:</strong> ' + (p.programa || '—');
+    proyecto.innerHTML = '<strong>Proyecto:</strong> ' + (p.proyecto || '—');
+    fecha.textContent = resultado.fecha_hora || '—';
+    if (resultado.operador) {
+      operador.textContent = resultado.operador;
+      operadorFila.style.display = '';
+    } else {
+      operadorFila.style.display = 'none';
+    }
+    panel.classList.add('mostrar');
+
+    if (status === 'VERDE') {
+      try { actualizarContadores(); } catch (e) {}
+    }
+  }
+
+  function ocultarPanelDespues(ms) {
+    setTimeout(function () {
+      var panel = document.getElementById('panel-resultado');
+      if (panel) panel.classList.remove('mostrar');
+    }, ms || 1500);
+  }
+
+  function vibrarSiSoportado(patron) {
+    try { if (navigator.vibrate) navigator.vibrate(patron); } catch (e) {}
+  }
+
+  var lector = null;
+  if (typeof window.LectorQRSena !== 'undefined') {
+    lector = new window.LectorQRSena('REFRIGERIOS', ENDPOINT_VALIDAR, ENDPOINT_REGISTRAR);
+    lector.elementoLectorId = 'reader';
+    lector.btnActivarId = 'btn-activar-camara';
+    lector.btnDetenerId = 'btn-detener-camara';
+    lector.datosExtra = { evento_id: EVENTO_ID, tipo_servicio_id: TIPO_SERVICIO_ID };
+    lector.onValidacion = function (respuesta) {
+      return respuesta && respuesta.status === 'OK';
+    };
+    lector.onAntesRegistrar = function (decodeData) {
+      return {
+        token: decodeData,
+        evento_id: EVENTO_ID,
+        tipo_servicio_id: TIPO_SERVICIO_ID,
+        medio: 'QR',
+      };
+    };
+    lector.onResultado = function (resultado) {
+      var status = (resultado.status || 'ROJO').toUpperCase();
+      if (status === 'VERDE') vibrarSiSoportado([80]);
+      else if (status === 'AMARILLO') vibrarSiSoportado([60, 60, 60]);
+      else vibrarSiSoportado([140]);
+      llenarPanel(resultado);
+      ocultarPanelDespues(1500);
+    };
+    lector.onError = function (mensaje, error) {
+      llenarPanel({
+        status: 'ROJO',
+        mensaje: mensaje || 'Error al procesar el QR',
+        persona: {},
+      });
+      ocultarPanelDespues(1800);
+    };
+    lector.inicializar();
+  }
+
+  var panel = document.getElementById('panel-resultado');
+  if (panel) {
+    panel.addEventListener('click', function () {
+      panel.classList.remove('mostrar');
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin conexión | SENA Feria</title>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/sena.css' %}">
+</head>
+<body class="min-vh-100 d-flex flex-column bg-light">
+    <div class="bg-sena-verde text-white py-4">
+        <div class="container text-center">
+            <h1 class="fw-bold mb-1">SENA · Feria Proyectos 2026</h1>
+            <p class="mb-0 opacity-90">Servicio Nacional de Aprendizaje</p>
+        </div>
+    </div>
+    <div class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+        <div class="card card-operador border-0 shadow-lg text-center" style="max-width:520px;width:100%;">
+            <div class="card-body p-5">
+                <div class="mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-sena-gris-medio mx-auto">
+                        <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+                        <line x1="2" y1="2" x2="22" y2="22"/>
+                    </svg>
+                </div>
+                <h2 class="fw-bold mb-3 text-sena-negro">Sin conexión a internet</h2>
+                <p class="text-sena-gris-oscuro mb-4">
+                    No se detectó conexión de red.<br>
+                    Verifica tu Wi-Fi o datos móviles e intenta nuevamente.
+                </p>
+                <div class="d-grid gap-2">
+                    <button onclick="location.reload()" class="btn btn-sena px-4 py-2 fw-semibold">Reintentar conexión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="bg-sena-verde text-white py-3">
+        <div class="container text-center small opacity-90">
+            Regional Guajira · Feria de Proyectos Productivos · {{ "now"|date:"Y" }}
+        </div>
+    </footer>
+</body>
+</html>

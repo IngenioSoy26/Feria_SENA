@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Principal | SENA Feria{% endblock %}
+
+{% block content %}
+<div class="main-wrapper">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+        <div>
+            <h2 class="h3 fw-bold mb-1 text-sena-negro">Panel Principal</h2>
+            <p class="mb-0 text-sena-gris-oscuro small" id="evento-actual-label">Cargando evento...</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'reportes:index' %}" class="btn btn-outline-sena fw-semibold">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes
+            </a>
+            <button id="btn-actualizar" type="button" class="btn fw-semibold shadow-sm"
+                style="background-color:#39A900;border-color:#39A900;color:white;">
+                <i class="bi bi-arrow-clockwise me-2"></i>ACTUALIZAR AHORA
+            </button>
+        </div>
+    </div>
+
+    <form method="get" id="form-filtros" class="card border-0 shadow-sm mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h4 class="h6 fw-bold mb-0 text-sena-verde">
+                <i class="bi bi-funnel me-2"></i>Filtros del Panel
+            </h4>
+            <small class="text-muted">Cualquier cambio actualiza automáticamente KPIs y gráficos</small>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Evento</label>
+                    <select class="form-select form-control-sm filtro-select" name="evento" id="f-evento">
+                        <option value="">-- Seleccione un evento --</option>
+                        {% for ev in eventos %}
+                        <option value="{{ ev.pk }}" {% if sel_evento == ev.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ ev.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Institución</label>
+                    <select class="form-select form-control-sm filtro-select" name="institucion" id="f-institucion">
+                        <option value="">Todas</option>
+                        {% for i in instituciones %}
+                        <option value="{{ i.pk }}" {% if sel_institucion == i.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ i.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Municipio</label>
+                    <select class="form-select form-control-sm filtro-select" name="municipio" id="f-municipio">
+                        <option value="">Todos</option>
+                        {% for m in municipios %}
+                        <option value="{{ m }}" {% if sel_municipio == m %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Programa Técnico</label>
+                    <select class="form-select form-control-sm filtro-select" name="programa" id="f-programa">
+                        <option value="">Todos</option>
+                        {% for p in programas %}
+                        <option value="{{ p.pk }}" {% if sel_programa == p.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ p.codigo }} - {{ p.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Proyecto</label>
+                    <select class="form-select form-control-sm filtro-select" name="proyecto" id="f-proyecto">
+                        <option value="">Todos</option>
+                        {% for pr in proyectos %}
+                        <option value="{{ pr.pk }}" {% if sel_proyecto == pr.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ pr.codigo }} - {{ pr.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Instructor</label>
+                    <select class="form-select form-control-sm filtro-select" name="instructor" id="f-instructor">
+                        <option value="">Todos</option>
+                        {% for ins in instructores %}
+                        <option value="{{ ins.pk }}" {% if sel_instructor == ins.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ ins.persona.nombre_completo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Tipo de Persona</label>
+                    <select class="form-select form-control-sm filtro-select" name="tipo_persona" id="f-tipo_persona">
+                        <option value="">Todos</option>
+                        {% for k,v in tipos_persona %}
+                        <option value="{{ k }}" {% if sel_tipo_persona == k %}selected{% endif %}>{{ v }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3 d-flex align-items-end">
+                    <button type="button" id="btn-limpiar-filtros" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle me-2"></i>Limpiar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="mb-4">
+        <h3 class="h5 fw-bold text-sena-negro mb-3">
+            <i class="bi bi-speedometer2 me-2"></i>Indicadores (KPIs)
+        </h3>
+        <div class="row g-3">
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#39A900;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Participantes registrados</p>
+                        <h3 class="fw-bold mb-0" style="color:#39A900;" id="kpi-participantes_registrados">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#66bb6a;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Aprendices</p>
+                        <h3 class="fw-bold mb-0" style="color:#2e7d32;" id="kpi-aprendices">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#0067B1;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Instructores</p>
+                        <h3 class="fw-bold mb-0" style="color:#0067B1;" id="kpi-instructores">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#F57C00;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Invitados</p>
+                        <h3 class="fw-bold mb-0" style="color:#F57C00;" id="kpi-invitados">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#39A900;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Proyectos</p>
+                        <h3 class="fw-bold mb-0" style="color:#39A900;" id="kpi-proyectos">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#424242;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Instituciones</p>
+                        <h3 class="fw-bold mb-0 text-sena-gris-oscuro" id="kpi-instituciones">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#424242;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Programas Técnicos</p>
+                        <h3 class="fw-bold mb-0 text-sena-gris-oscuro" id="kpi-programas_tecnicos">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#2E7D32;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Asistentes</p>
+                        <h3 class="fw-bold mb-0" style="color:#2E7D32;" id="kpi-asistentes">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#C62828;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Ausentes</p>
+                        <h3 class="fw-bold mb-0" style="color:#C62828;" id="kpi-ausentes">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#2E7D32;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">% Asistencia</p>
+                        <h3 class="fw-bold mb-0" style="color:#2E7D32;" id="kpi-porcentaje_asistencia">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#F9A825;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Refrigerios entregados / pendientes</p>
+                        <h3 class="fw-bold mb-0" style="color:#F9A825;" id="kpi-refrigerios_entregados">—</h3>
+                        <small class="text-sena-gris-medio" id="kpi-refrigerios_pendientes_label"></small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#F9A825;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">% Refrigerios</p>
+                        <h3 class="fw-bold mb-0" style="color:#F9A825;" id="kpi-porcentaje_refrigerios">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#39A900;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Certificados entregados</p>
+                        <h3 class="fw-bold mb-0" style="color:#39A900;" id="kpi-certificados_entregados">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#9E9E9E;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Certificados pendientes</p>
+                        <h3 class="fw-bold mb-0 text-sena-gris-oscuro" id="kpi-certificados_pendientes">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#39A900;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">% Certificados</p>
+                        <h3 class="fw-bold mb-0" style="color:#39A900;" id="kpi-porcentaje_certificados">—</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm border-start border-4" style="border-color:#0067B1;">
+                    <div class="card-body py-3">
+                        <p class="small text-sena-gris-medio mb-1 text-uppercase fw-semibold" style="letter-spacing:0.03em;">Operadores conectados</p>
+                        <h3 class="fw-bold mb-0" style="color:#0067B1;" id="kpi-operadores_conectados">—</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <h3 class="h5 fw-bold text-sena-negro mb-3">
+            <i class="bi bi-bar-chart-line me-2"></i>Gráficos Estadísticos
+        </h3>
+        <div class="row g-4">
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Participantes por Institución</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-participantes_x_institucion"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Participantes por Programa Técnico</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-participantes_x_programa"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Proyectos por Institución</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-proyectos_x_institucion"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Proyectos por Programa Técnico</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-proyectos_x_programa"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Top 15 Proyectos por Participantes</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-participantes_x_proyecto"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Participantes por Instructor</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-participantes_x_instructor"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6 col-xl-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Distribución por Tipo de Persona</h5></div>
+                    <div class="card-body d-flex align-items-center" style="height:340px;"><canvas id="chart-distribucion_tipo_persona"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6 col-xl-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Asistencia General</h5></div>
+                    <div class="card-body d-flex align-items-center" style="height:340px;"><canvas id="chart-asistencia_general"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Entrega Certificados por Día</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-certificados_tiempo"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Asistencia por Institución (Asistentes / Ausentes)</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-asistencia_x_institucion"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Asistencia por Programa (Asistentes / Ausentes)</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-asistencia_x_programa"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header"><h5 class="small fw-bold mb-0 text-sena-verde">Entrega de Refrigerios por Tipo de Servicio</h5></div>
+                    <div class="card-body" style="height:340px;"><canvas id="chart-refrigerios_x_tipo"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard.js' %}?v=3"></script>
+{% endblock %}

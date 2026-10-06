@@ -1,0 +1,169 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+:root {
+  --primary: #39A900;
+  --secondary: #0067B1;
+  --accent: #F57C00;
+  --primary-fg: #fff;
+  --body-fg: #303030;
+  --body-bg: #fff;
+  --body-quiet-color: #666;
+  --body-loud-color: #000;
+  --header-color: #fff;
+  --header-branding-color: var(--accent);
+  --header-bg: #39A900;
+  --header-link-color: #fff;
+  --breadcrumbs-fg: #E8F5E9;
+  --breadcrumbs-link-fg: #fff;
+  --breadcrumbs-bg: #2E7D32;
+  --link-fg: #39A900;
+  --link-hover-color: #1B5E20;
+  --link-selected-fg: #2E7D32;
+  --hairline-color: #e8e8e8;
+  --border-color: #ccc;
+  --error-fg: #C62828;
+  --message-success-bg: #E8F5E9;
+  --message-warning-bg: #FFF8E1;
+  --message-error-bg: #FFEBEE;
+  --darkened-bg: #F5F5F5;
+  --selected-bg: #E8F5E9;
+  --selected-row: #C8E6C9;
+  --button-fg: #fff;
+  --button-bg: #39A900;
+  --button-hover-bg: #2E7D32;
+  --default-button-bg: #2E7D32;
+  --default-button-hover-bg: #1B5E20;
+  --close-button-bg: #757575;
+  --close-button-hover-bg: #424242;
+  --delete-button-bg: #C62828;
+  --delete-button-hover-bg: #8E0000;
+  --object-tools-fg: #fff;
+  --object-tools-bg: #39A900;
+  --object-tools-hover-bg: #2E7D32;
+}
+
+#header {
+    background: linear-gradient(90deg, #39A900 0%, #2E7D32 100%);
+}
+
+#branding h1, #branding h1 a:link, #branding h1 a:visited {
+    color: #fff;
+    font-weight: 700;
+}
+
+div.breadcrumbs {
+    background: #2E7D32;
+}
+
+a:link, a:visited {
+    color: #39A900;
+}
+
+a:hover, a:focus {
+    color: #1B5E20;
+}
+
+button, input[type="submit"], input[type="button"], .button, input[type="submit"].default {
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+input[type="submit"].default:hover, button.default:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(46, 125, 50, 0.25);
+}
+
+.module h2, .module caption, .inline-group h2 {
+    background: #39A900;
+    color: #fff;
+    font-weight: 600;
+}
+
+#changelist-filter h2 {
+    background: #39A900;
+    color: #fff;
+}
+
+#toolbar form input[type="submit"] {
+    background: #39A900;
+    color: #fff;
+    border: 1px solid #39A900;
+}
+
+.paginator a:link, .paginator a:visited {
+    background: #39A900;
+    color: #fff;
+    border-radius: 0.375rem;
+}
+
+.paginator a:hover {
+    background: #2E7D32;
+    color: #fff;
+}
+
+.paginator thispage {
+    background: #E8F5E9;
+    color: #2E7D32;
+    border-radius: 0.375rem;
+}
+
+#changelist table tbody tr.selected {
+    background-color: #E8F5E9;
+}
+
+.object-tools a:link, .object-tools a:visited {
+    background: #39A900;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.object-tools a:hover, .object-tools a:focus {
+    background: #2E7D32;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(46, 125, 50, 0.25);
+}
+
+.object-tools a.addlink {
+    background-image: none;
+}
+
+.object-tools a.addlink::before {
+    content: "＋ ";
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}" style="color:#fff;text-decoration:none;">
+        <strong style="letter-spacing:0.5px;">SENA</strong>
+        <span style="opacity:0.9;font-weight:400;"> · Administración Feria</span>
+    </a>
+</h1>
+{% endblock %}
+
+{% block userlinks %}
+{% if site_url %}
+    <a href="{{ site_url }}">Ver sitio</a> /
+{% endif %}
+{% if user.has_permission %}
+    {% url 'django-admindocs-docroot' as docsroot %}
+    {% if docsroot %}
+        <a href="{{ docsroot }}">{% translate 'Documentation' %}</a> /
+    {% endif %}
+{% endif %}
+{% if user.has_usable_password %}
+<a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> /
+{% endif %}
+<form id="logout-form" method="post" action="{% url 'admin:logout' %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;font:inherit;text-decoration:underline;">{% translate 'Log out' %}</button>
+</form>
+{% endblock %}

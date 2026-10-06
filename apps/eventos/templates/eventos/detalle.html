@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}{{ evento.nombre }} - Detalle Evento{% endblock %}
+
+{% block content %}
+{% if confirm_delete %}
+<div class="row justify-content-center mb-4">
+    <div class="col-lg-10">
+        <div class="alert alert-danger" role="alert">
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div><i class="bi bi-exclamation-triangle-fill display-6"></i></div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">¿Eliminar este evento?</h5>
+                        <p class="mb-0">Esta acción no se puede deshacer. Se eliminará: <strong>{{ evento.nombre }}</strong></p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Sí, eliminar
+                        </button>
+                        <a href="{% url 'eventos:detail' evento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">{{ evento.nombre }}</h1>
+        <p class="text-muted mb-0">
+            {% if evento.estado == 'BORRADOR' %}
+                <span class="badge bg-secondary">Borrador</span>
+            {% elif evento.estado == 'ACTIVO' %}
+                <span class="badge bg-success">Activo</span>
+            {% else %}
+                <span class="badge bg-dark">Cerrado</span>
+            {% endif %}
+            {% if evento.activo %}
+                <span class="badge bg-success ms-1">✔ Activo</span>
+            {% else %}
+                <span class="badge bg-secondary ms-1">✘ Inactivo</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'eventos:list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+        {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+        <form method="post" action="{% url 'eventos:toggle_activo' evento.pk %}" class="d-inline" onsubmit="return confirm('¿Cambiar estado activo del evento?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-warning">
+                <i class="bi bi-power me-1"></i>
+                {% if evento.activo %}Desactivar{% else %}Activar{% endif %}
+            </button>
+        </form>
+        <a href="{% url 'eventos:update' evento.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        {% endif %}
+        {% if request.user|has_group:'ADMINISTRADOR' %}
+        <a href="{% url 'eventos:delete' evento.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash me-1"></i>Eliminar
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">Información del Evento</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Descripción</dt>
+                    <dd class="col-sm-8">{{ evento.descripcion|default:"—"|linebreaksbr }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Fecha Inicio</dt>
+                    <dd class="col-sm-8 fw-medium">{{ evento.fecha_inicio|date:"l, d \d\e F \d\e Y" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Fecha Fin</dt>
+                    <dd class="col-sm-8 fw-medium">{{ evento.fecha_fin|date:"l, d \d\e F \d\e Y" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Lugar</dt>
+                    <dd class="col-sm-8">{{ evento.lugar }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Municipio</dt>
+                    <dd class="col-sm-8">{{ evento.municipio }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Regional</dt>
+                    <dd class="col-sm-8">{{ evento.regional }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Creado por</dt>
+                    <dd class="col-sm-8">{{ evento.creado_por|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Fecha creación</dt>
+                    <dd class="col-sm-8">{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-sena-verde mb-1">{{ proyectos_count }}</div>
+                <p class="text-muted mb-0">Proyectos inscritos</p>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-sena-azul mb-1">{{ tipos_servicio|length }}</div>
+                <p class="text-muted mb-0">Tipos de servicio</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0">Tipos de Servicio</h5>
+        {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+        <button class="btn btn-sena btn-sm" data-bs-toggle="collapse" data-bs-target="#addServicioForm">
+            <i class="bi bi-plus-lg me-1"></i>Agregar Servicio
+        </button>
+        {% endif %}
+    </div>
+
+    {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+    <div class="collapse" id="addServicioForm">
+        <div class="card-body border-bottom">
+            <form method="post" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <div class="col-md-5">
+                    <label class="form-label">Nombre del servicio *</label>
+                    <input type="text" name="nombre" class="form-control" required placeholder="Ej: Registro, Refrigerio, Certificado">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Orden</label>
+                    <input type="number" name="orden" class="form-control" min="1" value="1">
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="activo" id="id_servicio_activo">
+                        <label class="form-check-label" for="id_servicio_activo">Servicio activo</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sena w-100">
+                        <i class="bi bi-check-lg me-1"></i>Agregar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card-body p-0">
+        {% if tipos_servicio %}
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Orden</th>
+                        <th>Nombre</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in tipos_servicio %}
+                    <tr>
+                        <td><span class="badge bg-sena-verde">{{ s.orden }}</span></td>
+                        <td class="fw-medium">{{ s.nombre }}</td>
+                        <td>
+                            {% if s.activo %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+                                <form method="post" action="{% url 'eventos:servicio_toggle' evento.pk s.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Activar/Desactivar">
+                                        <i class="bi bi-power"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if request.user|has_group:'ADMINISTRADOR' %}
+                                <form method="post" action="{% url 'eventos:servicio_delete' evento.pk s.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar servicio \"{{ s.nombre }}\"?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4 mb-0">
+            <i class="bi bi-list-ul display-6 d-block mb-2 opacity-50"></i>
+            No hay tipos de servicio configurados.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil | SENA Feria{% endblock %}
+
+{% block content %}
+<div class="main-wrapper">
+    <div class="row g-4 justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-sena-verde text-white d-flex align-items-center justify-content-center fw-bold" style="width:56px;height:56px;font-size:22px;">
+                        {{ usuario.first_name|default:usuario.username|slice:1|upper }}
+                    </div>
+                    <div>
+                        <h3 class="h5 fw-bold mb-0 text-sena-negro">{{ usuario.nombre_completo|default:usuario.get_full_name|default:usuario.username }}</h3>
+                        <p class="mb-0 small text-sena-gris-medio">
+                            <span class="badge badge-aprendiz">{{ rol_nombre|default:usuario.rol_sistema }}</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Usuario</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ usuario.username }}</dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Correo</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ usuario.email|default:"—" }}</dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Nombres</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ usuario.nombres|default:"—" }}</dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Apellidos</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ usuario.apellidos|default:"—" }}</dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Rol del Sistema</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ rol_nombre|default:usuario.rol_sistema }}</dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Estado</dt>
+                        <dd class="col-sm-8 fw-semibold">
+                            {% if usuario.activo %}
+                                <span class="badge badge-aprendiz">Activo</span>
+                            {% else %}
+                                <span class="badge badge-invitado">Inactivo</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Último Acceso</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ usuario.ultimo_acceso|date:"Y-m-d H:i:s"|default:"—" }}</dd>
+
+                        <dt class="col-sm-4 text-sena-gris-oscuro">Fecha de Registro</dt>
+                        <dd class="col-sm-8 fw-semibold">{{ usuario.date_joined|date:"Y-m-d H:i:s"|default:"—" }}</dd>
+                    </dl>
+                </div>
+                <div class="card-footer bg-white d-flex justify-content-end gap-2">
+                    <a href="{% url 'logout' %}" class="btn btn-outline-sena fw-semibold">Cerrar sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

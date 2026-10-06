@@ -1,0 +1,13 @@
+# Dependencias principales del proyecto
+# Versiones exactas compatibles con PythonAnywhere (Python 3.10)
+
+Django==5.1.2
+python-dotenv==1.0.1
+Pillow==10.4.0
+qrcode==7.4.2
+openpyxl==3.1.5
+reportlab==4.2.5
+whitenoise==6.7.0
+django-csp==3.8
+pandas==2.3.3
+argon2-cffi==23.1.0

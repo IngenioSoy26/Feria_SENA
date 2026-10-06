@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Personas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h2 class="h4 mb-0">{{ titulo }}</h2>
+                <a href="{% url 'personas:list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% include 'formulario_horizontal.html' with form=form submit_label=submit_label cancel_url=cancel_url %}
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-sena-gris-claro">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2 text-sena-verde"></i>Ayuda</h5>
+            </div>
+            <div class="card-body small text-muted">
+                <ul class="mb-0 ps-3">
+                    <li><strong>Aprendiz:</strong> El perfil se crea automáticamente si selecciona un Proyecto. Si no hay proyecto, solo se guarda la Persona.</li>
+                    <li><strong>Instructor:</strong> Seleccione los programas técnicos asociados (mantenga Ctrl/Cmd para selección múltiple).</li>
+                    <li><strong>Invitado:</strong> Diligencie Entidad y Cargo para generar el perfil.</li>
+                    <li><strong>Organizador:</strong> No requiere perfil adicional.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('id_tipo_persona');
+    const crearPerfilCheck = document.getElementById('id_crear_perfil');
+    const camposPerfil = {
+        'INSTRUCTOR': ['div_id_programas'],
+        'INVITADO': ['div_id_entidad', 'div_id_cargo'],
+        'APRENDIZ': ['div_id_proyecto', 'div_id_grado'],
+    };
+
+    function toggleCampos() {
+        const tipo = tipoSelect.value;
+        const crear = crearPerfilCheck.checked;
+        Object.values(camposPerfil).flat().forEach(id => {
+            const el = document.querySelector('[for="' + id.replace('div_id_', 'id_') + '"]')?.closest('.row') || document.getElementById(id);
+            const fieldName = id.replace('div_id_', '');
+            const label = document.querySelector('label[for="id_' + fieldName + '"]');
+            if (label) {
+                const row = label.closest('.row');
+                if (row) {
+                    const mustShow = crear && camposPerfil[tipo]?.includes(id);
+                    row.style.display = mustShow ? '' : 'none';
+                }
+            }
+        });
+    }
+
+    tipoSelect.addEventListener('change', toggleCampos);
+    crearPerfilCheck.addEventListener('change', toggleCampos);
+    toggleCampos();
+});
+</script>
+{% endblock %}

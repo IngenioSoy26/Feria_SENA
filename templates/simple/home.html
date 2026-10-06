@@ -1,0 +1,198 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Inicio · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="glass-card mb-4">
+  <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+    <div class="flex-grow-1 min-0">
+      <div class="d-flex gap-3 align-items-center">
+        <div class="ico-big d-flex align-items-center justify-content-center" style="width:64px;height:64px;border-radius:20px;background:#fff;border:2px solid var(--sena-50);">
+          <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:44px;height:44px;object-fit:contain;">
+        </div>
+        <div class="min-0">
+          <h2 class="mb-0" style="font-size:clamp(1.15rem,2.4vw,1.55rem);">
+            {% if evento %}{{ evento.nombre }}{% else %}Feria Proyectos Productivos{% endif %}
+          </h2>
+          {% if evento %}
+          <div class="muted-small mt-1">
+            📅 {{ evento.fecha_inicio|default:'' }} – {{ evento.fecha_fin|default:'' }}
+            · 📍 {{ evento.lugar|default:'' }} · {{ evento.municipio|default:'' }}
+            <span class="pill-ficha ms-1" style="background:var(--sena);color:#fff;">{{ evento.get_estado_display|default:evento.estado }}</span>
+          </div>
+          {% else %}
+          <div class="alert alert-warning mt-3 mb-0" style="border-radius:12px;">
+            ⚠ No hay evento ACTIVO. Crea uno desde el panel Admin → <code>/admin-seguro-sena-2026/</code>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn-sena btn-big" href="{% url 'simple:dashboard' %}">📊 Ver panel</a>
+      <a class="btn-outline-sena btn-big" href="{% url 'simple:wizard' %}">➕ Nuevo proyecto</a>
+    </div>
+  </div>
+
+  {% if es_admin and enlaces_publicos %}
+  <hr class="my-5 soft"/>
+  <div class="d-flex align-items-start gap-3 mb-3">
+    <div class="ico-big" style="width:46px;height:46px;font-size:22px;border-radius:14px;">🔗</div>
+    <div class="flex-grow-1 min-0">
+      <h4 class="mb-0" style="font-size:1.05rem;">Enlaces PÚBLICOS · compártelos sin usuario/contraseña</h4>
+      <div class="muted-small mt-1">Cópialos y envíalos por WhatsApp, correo o pégalos en la pantalla de presentación del evento.</div>
+    </div>
+  </div>
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">📋 Registro proyectos / aprendices</label>
+      <div class="input-group">
+        <input id="lnk-registro" readonly class="form-control pub-input"
+               value="{{ enlaces_publicos.registro|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-registro"
+                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                {% if not enlaces_publicos.registro %}disabled{% endif %}>📋 Copiar</button>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">✅ Operador Asistencia</label>
+      <div class="input-group">
+        <input id="lnk-asistencia" readonly class="form-control pub-input"
+               value="{{ enlaces_publicos.op_asistencia|default:'⚠ Desactivado · TOKEN_OPERADORES vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-asistencia"
+                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                {% if not enlaces_publicos.op_asistencia %}disabled{% endif %}>📋 Copiar</button>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">🍱 Operador Refrigerios</label>
+      <div class="input-group">
+        <input id="lnk-refrigerios" readonly class="form-control pub-input"
+               value="{{ enlaces_publicos.op_refrigerios|default:'⚠ Desactivado · TOKEN_OPERADORES vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-refrigerios"
+                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                {% if not enlaces_publicos.op_refrigerios %}disabled{% endif %}>📋 Copiar</button>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">📜 Operador Certificados</label>
+      <div class="input-group">
+        <input id="lnk-certificados" readonly class="form-control pub-input"
+               value="{{ enlaces_publicos.op_certificados|default:'⚠ Desactivado · TOKEN_OPERADORES vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-certificados"
+                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                {% if not enlaces_publicos.op_certificados %}disabled{% endif %}>📋 Copiar</button>
+      </div>
+    </div>
+  </div>
+  <div class="muted-small mt-3">
+    🔐 Para volver al modo <b>solo con login</b> (seguro), vacía <code>TOKEN_REGISTRO</code> y <code>TOKEN_OPERADORES</code>
+    en el archivo <code>.env</code> y reinicia el servidor.
+  </div>
+  {% endif %}
+</div>
+
+<div class="mb-4 d-flex align-items-end justify-content-between flex-wrap gap-2">
+  <h3 class="mb-0" style="font-size:1.15rem;">🎯 Acciones rápidas</h3>
+  <span class="muted-small">Toca una tarjeta · funciona perfecto en móvil</span>
+</div>
+
+<div class="menu-hero mb-5">
+  <a class="mh mh-verde" href="{% url 'simple:wizard' %}">
+    <div class="mh-ico">➕</div>
+    <div>
+      Registrar<br/>
+      <small>Datos del evento · 3 pasos</small>
+    </div>
+  </a>
+  <a class="mh mh-verde-claro" href="{% url 'simple:operador' 'asistencia' %}">
+    <div class="mh-ico">✅</div>
+    <div>
+      Asistencia<br/>
+      <small>Escanea código QR</small>
+    </div>
+  </a>
+  <a class="mh mh-naranja" href="{% url 'simple:operador' 'refrigerios' %}">
+    <div class="mh-ico">🍱</div>
+    <div>
+      Refrigerios<br/>
+      <small>Entrega de almuerzo</small>
+    </div>
+  </a>
+  <a class="mh mh-azul-o" href="{% url 'simple:operador' 'certificados' %}">
+    <div class="mh-ico">📜</div>
+    <div>
+      Certificados<br/>
+      <small>Genera código y entrega</small>
+    </div>
+  </a>
+  <a class="mh mh-purpura" href="{% url 'simple:listados' 'proyectos' %}">
+    <div class="mh-ico">🎯</div>
+    <div>
+      Proyectos<br/>
+      <small>Ver todos · fichas</small>
+    </div>
+  </a>
+  <a class="mh mh-azul" target="_blank" href="{% url 'simple:escarapelas_lote' 'todos' %}">
+    <div class="mh-ico">🎫</div>
+    <div>
+      Escarapelas PDF<br/>
+      <small>Lote imprimible A6</small>
+    </div>
+  </a>
+  <a class="mh mh-rojo" target="_blank" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">
+    <div class="mh-ico">🏆</div>
+    <div>
+      Certificados<br/>
+      <small>Participación aprendices</small>
+    </div>
+  </a>
+  <a class="mh mh-gris" href="{% url 'simple:dashboard' %}">
+    <div class="mh-ico">📊</div>
+    <div>
+      Reportes<br/>
+      <small>Informe del evento</small>
+    </div>
+  </a>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="glass-card">
+      <div class="d-flex gap-3 align-items-start mb-3">
+        <div class="ico-big">🧭</div>
+        <div>
+          <h4 class="mb-0" style="font-size:1.08rem;">Cómo funciona en 4 pasos</h4>
+          <div class="muted-small mt-1">Diseñado para ser rápido en dispositivos móviles y sin complicaciones.</div>
+        </div>
+      </div>
+      <ol class="m-0 ps-4" style="line-height:1.7;">
+        <li class="mb-2"><b>[Registrar]</b> proyectos con su colegio, instructores y aprendices (solo datos únicos, no se repiten).</li>
+        <li class="mb-2"><b>[Imprimir]</b> escarapelas en PDF A6 por persona o por lote (todos/asistentes/colegio).</li>
+        <li class="mb-2"><b>[Evento]</b> 3 pantallas 100vh móviles: Asistencia → Refrigerios → Certificados, cada una con UN solo botón grande de ESCANEAR QR.</li>
+        <li><b>[Entregar]</b> certificados: plantilla completamente editable (nombres, fechas, firmas, proyecto, rol… antes de descargar).</li>
+      </ol>
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="glass-card h-100">
+      <div class="d-flex gap-3 align-items-start mb-3">
+        <div class="ico-big" style="background:linear-gradient(160deg,#d9ebff,#a1c9ff);">⚡</div>
+        <div>
+          <h4 class="mb-0" style="font-size:1.08rem;">Accesos directos</h4>
+          <div class="muted-small mt-1">PDFs listos para imprimir o enviar</div>
+        </div>
+      </div>
+      <div class="d-grid gap-2">
+        <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:escarapelas_lote' 'asistentes' %}">🎫 Escarapelas · solo asistentes</a>
+        <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:escarapelas_lote' 'aprendices' %}">🎫 Escarapelas · aprendices</a>
+        <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:escarapelas_lote' 'instructores' %}">🎫 Escarapelas · instructores</a>
+        <hr class="soft my-2">
+        <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'todos' %}">📜 Asistencia · todos</a>
+        <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">🏆 Participación · aprendices</a>
+        <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'instructores' %}">📜 Asistencia · instructores</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

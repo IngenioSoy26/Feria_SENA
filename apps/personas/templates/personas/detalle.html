@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}{{ persona.nombre_completo }} - Detalle Persona{% endblock %}
+
+{% block content %}
+{% if confirm_delete %}
+<div class="row justify-content-center mb-4">
+    <div class="col-lg-10">
+        <div class="alert alert-danger" role="alert">
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div><i class="bi bi-exclamation-triangle-fill display-6"></i></div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">¿Eliminar esta persona?</h5>
+                        <p class="mb-0">Esta acción no se puede deshacer. Se eliminará: <strong>{{ persona.nombre_completo }}</strong></p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Sí, eliminar
+                        </button>
+                        <a href="{% url 'personas:detail' persona.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">{{ persona.nombre_completo }}</h1>
+        <p class="text-muted mb-0">
+            <span class="badge {{ persona.tipo_persona|badge_color_rol }} me-1">{{ persona.get_tipo_persona_display }}</span>
+            {% if persona.activo %}
+                <span class="badge bg-success">Activo</span>
+            {% else %}
+                <span class="badge bg-secondary">Inactivo</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'personas:list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+        {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+        <a href="{% url 'personas:update' persona.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        {% endif %}
+        {% if request.user|has_group:'ADMINISTRADOR' %}
+        <a href="{% url 'personas:delete' persona.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash me-1"></i>Eliminar
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Información Personal</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Tipo Identificación</dt>
+                    <dd class="col-sm-8">{{ persona.tipo_identificacion.nombre }} ({{ persona.tipo_identificacion.codigo }})</dd>
+
+                    <dt class="col-sm-4 text-muted">N° Identificación</dt>
+                    <dd class="col-sm-8 fw-semibold">{{ persona.numero_identificacion }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Nombres</dt>
+                    <dd class="col-sm-8">{{ persona.nombres }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Apellidos</dt>
+                    <dd class="col-sm-8">{{ persona.apellidos }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Nombre Completo</dt>
+                    <dd class="col-sm-8 fw-medium">{{ persona.nombre_completo }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Correo</dt>
+                    <dd class="col-sm-8">{{ persona.correo|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Teléfono</dt>
+                    <dd class="col-sm-8">{{ persona.telefono|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Tipo Persona</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge {{ persona.tipo_persona|badge_color_rol }}">{{ persona.get_tipo_persona_display }}</span>
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Creado por</dt>
+                    <dd class="col-sm-8">{{ persona.creado_por|default:"Sistema" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Fecha creación</dt>
+                    <dd class="col-sm-8">{{ persona.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Token QR</dt>
+                    <dd class="col-sm-8"><small class="text-muted"><code>{{ persona.qr_token }}</code></small></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        {% if persona.tipo_persona == 'INSTRUCTOR' and hasattr persona 'perfil_instructor' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><span class="badge badge-instructor me-2">I</span>Perfil Instructor</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2"><strong>Programas Técnicos Asociados:</strong></p>
+                {% if persona.perfil_instructor.programas.all %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for prog in persona.perfil_instructor.programas.all %}
+                    <span class="badge rounded-pill bg-sena-verde">{{ prog.codigo }} - {{ prog.nombre }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0 fst-italic">Sin programas asociados.</p>
+                {% endif %}
+                <hr>
+                <p class="mb-0">
+                    {% if persona.perfil_instructor.activo %}
+                        <span class="badge bg-success">Perfil Activo</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Perfil Inactivo</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% elif persona.tipo_persona == 'INVITADO' and hasattr persona 'perfil_invitado' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><span class="badge badge-invitado me-2">G</span>Perfil Invitado</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Entidad</dt>
+                    <dd class="col-sm-8 fw-medium">{{ persona.perfil_invitado.entidad }}</dd>
+                    <dt class="col-sm-4 text-muted">Cargo</dt>
+                    <dd class="col-sm-8">{{ persona.perfil_invitado.cargo }}</dd>
+                </dl>
+            </div>
+        </div>
+        {% elif persona.tipo_persona == 'APRENDIZ' and hasattr persona 'perfil_aprendiz' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><span class="badge badge-aprendiz me-2">A</span>Perfil Aprendiz</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Proyecto</dt>
+                    <dd class="col-sm-8">
+                        <a href="{% url 'proyectos:detail' persona.perfil_aprendiz.proyecto.pk %}" class="fw-medium text-sena-verde-hover">
+                            {{ persona.perfil_aprendiz.proyecto.codigo }} - {{ persona.perfil_aprendiz.proyecto.nombre }}
+                        </a>
+                    </dd>
+                    <dt class="col-sm-4 text-muted">Grado</dt>
+                    <dd class="col-sm-8 fw-medium">{{ persona.perfil_aprendiz.grado }}</dd>
+                </dl>
+            </div>
+        </div>
+        {% else %}
+        <div class="card mb-4">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-person-badge display-4 d-block mb-3 text-sena-gris-medio"></i>
+                <p class="text-muted mb-0">
+                    Esta persona no tiene un perfil de {{ persona.get_tipo_persona_display }} creado aún.<br>
+                    Edite el registro y marque la opción "Crear perfil asociado".
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Código QR Token</h5></div>
+            <div class="card-body text-center">
+                <div class="bg-sena-gris-claro rounded p-3 d-inline-block">
+                    <code class="text-sena-verde small">{{ persona.qr_token }}</code>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Utilice este token para generar la escarapela o registro.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}Eventos - SENA Feria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Eventos</h1>
+        <p class="text-muted mb-0">Total registros: <strong>{{ total }}</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+        <a href="{% url 'eventos:tipos_identificacion_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-person-vcard me-1"></i>Tipos ID
+        </a>
+        <a href="{% url 'eventos:create' %}" class="btn btn-sena">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Evento
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Buscar nombre o lugar</label>
+                <input type="text" name="q" class="form-control" placeholder="Ej: Feria Guajira, Coliseo" value="{{ q }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Municipio</label>
+                <input type="text" name="municipio" class="form-control" placeholder="Ej: Riohacha" value="{{ municipio }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    {% for k, v in estados_choices %}
+                    <option value="{{ k }}" {% if estado == k %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Activo</label>
+                <select name="activo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="1" {% if activo == '1' %}selected{% endif %}>Sí</option>
+                    <option value="0" {% if activo == '0' %}selected{% endif %}>No</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sena flex-grow-1">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+                <a href="{% url 'eventos:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Fechas</th>
+                        <th>Lugar / Municipio</th>
+                        <th>Regional</th>
+                        <th>Estado</th>
+                        <th>Activo</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in eventos %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'eventos:detail' e.pk %}" class="fw-medium text-sena-verde-hover">
+                                {{ e.nombre }}
+                            </a>
+                        </td>
+                        <td>
+                            <div><small class="text-muted">Inicio:</small> {{ e.fecha_inicio|date:"d/m/Y" }}</div>
+                            <div><small class="text-muted">Fin:</small> {{ e.fecha_fin|date:"d/m/Y" }}</div>
+                        </td>
+                        <td>
+                            <div>{{ e.lugar }}</div>
+                            <small class="text-muted">{{ e.municipio }}</small>
+                        </td>
+                        <td>{{ e.regional }}</td>
+                        <td>
+                            {% if e.estado == 'BORRADOR' %}
+                                <span class="badge bg-secondary">Borrador</span>
+                            {% elif e.estado == 'ACTIVO' %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-dark">Cerrado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if e.activo %}
+                                <span class="badge bg-success">Sí</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{% url 'eventos:detail' e.pk %}" class="btn btn-sm btn-outline-info" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+                                <a href="{% url 'eventos:update' e.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" action="{% url 'eventos:toggle_activo' e.pk %}" class="d-inline" onsubmit="return confirm('¿Cambiar estado activo?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Activar/Desactivar">
+                                        <i class="bi bi-power"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if request.user|has_group:'ADMINISTRADOR' %}
+                                <a href="{% url 'eventos:delete' e.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-event display-4 d-block mb-2 opacity-50"></i>
+                            No se encontraron eventos.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-transparent py-3">
+        <nav aria-label="Paginación">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&municipio={{ municipio }}&activo={{ activo }}&page=1">&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&municipio={{ municipio }}&activo={{ activo }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link bg-sena-verde border-sena-verde">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ q }}&estado={{ estado }}&municipio={{ municipio }}&activo={{ activo }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&municipio={{ municipio }}&activo={{ activo }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&municipio={{ municipio }}&activo={{ activo }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <p class="text-center small text-muted mt-2 mb-0">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

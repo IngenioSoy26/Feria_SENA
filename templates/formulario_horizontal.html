@@ -1,0 +1,102 @@
+{% load sena %}
+{% if form.non_field_errors %}
+<div class="alert alert-danger mb-3" role="alert">
+    {% for error in form.non_field_errors %}
+        {{ error }}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for field in form.hidden_fields %}
+    {{ field }}
+{% endfor %}
+
+{% for field in form.visible_fields %}
+<div class="row mb-3">
+    <label for="{{ field.id_for_label }}" class="col-sm-3 col-form-label text-sm-end fw-medium">
+        {{ field.label }}
+        {% if field.field.required %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+    <div class="col-sm-9">
+        {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="form-check mt-2">
+                {{ field }}
+                {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+        {% else %}
+            {% if field.errors %}
+                {{ field }}
+                {% for error in field.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            {% else %}
+                {{ field }}
+            {% endif %}
+            {% if field.help_text and not field.errors %}
+                <div class="form-text">{{ field.help_text }}</div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+{% if formset %}
+<hr class="my-4">
+<h5 class="mb-3">{{ formset_title|default:"Detalles" }}</h5>
+{{ formset.management_form }}
+<div id="{{ formset.prefix }}-formset">
+    {% for form_inline in formset %}
+        <div class="card mb-3 {{ formset.prefix }}-item">
+            <div class="card-body py-3">
+                {% if form_inline.non_field_errors %}
+                    <div class="alert alert-danger mb-3" role="alert">
+                        {% for error in form_inline.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                {% for hidden in form_inline.hidden_fields %}{{ hidden }}{% endfor %}
+                <div class="row g-3">
+                    {% for f in form_inline.visible_fields %}
+                        <div class="col-md">
+                            <label for="{{ f.id_for_label }}" class="form-label small">
+                                {{ f.label }}
+                                {% if f.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {% if f.errors %}
+                                {{ f }}
+                                {% for error in f.errors %}
+                                    <div class="invalid-feedback d-block small">{{ error }}</div>
+                                {% endfor %}
+                            {% else %}
+                                {{ f }}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted">No hay elementos.</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-sm-9 offset-sm-3 d-flex gap-2 flex-wrap">
+        {% if submit_label %}
+            <button type="submit" class="btn btn-sena">
+                <i class="bi bi-check-lg me-1"></i>{{ submit_label }}
+            </button>
+        {% else %}
+            <button type="submit" class="btn btn-sena">
+                <i class="bi bi-check-lg me-1"></i>Guardar
+            </button>
+        {% endif %}
+        <a href="{{ cancel_url|default:'javascript:history.back()' }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg me-1"></i>Cancelar
+        </a>
+    </div>
+</div>

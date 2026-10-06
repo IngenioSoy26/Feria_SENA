@@ -1,0 +1,33 @@
+{% extends 'base_operador.html' %}
+{% load static %}
+
+{% block title %}Registro de Asistencia | SENA Feria{% endblock %}
+
+{% block operador_titulo %}Control de Asistencia{% endblock %}
+{% block operador_subtitulo %}Escanea o busca el participante para marcar su ingreso{% endblock %}
+{% block operador_color %}#0067B1{% endblock %}
+
+{% block operador_content %}
+<div class="text-center py-4">
+    <div class="mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#0067B1" stroke-width="1.5" class="mx-auto">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            <polyline points="9 11 9 17 15 17"></polyline>
+        </svg>
+    </div>
+    <h3 class="fw-bold mb-2 text-sena-negro">Módulo de Asistencia</h3>
+    <p class="text-sena-gris-oscuro mb-4">Aquí podrás registrar el ingreso de los participantes al evento.</p>
+    <div class="d-grid gap-2 col-md-8 col-lg-6 mx-auto">
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control form-control-lg" id="buscarParticipante" placeholder="Número de identificación, nombre o QR..." autofocus>
+            <label for="buscarParticipante">Buscar participante</label>
+        </div>
+        <button class="btn btn-lg fw-semibold text-white py-3" style="background-color:#0067B1;border-color:#0067B1;">
+            Marcar Asistencia
+        </button>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}{{ tipo|upper }} · Panel Operador{% endblock %}
+{% block navegacion %}{% endblock %}
+{% block main_class %}{% endblock %}
+
+{% block body_class %}
+  {% if tipo == 'asistencia' %}operador-ver
+  {% elif tipo == 'refrigerios' %}operador-ref
+  {% else %}operador-cert{% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="op-wrap">
+  <div class="op-header">
+    <div class="d-flex gap-3 align-items-center min-0">
+      <div class="logo-sena-pill" style="width:42px;height:42px;border-radius:14px;background:#fff;">
+        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;display:block;">
+      </div>
+      <div class="min-0">
+        <div class="fw-bold" style="font-size:clamp(1rem,2.2vw,1.1rem);line-height:1.05;">
+          {% if tipo == 'asistencia' %}✅ CONTROL ASISTENCIA
+          {% elif tipo == 'refrigerios' %}🍱 ENTREGA REFRIGERIOS
+          {% else %}📜 ENTREGA CERTIFICADOS{% endif %}
+        </div>
+        <div class="opacity-75" style="font-size:.8rem;">{{ evento.nombre|default:"Evento SENA" }} · {{ evento.municipio|default:"" }}</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'logout' %}" class="m-0 p-0">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-light btn-sm" style="min-height:42px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);">⬅ Salir</button>
+    </form>
+  </div>
+
+  {% if tipo == 'refrigerios' and servicio %}
+    <div class="mt-3 p-3 text-center fw-bold" style="border-radius:16px;background:rgba(255,255,255,.14);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,.2);">
+      Servicio ACTIVO · {{ servicio.nombre|upper }}
+    </div>
+  {% endif %}
+
+  <div class="op-counters">
+    <div class="op-counter">
+      <b id="cnt-verde">0</b>
+      <span>OK / Entregado</span>
+    </div>
+    <div class="op-counter">
+      <b id="cnt-amarillo">0</b>
+      <span>Duplicados</span>
+    </div>
+    <div class="op-counter">
+      <b id="cnt-rojo">0</b>
+      <span>Errores</span>
+    </div>
+  </div>
+
+  <button id="btn-iniciar" class="op-big-qr">
+    📷 INICIAR LECTOR QR
+  </button>
+
+  <div id="lector-qr" style="display:none;margin-top:16px;">
+    <div id="qr-reader" style="border-radius:22px;background:white;overflow:hidden;padding:6px;box-shadow:0 20px 60px rgba(0,0,0,.35);border:5px solid white;"></div>
+    <button id="btn-detener" class="mt-3 w-100" style="min-height:56px;border-radius:18px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:white;font-weight:700;">❌ Cerrar cámara</button>
+  </div>
+
+  <div class="mt-4 opacity-85 small" style="max-width:420px;margin-left:auto;margin-right:auto;">
+    <p class="mb-1"><b>🧭 Pasos rápidos:</b></p>
+    <ol class="mb-0 ps-4" style="line-height:1.65;">
+      <li>Toca el botón blanco grande de arriba</li>
+      <li>Apunta la cámara trasera al código QR de la escarapela</li>
+      <li>Se escanea SOLO UNA VEZ y muestra confirmación VERDE</li>
+    </ol>
+  </div>
+
+  <div id="panel-resultado" class="op-panel d-none">
+    <div class="d-flex gap-3 align-items-center">
+      <div id="panel-icon" style="font-size:2.4rem;">✅</div>
+      <div class="flex-grow-1 min-0">
+        <div id="panel-nombre" class="fw-bold" style="font-size:1.08rem;"></div>
+        <div class="small mt-1">
+          <span id="panel-rol" class="badge badge-azul me-1" style="background:var(--sena-azul);color:white;padding:3px 8px;border-radius:999px;"></span>
+          <span id="panel-extra"></span>
+        </div>
+        <div id="panel-mensaje" class="fw-bold mt-2"></div>
+      </div>
+      <button id="panel-cerrar" class="btn btn-sm" style="min-height:38px;background:rgba(0,0,0,.1);border-radius:10px;">✖</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous"></script>
+<script>
+  const TIPO_OP='{{ tipo }}';
+  // Detectar si venimos de ruta pública /o/<token>/... → la URL API debe incluir el token, usamos path relativo a /o/.../api/registrar/
+  // pero la ruta pública 'simple:public_api_registrar' usa URL /o/<token_operador>/api/registrar/.
+  // Construimos ENDPOINT basado en URL actual.
+  (function(){
+    const cur = (window.location.pathname || '').replace(/\/+$/, '');
+    const m = cur.match(/^(.+\/o\/[^\/]+)/);
+    window.ENDPOINT = m ? (m[1] + '/api/registrar/') : '{% url "simple:api_registrar" %}';
+  })();
+  const panel=document.getElementById('panel-resultado');
+  const pIcon=document.getElementById('panel-icon');
+  const pNombre=document.getElementById('panel-nombre');
+  const pRol=document.getElementById('panel-rol');
+  const pExtra=document.getElementById('panel-extra');
+  const pMensaje=document.getElementById('panel-mensaje');
+  const cntV=document.getElementById('cnt-verde');
+  const cntA=document.getElementById('cnt-amarillo');
+  const cntR=document.getElementById('cnt-rojo');
+  let cntVn=0,cntAn=0,cntRn=0;
+  let scanner=null,escaneando=false,ultimoToken='',tsUltimo=0;
+
+  document.getElementById('panel-cerrar').addEventListener('click',()=>{panel.classList.add('d-none');if(scanner && escaneando){try{scanner.resume();}catch(e){}}});
+
+  function mostrarPanel(data){
+    pNombre.textContent=data.nombre||'';
+    pRol.textContent=data.rol||'';
+    pExtra.textContent=data.extra||'';
+    pMensaje.textContent=data.mensaje||'';
+    panel.classList.remove('ok','warn','err','d-none');
+    if(data.status==='VERDE'){pIcon.textContent='✅';panel.classList.add('ok');cntVn++;cntV.textContent=cntVn;}
+    else if(data.status==='AMARILLO'){pIcon.textContent='⚠';panel.classList.add('warn');cntAn++;cntA.textContent=cntAn;}
+    else{pIcon.textContent='❌';panel.classList.add('err');cntRn++;cntR.textContent=cntRn;}
+    if(scanner && escaneando)try{scanner.pause();}catch(e){}
+    setTimeout(()=>{
+      panel.classList.add('d-none');
+      if(scanner && escaneando){try{scanner.resume();}catch(e){}}
+    },1700);
+  }
+
+  async function registrar(token){
+    const ahora=Date.now();
+    if(token===ultimoToken && ahora-tsUltimo<3000){return;}
+    ultimoToken=token;tsUltimo=ahora;
+    try{
+      const r=await fetchJSON(ENDPOINT,{method:'POST',body:{token:token,tipo:TIPO_OP,medio:'QR'}});
+      mostrarPanel(r);
+    }catch(err){
+      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+err,nombre:'',rol:'',extra:''});
+    }
+  }
+
+  async function iniciarCamara(){
+    if(scanner){detenerCamara();}
+    document.getElementById('lector-qr').style.display='block';
+    const Html5QrCode=window.Html5Qrcode;
+    if(!Html5QrCode){alert('No se cargó el lector QR. Revisa tu conexión.');return;}
+    scanner=new Html5QrCode('qr-reader',{useBarCodeDetectorIfSupported:false});
+    try{
+      await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:260}},decodedText=>{
+        if(!escaneando)return;
+        if(decodedText===ultimoToken && Date.now()-tsUltimo<3000)return;
+        registrar(decodedText.trim());
+      },()=>{});
+      escaneando=true;
+      document.getElementById('btn-iniciar').textContent='📷 ESCANEA EL CÓDIGO QR';
+    }catch(err){
+      alert('No se pudo abrir la cámara: '+err);
+    }
+  }
+  async function detenerCamara(){
+    if(scanner && escaneando){try{await scanner.stop();scanner.clear();}catch(e){}}
+    escaneando=false;scanner=null;
+    document.getElementById('lector-qr').style.display='none';
+    document.getElementById('btn-iniciar').textContent='📷 INICIAR LECTOR QR';
+  }
+  document.getElementById('btn-iniciar').addEventListener('click',()=>{if(escaneando)detenerCamara();else iniciarCamara();});
+  document.getElementById('btn-detener').addEventListener('click',detenerCamara);
+</script>
+{% endblock %}

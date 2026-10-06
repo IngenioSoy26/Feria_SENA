@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema Feria Proyectos Productivos SENA{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/sena.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-sena-verde shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% if user.is_authenticated %}/dashboard/{% else %}/accounts/login/{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 200 40" fill="currentColor" aria-label="SENA">
+                    <path d="M20 10 L5 20 L20 30 L35 20 Z M60 8 Q50 8 50 20 Q50 32 60 32 Q70 32 70 24 Q70 18 60 18 Q64 18 64 22 L58 22 L58 18 L76 18 Q76 8 60 8 Z M90 8 L90 32 L96 32 L96 22 L106 32 L112 32 L122 22 L122 32 L128 32 L128 8 L122 8 L109 22 L96 8 Z M140 8 Q130 8 130 20 Q130 32 140 32 L152 32 L152 28 L142 28 Q138 28 138 22 L154 22 Q154 8 140 8 Z M142 18 Q146 18 146 20 L138 20 Q138 18 142 18 Z M162 8 L162 20 L154 8 L148 8 L148 32 L154 32 L154 18 L162 32 L168 32 L168 8 Z M180 8 Q170 8 170 20 Q170 32 180 32 L192 32 L192 28 L182 28 Q178 28 178 22 L194 22 Q194 8 180 8 Z M182 18 Q186 18 186 20 L178 20 Q178 18 182 18 Z"/>
+                </svg>
+                <span class="fw-bold d-none d-sm-inline">SENA</span>
+                <span class="fw-light d-none d-md-inline ms-1">| Feria Proyectos Productivos</span>
+            </a>
+            {% if user.is_authenticated %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.dashboard.view_dashboard %}
+                    <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.eventos.view_evento %}
+                    <li class="nav-item"><a class="nav-link" href="/eventos/">Eventos</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' %}
+                    <li class="nav-item"><a class="nav-link" href="/usuarios/">Usuarios</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.instituciones.view_institucion %}
+                    <li class="nav-item"><a class="nav-link" href="/instituciones/">Instituciones</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.programas.view_programa %}
+                    <li class="nav-item"><a class="nav-link" href="/programas/">Programas</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.instructores.view_instructor %}
+                    <li class="nav-item"><a class="nav-link" href="/instructores/">Instructores</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.personas.view_persona %}
+                    <li class="nav-item"><a class="nav-link" href="/personas/">Participantes</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.invitados.view_invitado %}
+                    <li class="nav-item"><a class="nav-link" href="/invitados/">Invitados</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.proyectos.view_proyecto %}
+                    <li class="nav-item"><a class="nav-link" href="/proyectos/">Proyectos</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.escarapelas.view_escarapela %}
+                    <li class="nav-item"><a class="nav-link" href="/escarapelas/">Escarapelas</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or user.groups.all.0.name == 'OPERADOR_ASISTENCIA' or perms.asistencia.view_asistencia %}
+                    <li class="nav-item"><a class="nav-link" href="/asistencia/">Asistencia</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or user.groups.all.0.name == 'OPERADOR_REFRIGERIO' or perms.refrigerios.view_refrigerio %}
+                    <li class="nav-item"><a class="nav-link" href="/refrigerios/">Refrigerios</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or user.groups.all.0.name == 'OPERADOR_CERTIFICADO' or perms.certificados.view_certificado %}
+                    <li class="nav-item"><a class="nav-link" href="/certificados/">Certificados</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.reportes.view_reporte %}
+                    <li class="nav-item"><a class="nav-link" href="/reportes/">Reportes</a></li>
+                    {% endif %}
+                    {% if user.groups.all.0.name == 'ADMINISTRADOR' or perms.auditoria.view_auditoria %}
+                    <li class="nav-item"><a class="nav-link" href="/auditoria/">Auditoría</a></li>
+                    {% endif %}
+                    <li class="nav-item dropdown ms-lg-3">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="rounded-circle bg-white text-sena-verde d-flex align-items-center justify-content-center fw-bold" style="width:32px;height:32px;font-size:14px;">
+                                {{ user.first_name|default:user.username|slice:1|upper }}
+                            </div>
+                            <span class="d-none d-lg-inline">{{ user.get_full_name|default:user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">{{ user.get_full_name|default:user.username }}</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/accounts/logout/"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container my-4">
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show auto-dismiss" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-auto pt-4 pb-3 bg-sena-verde text-white">
+        <div class="container">
+            <div class="row g-3 text-center text-md-start">
+                <div class="col-md-6">
+                    <p class="mb-1 fw-semibold">Servicio Nacional de Aprendizaje — SENA</p>
+                    <p class="mb-0 small opacity-90">Regional Guajira · Feria de Proyectos Productivos · {{ "now"|date:"Y" }}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1 small opacity-90">Sistema de Gestión de Feria — Versión 1.0 FASE 1</p>
+                    <p class="mb-0 small opacity-75">Articulación con la Media Técnica</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    <script>
+      (function () {
+        var INTENTOS_MAX = 40;
+        var intentos = 0;
+        function esperarChart() {
+          intentos++;
+          if (typeof window.Chart === 'function') {
+            window.__SENA_CHART_READY__ = true;
+            document.dispatchEvent(new CustomEvent('SENA_CHART_READY', { detail: { source: 'CDN', intentos: intentos } }));
+            try { console.info('[SENA] Chart.js cargado OK (CDN cdn.jsdelivr.net)'); } catch (e) {}
+            return;
+          }
+          if (intentos >= INTENTOS_MAX) {
+            try { console.warn('[SENA] CDN Chart.js no disponible; cargando backup local.'); } catch (e) {}
+            var s = document.createElement('script');
+            s.src = '{% static "js/chart.umd.min.js" %}';
+            s.onload = function () {
+              window.__SENA_CHART_READY__ = true;
+              document.dispatchEvent(new CustomEvent('SENA_CHART_READY', { detail: { source: 'BACKUP_LOCAL' } }));
+            };
+            s.onerror = function () {
+              try { console.error('[SENA] No se pudo cargar Chart.js (ni CDN ni backup).'); } catch (e) {}
+              window.__SENA_CHART_READY__ = false;
+              document.dispatchEvent(new CustomEvent('SENA_CHART_FAILED'));
+            };
+            document.head.appendChild(s);
+            return;
+          }
+          setTimeout(esperarChart, 75);
+        }
+        esperarChart();
+      })();
+    </script>
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

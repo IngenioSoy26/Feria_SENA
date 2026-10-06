@@ -1,0 +1,541 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#39A900">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>{% block titulo %}SENA · Feria Proyectos Productivos{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <style>
+    /* ============================================================
+       SENA · FERIA 2026 · DISEÑO MODERNO MOBILE-FIRST
+       Paleta: verde institucional + glassmorphism + gradientes
+       ============================================================ */
+    :root {
+      --sena:             #39A900;
+      --sena-dark:        #2c7f00;
+      --sena-deep:       #1f5f00;
+      --sena-50:        #ecfbe0;
+      --sena-azul:        #0067B1;
+      --sena-naranja:     #F57C00;
+      --sena-rojo:       #C9222B;
+      --sena-bg:           #F4FAEF;
+      --sena-text:        #1e2d14;
+      --sena-muted:      #77916a;
+      --radius-lg:     18px;
+      --radius-md:     14px;
+      --radius-sm:     10px;
+      --shadow-card:     0 10px 30px rgba(57,169,0,.10), 0 2px 8px rgba(0,0,0,.05);
+      --shadow-soft:     0 6px 20px rgba(0,0,0,.06);
+      --ease: cubic-bezier(.2,.7,.2,1);
+    }
+    *{font-family:'Work Sans','Segoe UI',Calibri,sans-serif !important;
+      -webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;}
+    body{
+      color: var(--sena-text);
+      background:
+        radial-gradient(1200px 600px at 110% -10%, rgba(57,169,0,.08), transparent 60%),
+        radial-gradient(1000px 600px at -10% 110%, rgba(0,103,177,.06), transparent 60%),
+        linear-gradient(180deg, #f9fdf4 0%, var(--sena-bg) 55%, #f1f7eb 100%);
+      min-height:100vh;
+      font-weight:400;
+      -webkit-font-smoothing:antialiased;
+    }
+    body.operador-ver{background:linear-gradient(160deg, #0e5200 0%, #0a3a00 100%) !important; color:white;}
+    body.operador-ref{background:linear-gradient(160deg, #8b4a00 0%, #5a3100 100%) !important; color:white;}
+    body.operador-cert{background:linear-gradient(160deg, #003e79 0%, #00254a 100%) !important; color:white;}
+    /* Enlaces y tipografia */
+    a{color:var(--sena);}
+    a:hover{color:var(--sena-dark);}
+    h1,h2,h3,h4,h5,h6{font-weight:700;letter-spacing:-.01em;}
+    .text-sena{color:var(--sena) !important;}
+    .text-sena-dark{color:var(--sena-dark) !important;}
+    .muted-small{color:var(--sena-muted); font-size:.84rem;}
+    .req{color:var(--sena-rojo); font-weight:700;}
+    .hint-sena{
+      display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+      background:#e7f7d9; color:var(--sena-dark);
+      font-size:.72rem; font-weight:600; letter-spacing:.2px;}
+    /* =======================================================
+       NAVBAR MODERNO
+       ======================================================= */
+    .nav-sena{
+      background: linear-gradient(135deg, var(--sena) 0%, var(--sena-dark) 100%);
+      border:0;
+      box-shadow: 0 8px 30px rgba(44,127,0,.20);
+      backdrop-filter:saturate(140%) blur(6px);
+      -webkit-backdrop-filter:saturate(140%) blur(6px);
+    }
+    .nav-sena .navbar-brand{color:white;font-weight:800; letter-spacing:-.01em; font-size:1.05rem;}
+    .nav-sena .nav-link{color:#eef9e5;border-radius:10px; transition:background .15s var(--ease);}
+    .nav-sena .nav-link:hover,.nav-sena .nav-link:focus{background:rgba(255,255,255,.12);color:#fff;}
+    .logo-sena-pill{
+      width:34px;height:34px;border-radius:10px;
+      background:rgba(255,255,255,.14);
+      display:inline-flex;align-items:center;justify-content:center;
+      backdrop-filter: blur(4px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.18) ;
+    }
+    /* =======================================================
+       TARJETA GLASS PRINCIPAL
+       ======================================================= */
+    .glass-card{
+      position:relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.86) 100%);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      border:1px solid rgba(255,255,255,.70);
+      box-shadow: var(--shadow-card);
+      border-radius: var(--radius-lg);
+      padding: clamp(18px, 3vw, 28px);
+    }
+    .glass-card::before{
+      content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+      background: linear-gradient(135deg, rgba(57,169,0,.06), transparent 40%, transparent 60%, rgba(0,103,177,.05));
+    }
+    .form-card{
+      background: linear-gradient(180deg, #f7fdf1 0%, #fff 100%);
+      border:1px solid #e6f3d7;
+      border-radius: var(--radius-md);
+      padding: clamp(14px, 2vw, 20px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+    .card-title{font-size: clamp(1.15rem, 2vw, 1.45rem); font-weight:700; margin:0; color:var(--sena-text);}
+    .card-sub{margin:6px 0 0 0; color:var(--sena-muted); font-size:.94rem;}
+    .ico-big{
+      flex:0 0 auto;width:56px;height:56px;
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:28px;
+      border-radius:16px;
+      background:linear-gradient(160deg, #e9f9d6 0%, #cdefb0 100%);
+      box-shadow: inset 0 -2px 0 rgba(57,169,0,.15), 0 10px 20px rgba(57,169,0,.14);
+    }
+    /* =======================================================
+       FORMULARIOS · MOBILE FIRST
+       ======================================================= */
+    .form-label{
+      display:block;margin:0 0 8px 0;
+      font-weight:600;color:#2e3a21;letter-spacing:-.01em;
+      font-size:.92rem;
+    }
+    .form-field,.form-field.select,textarea.form-field,input.form-field,select.form-field{
+      appearance:none;-webkit-appearance:none;-moz-appearance:none;
+      width:100%;
+      min-height:52px;  /* >= 48px móvil */
+      padding: 13px 16px;
+      background:#ffffff;
+      border:1.5px solid #d7e6c5;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      color: var(--sena-text);
+      transition: border-color .18s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease), transform .08s var(--ease);
+    }
+    textarea.form-field{min-height:160px; line-height:1.55; resize:vertical;}
+    .form-field::placeholder{color:#a9b79b; font-weight:500;}
+    .form-field.mono{font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace !important;
+      letter-spacing:.08em; font-variant-numeric:tabular-nums;}
+    .form-field:focus{
+      outline:none; border-color:var(--sena);
+      box-shadow: 0 0 0 4px rgba(57,169,0,.14);
+      background:#ffffff;
+    }
+    .form-field.select{
+      background-image:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2339A900' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+      background-repeat:no-repeat; background-position: right 16px center; background-size:14px 14px;
+      padding-right:44px;
+    }
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap;}
+    .chip{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:4px 10px;border-radius:999px;
+      background:#eef6e3;color:#43563a;
+      font-size:.78rem;font-weight:600;
+    }
+    .chip-sena{background:#e3f5d0;color:var(--sena-dark);}
+    /* =======================================================
+       BOTONES MODERNOS · 48px MINIMO
+       ======================================================= */
+    .btn-sena,.btn-outline-sena,.btn-ghost{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      min-height:52px;  /* >= 48px + padding */
+      padding: 12px 22px;
+      font-weight:700;
+      border-radius: var(--radius-md);
+      text-decoration:none;
+      cursor:pointer;
+      border:0;
+      transition: transform .12s var(--ease), box-shadow .2s var(--ease), background .15s var(--ease);
+      letter-spacing:.01em;
+      font-size: 1rem;
+      line-height:1.1;
+      white-space:normal;
+    }
+    .btn-sena{
+      background: linear-gradient(180deg, var(--sena) 0%, var(--sena-dark) 100%);
+      color:white;
+      box-shadow: 0 10px 24px rgba(44,127,0,.28), inset 0 -2px 0 rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .btn-sena:hover{color:white; transform: translateY(-1px); box-shadow: 0 14px 30px rgba(44,127,0,.34);}
+    .btn-sena:active{transform:translateY(1px);}
+    .btn-sena.btn-big{
+      padding: 14px 28px;
+      min-height:60px;
+      font-size:1.03rem;
+    }
+    .btn-sena .btn-sub{display:block;font-weight:500;opacity:.92;font-size:.82rem;margin-top:2px;}
+    .btn-outline-sena{
+      background:#ffffff;
+      color:var(--sena-dark);
+      border:1.8px solid var(--sena);
+    }
+    .btn-outline-sena:hover{background:#f2fbe8;color:var(--sena-dark);}
+    .btn-ghost{
+      background: transparent;
+      color:var(--sena-dark);
+      min-height:52px;
+      border:1.5px solid #d7e6c5;
+    }
+    .btn-ghost:hover{background:#eef8e1;}
+    .btn-big{min-height:60px; padding:14px 24px;}
+    /* =======================================================
+       STEPPER / PASOS
+       ======================================================= */
+    .stepper{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.7));
+      border:1px solid rgba(255,255,255,.7);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      overflow-x:auto;
+    }
+    .stepper-item{display:flex;align-items:center;gap:10px;flex:0 0 auto; min-width:0;}
+    .stepper-badge{
+      width: 38px;height:38px;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;font-size:1rem;
+      background:#f1f7ea;color:#95a687;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,.04);
+    }
+    .stepper-item.done .stepper-badge{
+      background: #cdefb0; color: var(--sena-deep);
+    }
+    .stepper-item.active .stepper-badge{
+      background: linear-gradient(180deg, var(--sena) 0%, var(--sena-dark) 100%);
+      color:white;
+      box-shadow: 0 8px 20px rgba(57,169,0,.3);
+    }
+    .stepper-lbl{display:flex;flex-direction:column;line-height:1.05;font-size:.86rem;color:#5c6e50; min-width:0;}
+    .stepper-lbl small{opacity:.76;font-weight:500;font-size:.74rem;}
+    .stepper-item.active .stepper-lbl{color:var(--sena-deep);}
+    .stepper-item.done .stepper-lbl{color:#35502a;}
+    .stepper-line{
+      flex:1 1 auto; height: 4px; border-radius:999px; background:#e4ecd9; min-width:30px;
+    }
+    .stepper-line.active{background: linear-gradient(90deg, var(--sena) 0%, #8ec76b 100%);}
+    @media (max-width: 520px){
+      .stepper-lbl b{display:none;}
+    }
+    /* =======================================================
+       HOME / BOTONES MENU GRANDES
+       ======================================================= */
+    .menu-hero{
+      display:grid; gap:14px;
+      grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    }
+    .menu-hero .mh{
+      position:relative; overflow:hidden;
+      min-height: 124px; padding:18px 16px;
+      border-radius: var(--radius-lg);
+      color:white; text-decoration:none; font-weight:700;
+      display:flex; flex-direction:column; justify-content:space-between;
+      box-shadow: var(--shadow-card);
+      transition: transform .18s var(--ease);
+    }
+    .menu-hero .mh:hover{transform: translateY(-3px);}
+    .menu-hero .mh small{font-weight:500;opacity:.93;font-size:.82rem;}
+    .menu-hero .mh .mh-ico{font-size:30px;line-height:1;filter: drop-shadow(0 2px 6px rgba(0,0,0,.22));}
+    .mh-verde{background:linear-gradient(135deg, var(--sena) 0%, var(--sena-dark) 100%);}
+    .mh-azul{background:linear-gradient(135deg, #0e74c8 0%, #064f8f 100%);}
+    .mh-naranja{background:linear-gradient(135deg, #ff8a00 0%, #c85800 100%);}
+    .mh-azul-o{background:linear-gradient(135deg, #0070c0 0%, #004d86 100%);}
+    .mh-purpura{background:linear-gradient(135deg, #7248ff 0%, #4a26d1 100%);}
+    .mh-rojo{background:linear-gradient(135deg, #e04b54 0%, #a71a24 100%);}
+    .mh-gris{background:linear-gradient(135deg, #687684 0%, #3f4953 100%);}
+    .mh-verde-claro{background:linear-gradient(135deg, #60c426 0%, #2e7a00 100%);}
+    .mh::after{
+      content:"";position:absolute;right:-20px;bottom:-20px;width:150px;height:150px;border-radius:50%;
+      background: radial-gradient(closest-side, rgba(255,255,255,.22), transparent 70%);
+    }
+    /* =======================================================
+       TABLAS MODERNAS
+       ======================================================= */
+    .table-wrap{
+      background:#ffffff;border:1px solid #edf4e2;border-radius: var(--radius-md);
+      overflow:auto; box-shadow: var(--shadow-soft);
+    }
+    .tbl{width:100%;border-collapse:separate;border-spacing:0;min-width:720px;font-size:.94rem;}
+    .tbl th{
+      background: linear-gradient(180deg, #eaf5dd 0%, #dcecd0 100%);
+      color: var(--sena-deep);
+      font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.4px;
+      padding: 12px 14px; text-align:left;
+      border-bottom:1px solid #c8dfb1;
+      position:sticky;top:0;z-index:1;
+    }
+    .tbl td{padding: 12px 14px; border-bottom: 1px solid #eff5e7; vertical-align:middle;}
+    .tbl tbody tr:hover{background:#f8fcf2;}
+    .tbl .tb-name{font-weight:600;}
+    .tbl .tb-muted{color:var(--sena-muted);}
+    .pill-ficha{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding: 4px 12px;border-radius: 999px;
+      background:#e4f6cf;color:var(--sena-deep);
+      font-weight:700; font-family: ui-monospace, Menlo, Consolas, monospace;
+      letter-spacing:.05em; font-size:.82rem;
+    }
+    .pill-ct{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:30px;padding:3px 10px;border-radius: 999px;
+      background:#fff3cd;color:#7a5d00;font-weight:700;font-size:.82rem;
+    }
+    hr.soft{border:0;height:1px;background:linear-gradient(90deg, transparent, #dfe9d0 20%, #dfe9d0 80%, transparent); opacity:.9;}
+    /* =======================================================
+       MINI CARDS (Instructores / Invitados)
+       ======================================================= */
+    .cards-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
+    .mini-card{
+      display:flex; gap:12px; align-items:center;
+      background: #ffffff; border:1px solid #edf4e2; border-radius:var(--radius-md);
+      padding: 12px; box-shadow: var(--shadow-soft);
+    }
+    .mini-card.inv{border-color:#fff0d3;}
+    .avatar{
+      flex:0 0 auto;width:44px;height:44px;border-radius:14px;
+      display:inline-flex;align-items:center;justify-content:center;
+      font-weight:800;letter-spacing:.5px;color:white;font-size:.86rem;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,.12);
+    }
+    .avatar.av-sena{background:linear-gradient(135deg, #4ec400 0%, #1c7a00 100%);}
+    .avatar.av-inv{background:linear-gradient(135deg, #ff9a2d 0%, #bb5600 100%);}
+    .mini-link{
+      display:inline-block;padding:4px 9px;border-radius:10px;
+      background:#eef8e1;color:var(--sena-dark);
+      font-weight:600;font-size:.76rem;text-decoration:none;
+    }
+    .mini-link:hover{background:#dcf0c2;}
+    /* =======================================================
+       DASHBOARD · KPIs
+       ======================================================= */
+    .kpi-card{
+      background:white;border:1px solid #edf4e2;border-radius:var(--radius-lg);
+      padding:18px;box-shadow: var(--shadow-soft); position:relative;overflow:hidden;
+    }
+    .kpi-card::after{content:"";position:absolute;right:-22px;top:-22px;width:110px;height:110px;border-radius:50%;
+      background: radial-gradient(closest-side, rgba(57,169,0,.12), transparent 70%);}
+    .kpi-num{font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight:800; line-height:1; color: var(--sena-deep); letter-spacing:-.02em;}
+    .kpi-label{font-size:.74rem;text-transform:uppercase;letter-spacing:.6px;color:var(--sena-muted);font-weight:700;}
+    .progress{background:#e9f2db;border-radius:999px;height:10px;overflow:hidden;}
+    .progress .progress-bar{background: linear-gradient(90deg, var(--sena), var(--sena-dark));}
+    /* =======================================================
+       OPERADORES MÓVILES
+       ======================================================= */
+    .op-wrap{min-height:100vh;padding: 18px 16px calc(32px + env(safe-area-inset-bottom));}
+    .op-header{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding: 12px 14px;border-radius: var(--radius-md);
+      background:rgba(255,255,255,.10);
+      backdrop-filter: blur(8px);-webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .op-counters{
+      display:grid;grid-template-columns: repeat(3,1fr);gap:10px;margin:14px 0;
+    }
+    .op-counter{
+      padding: 10px 12px;border-radius:var(--radius-md);
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.14);
+      text-align:center;
+    }
+    .op-counter b{display:block;font-size:1.5rem;font-weight:800;line-height:1;}
+    .op-counter span{display:block;font-size:.74rem;opacity:.9;margin-top:4px;font-weight:600;}
+    .op-big-qr{
+      margin-top: 16px;
+      width:100%; min-height:88px;
+      font-size:1.1rem; font-weight:800;
+      background: rgba(255,255,255,.95);
+      color: #111;
+      border-radius: 20px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.25), inset 0 -3px 0 rgba(0,0,0,.08);
+    }
+    .op-big-qr:hover{background:#ffffff;}
+    .op-panel{
+      margin-top: 18px; border-radius: 20px; padding: 16px 18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.3);
+      animation: pop .25s var(--ease);
+    }
+    @keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+    .op-panel.ok{background:linear-gradient(160deg,#e7ffd4 0%, #c5efa2 100%); color:#0f3c00;}
+    .op-panel.warn{background:linear-gradient(160deg,#fff3c2 0%, #ffd875 100%); color:#5a3e00;}
+    .op-panel.err{background:linear-gradient(160deg,#ffd2d5 0%, #ff9ea3 100%); color:#5a0c10;}
+    /* =======================================================
+       ENLACES PÚBLICOS (HOME admin)
+       ======================================================= */
+    .pub-input{
+      min-height:50px;border-radius:12px;padding:10px 14px;
+      background:#f7fbf0;border:1.5px solid #d8e8c7;
+      font-weight:600;color:#2a3a1e;font-size:.82rem;
+      font-family: ui-monospace, Menlo, Consolas, monospace !important;
+    }
+    .btn-outline-sena{color:var(--sena-dark);}
+    /* =======================================================
+       UTILIDADES RESPONSIVE
+       ======================================================= */
+    .container-fluid{max-width: 1140px;}
+    main.py-4{padding-top: clamp(12px,3vw,24px) !important; padding-bottom: clamp(20px, 5vh, 60px) !important;}
+    @media (max-width:640px){
+      .glass-card{padding:16px;}
+      .btn-sena.btn-big{width:100%;}
+      .btn-ghost{width:100%;text-align:center;}
+      .mt-4.d-flex{flex-direction:column;}
+      .stepper{padding:10px 10px;border-radius:14px;}
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% block navegacion %}
+<nav class="nav-sena navbar navbar-expand-lg text-white sticky-top">
+  <div class="container-fluid">
+    {% load static %}
+    <a class="navbar-brand text-white fw-bold d-flex align-items-center gap-3" href="{% url 'simple:home' %}">
+      <span class="logo-sena-pill" aria-hidden="true" style="background:#fff;">
+        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:28px;height:28px;object-fit:contain;display:block;">
+      </span>
+      <span>SENA · Feria Proyectos</span>
+    </a>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navSena" aria-label="Abrir menú" style="filter:invert(1);">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navSena">
+      <ul class="navbar-nav gap-1 py-2 py-lg-0">
+        <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:home' %}">🏠 Inicio</a></li>
+        {% if request.user.is_staff %}
+        <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:panel_admin' %}">⚙ Panel Admin</a></li>
+        {% endif %}
+        <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:dashboard' %}">📊 Analytics</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:wizard' %}">➕ Registro</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link text-white dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">📋 Listados</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'simple:listados' 'proyectos' %}">🎯 Proyectos</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:listados' 'colegios' %}">🏫 Colegios</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:listados' 'programas' %}">📚 Programas</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:listados' 'aprendices' %}">👨‍🎓 Aprendices</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:listados' 'instructores' %}">👨‍🏫 Instructores</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:listados' 'invitados' %}">🎟️ Invitados</a></li>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link text-white dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">🎪 Operadores</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'simple:operador' 'asistencia' %}">✅ Asistencia</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:operador' 'refrigerios' %}">🍱 Refrigerios</a></li>
+            <li><a class="dropdown-item" href="{% url 'simple:operador' 'certificados' %}">📜 Certificados</a></li>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link text-white dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">🖨️ PDF</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">🎫 Escarapelas</h6></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:escarapelas_lote' 'todos' %}">👥 Todas (A6)</a></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:escarapelas_lote' 'asistentes' %}">✔ Asistentes</a></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:escarapelas_lote' 'aprendices' %}">👨‍🎓 Aprendices</a></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:escarapelas_lote' 'instructores' %}">👨‍🏫 Instructores</a></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:escarapelas_lote' 'invitados' %}">🎟️ Invitados</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">📜 Certificados Lote</h6></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'asistentes' %}">✔ Asistencia · Asistentes</a></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">👨‍🎓 Participación</a></li>
+            <li><a class="dropdown-item" target="_blank" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'todos' %}">👥 Todos (Asistencia)</a></li>
+          </ul>
+        </li>
+        {% if request.user.is_authenticated %}
+        <li class="nav-item d-none d-lg-flex align-items-center text-white-50 small mx-1">
+          👤 {{ request.user.get_short_name|default:request.user.username }}</li>
+        <li class="nav-item d-flex align-items-center">
+          <form method="post" action="{% url 'logout' %}" class="m-0 p-0">
+            {% csrf_token %}<button class="btn btn-outline-light btn-sm ms-1" style="min-height:38px;border-radius:10px;" type="submit">Salir</button>
+          </form>
+        </li>
+        {% else %}
+        <li class="nav-item d-flex align-items-center">
+          <a class="btn btn-light btn-sm ms-1" href="{% url 'login' %}" style="min-height:38px;border-radius:10px;border:0;">Iniciar sesión</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+<main class="{% block main_class %}container py-4{% endblock %}">
+  {% if messages %}
+    <div class="mb-3">
+      {% for m in messages %}
+        <div class="alert alert-{{ m.tags }} alert-dismissible fade show border-0" role="alert"
+             style="border-radius:14px; background:#ffffffc7; backdrop-filter:blur(6px);
+                    {% if 'error' in m.tags %}border-left:5px solid #C9222B;
+                    {% elif 'warning' in m.tags %}border-left:5px solid #F57C00;
+                    {% elif 'success' in m.tags %}border-left:5px solid #39A900;
+                    {% else %}border-left:5px solid #0067B1;{% endif %}
+                    box-shadow:0 10px 24px rgba(0,0,0,.06);">
+          {{ m }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% block contenido %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+<script>
+  function getCookie(n){let v=null;document.cookie.split(';').forEach(p=>{const[k,val]=p.trim().split('=');if(k===n)v=decodeURIComponent(val);});return v;}
+  const SENA_CSRF=getCookie('csrftoken')||'';
+  async function fetchJSON(url,opts={}){
+    const o=Object.assign({credentials:'same-origin',headers:{'X-CSRFToken':SENA_CSRF,'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'}},opts||{});
+    if(o.body && typeof o.body!=='string')o.body=JSON.stringify(o.body);
+    const r=await fetch(url,o);
+    return r.ok?r.json():Promise.reject('HTTP '+r.status);
+  }
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('.btn-copiar');
+    if(!b)return;
+    const id=b.getAttribute('data-target');
+    const el=document.getElementById(id);
+    if(!el)return;
+    navigator.clipboard.writeText(el.value||el.textContent||'').then(()=>{
+      const t0=b.textContent;
+      b.textContent='✅ Copiado';
+      setTimeout(()=>{b.textContent=t0;},1600);
+    });
+  });
+  // Mobile-first: autocorrección código de ficha (7 dígitos)
+  document.addEventListener('input',e=>{
+    const inp = e.target;
+    if(inp && inp.name==='codigo_ficha'){
+      inp.value = inp.value.replace(/\D/g,'').slice(0,7);
+    }
+  },true);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

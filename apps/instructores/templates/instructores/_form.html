@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Instructores{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h2 class="h4 mb-0">{{ titulo }}</h2>
+                <a href="{% url 'instructores:list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% include 'formulario_horizontal.html' with form=form submit_label=submit_label cancel_url=cancel_url %}
+                </form>
+            </div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header bg-sena-gris-claro">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2 text-sena-verde"></i>Nota</h5>
+            </div>
+            <div class="card-body small text-muted">
+                <p class="mb-0">Solo aparecen personas registradas como <strong>Instructor</strong> u <strong>Organizador</strong>. Si no aparece, créela primero desde Personas.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

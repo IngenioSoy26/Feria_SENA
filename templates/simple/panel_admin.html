@@ -1,0 +1,185 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Panel Administrativo · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="mb-4">
+  <div class="d-flex align-items-start gap-3 flex-wrap">
+    <div class="ico-big d-flex align-items-center justify-content-center" style="background:#fff;border:2px solid var(--sena-50);">
+      <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;">
+    </div>
+    <div class="flex-grow-1">
+      <h3 class="card-title mb-1">⚙ Panel Administrativo · Maestra de Datos</h3>
+      <p class="card-sub">
+        Configura la feria, carga bases Excel y gestiona todas las entidades sin duplicados.
+        {% if evento %}<br><b>Evento ACTIVO:</b> <span class="text-sena fw-semibold">{{ evento.nombre }}</span> · {{ evento.fecha_inicio|date:'Y-m-d' }}{% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <a href="{{ admin_root }}" target="_blank" class="btn-outline-sena" style="min-height:48px;padding:10px 18px;">
+        🔐 Admin Django
+      </a>
+      <a href="{% url 'simple:home' %}" class="btn-ghost" style="min-height:48px;padding:10px 18px;">
+        🏠 Ir al Inicio
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="mb-4">
+  <div class="glass-card p-3">
+    <div class="kpi-grid" style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+      <div class="kpi-card">
+        <div class="kpi-label">🎪 Ferias / Eventos</div>
+        <div class="kpi-num">{{ counts.eventos|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.eventos_activos|default:0 }} activos)</small></div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" href="{{ admin_root }}eventos/evento/">Listar</a>
+          <a class="mini-link" href="{{ admin_root }}eventos/evento/add/">➕ Nuevo</a>
+          <a class="mini-link" href="{{ admin_root }}eventos/tipoidentificacion/">🆔 Tipos ID</a>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🏫 Instituciones Educat.</div>
+        <div class="kpi-num">{{ counts.instituciones|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.instituciones_activas|default:0 }} activas)</small></div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" href="{% url 'simple:listados' 'colegios' %}">Listar</a>
+          <a class="mini-link" href="{{ admin_root }}instituciones/institucioneducativa/add/">➕ Nueva</a>
+          <a class="mini-link" href="{{ admin_root }}instituciones/institucioneducativa/">Admin</a>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">📚 Programas Técnicos</div>
+        <div class="kpi-num">{{ counts.programas|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.programas_activos|default:0 }} activos)</small></div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" href="{% url 'simple:listados' 'programas' %}">Listar</a>
+          <a class="mini-link" href="{{ admin_root }}programas/programatecnico/add/">➕ Nuevo</a>
+          <a class="mini-link" href="{{ admin_root }}programas/programatecnico/">Admin</a>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">👨‍🏫 Instructores</div>
+        <div class="kpi-num">{{ counts.instructores|default:0 }}</div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" href="{% url 'simple:listados' 'instructores' %}">Listar</a>
+          <a class="mini-link" href="{{ admin_root }}instructores/instructor/add/">➕ Nuevo</a>
+          <a class="mini-link" href="{{ admin_root }}personas/persona/?tipo_persona__exact=INSTRUCTOR">Admin Personas</a>
+        </div>
+      </div>
+      <div class="kpi-card" style="outline:2px solid #d6f3b9;">
+        <div class="kpi-label text-sena-dark">🔢 Fichas (7 dígitos)</div>
+        <div class="kpi-num text-sena">{{ counts.fichas|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.fichas_activas|default:0 }} activas)</small></div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" style="background:#e3f5d0;color:var(--sena-deep);" href="{% url 'proyectos:ficha_list' %}">📋 Gestionar</a>
+          <a class="mini-link" style="background:#cdefb0;color:var(--sena-deep);font-weight:700;" href="{% url 'proyectos:ficha_create' %}">➕ Nueva Ficha</a>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🎯 Proyectos Registrados</div>
+        <div class="kpi-num">{{ counts.proyectos|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.proyectos_aprobados|default:0 }} aprobados)</small></div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" href="{% url 'simple:listados' 'proyectos' %}">Listar</a>
+          <a class="mini-link" href="{% url 'simple:wizard' %}">➕ Registro Rápido</a>
+          <a class="mini-link" href="{{ admin_root }}proyectos/proyecto/">Admin</a>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">👥 Personas · Aprendices</div>
+        <div class="kpi-num">{{ counts.personas|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.aprendices|default:0 }} aprendices)</small></div>
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a class="mini-link" href="{% url 'simple:listados' 'aprendices' %}">Aprendices</a>
+          <a class="mini-link" href="{% url 'simple:listados' 'invitados' %}">Invitados</a>
+          <a class="mini-link" href="{{ admin_root }}personas/persona/">Admin Personas</a>
+        </div>
+      </div>
+      <div class="kpi-card" style="background:linear-gradient(180deg,#f5fff0,#fff);">
+        <div class="kpi-label">📊 KPIs Operativos (Evento actual)</div>
+        <div class="op-counters mt-2" style="grid-template-columns:repeat(3,1fr);display:grid;gap:8px;">
+          <div class="op-counter" style="background:linear-gradient(160deg,#e7ffd4,#c5efa2);color:#0f3c00;border-radius:12px;padding:8px;">
+            <b>{{ counts.asistencias|default:0 }}</b><span>✅ Asistencias</span>
+          </div>
+          <div class="op-counter" style="background:linear-gradient(160deg,#fff3c2,#ffd875);color:#5a3e00;border-radius:12px;padding:8px;">
+            <b>{{ counts.refrigerios|default:0 }}</b><span>🍱 Refrigerios</span>
+          </div>
+          <div class="op-counter" style="background:linear-gradient(160deg,#d8ecff,#9fc8f0);color:#003e79;border-radius:12px;padding:8px;">
+            <b>{{ counts.certificados|default:0 }}</b><span>📜 Certificados</span>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <a class="mini-link" href="{% url 'simple:dashboard' %}">📊 Dashboard Completo</a>
+          <a class="mini-link" href="{% url 'simple:operador' 'asistencia' %}">Operadores</a>
+        </div>
+      </div>
+      <div class="kpi-card" style="background:linear-gradient(180deg,#f5faff,#fff);">
+        <div class="kpi-label">📥 Importar Excel + 🔑 Enlaces</div>
+        <div class="d-flex gap-2 mt-2 flex-wrap">
+          <a class="mini-link" target="_blank" href="{{ admin_root }}reportes/importacionexcel/">🗂 Importador (Admin)</a>
+          <a class="mini-link" href="{% url 'simple:listados' 'proyectos' %}">🔄 Verificar</a>
+        </div>
+        <div class="mt-3">
+          <label class="form-label mb-1" style="font-size:.82rem;">🔗 Enlace Registro Público</label>
+          <div class="d-flex gap-2">
+            <input readonly type="text" class="pub-input flex-grow-1" id="pub-reg" value="{{ enlaces_publicos.registro|default:'⚠ TOKEN_REGISTRO no está en el .env — configúralo para habilitar registro sin login.' }}">
+            <button class="btn-copiar btn-ghost" style="min-height:42px;padding:8px 14px;" data-target="pub-reg" type="button">📋 Copiar</button>
+          </div>
+        </div>
+        <div class="mt-2">
+          <label class="form-label mb-1" style="font-size:.82rem;">🛠 Enlace Operadores (QR móvil)</label>
+          <div class="d-flex gap-2">
+            <input readonly type="text" class="pub-input flex-grow-1" id="pub-op" value="{{ enlaces_publicos.op_asistencia|default:'⚠ TOKEN_OPERADORES no configurado en .env.' }}">
+            <button class="btn-copiar btn-ghost" style="min-height:42px;padding:8px 14px;" data-target="pub-op" type="button">📋 Copiar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="glass-card">
+  <h5 class="mb-3 text-sena-dark">📚 Orden recomendado para cargar las bases de datos Excel</h5>
+  <div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="form-card text-center">
+        <div class="pill-ficha mb-2">1</div>
+        <div class="fw-bold">I.E_BD.xlsx</div>
+        <div class="muted-small">Instituciones Educativas</div>
+        <div class="mt-2 small text-muted">14 cols · ~99 filas</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="form-card text-center">
+        <div class="pill-ficha mb-2">2</div>
+        <div class="fw-bold">PROGRAMAS.xlsx</div>
+        <div class="muted-small">Programas Técnicos</div>
+        <div class="mt-2 small text-muted">1 col · ~115 filas · <b>sin código</b></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="form-card text-center">
+        <div class="pill-ficha mb-2">3</div>
+        <div class="fw-bold">INSTRUCTORES.xlsx</div>
+        <div class="muted-small">Instructores Articulación</div>
+        <div class="mt-2 small text-muted">2 fila header · ~35 filas</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="form-card text-center" style="background:#f0fae2;border-color:#c5e29e;">
+        <div class="pill-ficha mb-2">4</div>
+        <div class="fw-bold text-sena-dark">POR_FICHAS.xlsx</div>
+        <div class="muted-small">Fichas · 7 dígitos</div>
+        <div class="mt-2 small text-muted">8 cols · ~115 filas · FK IE+Programa</div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-3 d-flex align-items-center gap-2 flex-wrap">
+    <span class="pill-ct">✅ Regla</span>
+    <div class="muted-small">
+      Cada importación usa <code>update_or_create</code> por clave natural.
+      <b>La 2da carga del MISMO archivo retorna <span class="text-sena-dark fw-bold">creados=0</span></b> — sin duplicados.
+      Si una ficha aparece por segunda vez, sus datos se actualizan.
+    </div>
+  </div>
+</div>
+
+{% endblock %}

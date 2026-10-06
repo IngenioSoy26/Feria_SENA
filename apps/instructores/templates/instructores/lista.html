@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}Instructores - SENA Feria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Instructores</h1>
+        <p class="text-muted mb-0">Total registros: <strong>{{ total }}</strong></p>
+    </div>
+    {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'personas:create' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-person-plus me-1"></i>Nueva Persona
+        </a>
+        <a href="{% url 'instructores:create' %}" class="btn btn-sena">
+            <i class="bi bi-plus-lg me-1"></i>Asociar Instructor
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">Buscar por nombre, identificación o correo</label>
+                <input type="text" name="q" class="form-control" placeholder="Ej: María, 1234567" value="{{ q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Filtrar por programa</label>
+                <select name="programa" class="form-select">
+                    <option value="">Todos los programas</option>
+                    {% for p in programas_list %}
+                    <option value="{{ p.pk }}" {% if programa == p.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ p.codigo }} - {{ p.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="activo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="1" {% if activo == '1' %}selected{% endif %}>Activo</option>
+                    <option value="0" {% if activo == '0' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sena flex-grow-1">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+                <a href="{% url 'instructores:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Identificación</th>
+                        <th>Nombre Completo</th>
+                        <th>Programas</th>
+                        <th>Contacto</th>
+                        <th>Proyectos</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in instructores %}
+                    <tr>
+                        <td>
+                            <small class="text-muted d-block">{{ i.persona.tipo_identificacion.codigo }}</small>
+                            <strong>{{ i.persona.numero_identificacion }}</strong>
+                        </td>
+                        <td>
+                            <a href="{% url 'instructores:detail' i.pk %}" class="fw-medium text-sena-verde-hover">
+                                {{ i.persona.nombre_completo }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if i.programas.all %}
+                                {% for p in i.programas.all|slice:":2" %}
+                                    <span class="badge rounded-pill bg-sena-verde me-1 mb-1">{{ p.codigo }}</span>
+                                {% endfor %}
+                                {% if i.programas.count > 2 %}
+                                    <span class="badge bg-secondary">+{{ i.programas.count|add:"-2" }}</span>
+                                {% endif %}
+                            {% else %}
+                                <small class="text-muted">Sin programas</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ i.persona.correo|default:"—" }}</small><br>
+                            <small class="text-muted">{{ i.persona.telefono|default:"" }}</small>
+                        </td>
+                        <td><span class="badge rounded-pill bg-info">{{ i.num_proyectos }}</span></td>
+                        <td>
+                            {% if i.activo %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{% url 'instructores:detail' i.pk %}" class="btn btn-sm btn-outline-info" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+                                <a href="{% url 'instructores:update' i.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if request.user|has_group:'ADMINISTRADOR' %}
+                                <a href="{% url 'instructores:delete' i.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-person-badge display-4 d-block mb-2 opacity-50"></i>
+                            No se encontraron instructores.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-transparent py-3">
+        <nav aria-label="Paginación">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&programa={{ programa }}&activo={{ activo }}&page=1">&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&programa={{ programa }}&activo={{ activo }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link bg-sena-verde border-sena-verde">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ q }}&programa={{ programa }}&activo={{ activo }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&programa={{ programa }}&activo={{ activo }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&programa={{ programa }}&activo={{ activo }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <p class="text-center small text-muted mt-2 mb-0">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

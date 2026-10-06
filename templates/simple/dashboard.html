@@ -1,0 +1,86 @@
+{% extends "simple/base_simple.html" %}
+{% block titulo %}📊 Panel · Feria SENA{% endblock %}
+{% block contenido %}
+<h2 class="text-sena mb-3">📊 Informe del evento</h2>
+
+{% if not evento %}
+  <div class="alert alert-warning">⚠ No hay evento ACTIVO configurado.</div>
+{% else %}
+  <div class="card p-4 mb-4">
+    <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+      <div>
+        <div class="h4 text-sena mb-1">{{ evento.nombre }}</div>
+        <div class="text-muted small">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'asistentes' %}">🎫 Escarapelas asistentes</a>
+        <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'asistentes' %}">📜 Certificados asistencia</a>
+        <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">🏆 Certificados participación</a>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-3">🎯 3 números clave</h3>
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="card p-4"><div class="kpi-label">Inscritos vs Asistentes</div>
+      <div class="kpi-num text-sena my-2">{{ asistentes }} / {{ total_personas }}</div>
+      <div class="progress" style="height:10px;"><div class="progress-bar bg-sena" role="progressbar" style="width:{% if total_personas %}{{ asistentes|floatformat:0 }}{% else %}0{% endif %}%;background:#39A900;"></div></div>
+      <div class="small mt-2">Ausentes: <b>{{ ausentes }}</b> · Asistencia: <b>{% if total_personas %}{% widthratio asistentes total_personas 100 %}%{% else %}0%{% endif %}</b></div>
+    </div></div>
+    <div class="col-md-4"><div class="card p-4"><div class="kpi-label">🍱 Refrigerios (Almuerzo)</div>
+      <div class="kpi-num my-2" style="color:#F57C00;">{{ refrigerios_entregados }} / {{ asistentes }}</div>
+      <div class="progress" style="height:10px;"><div class="progress-bar" role="progressbar" style="width:{% if asistentes %}{% widthratio refrigerios_entregados asistentes 100 %}{% else %}0{% endif %}%;background:#F57C00;"></div></div>
+      <div class="small mt-2">Pendientes por entregar: <b>{{ refrigerios_pendientes }}</b> · Cumplimiento: <b>{% if asistentes %}{% widthratio refrigerios_entregados asistentes 100 %}%{% else %}0%{% endif %}</b></div>
+    </div></div>
+    <div class="col-md-4"><div class="card p-4"><div class="kpi-label">📜 Certificados entregados</div>
+      <div class="kpi-num my-2" style="color:#0067B1;">{{ certificados_entregados }} / {{ asistentes }}</div>
+      <div class="progress" style="height:10px;"><div class="progress-bar" role="progressbar" style="width:{% if asistentes %}{% widthratio certificados_entregados asistentes 100 %}{% else %}0{% endif %}%;background:#0067B1;"></div></div>
+      <div class="small mt-2">Pendientes: <b>{{ certificados_pendientes }}</b> · Avance: <b>{% if asistentes %}{% widthratio certificados_entregados asistentes 100 %}%{% else %}0%{% endif %}</b></div>
+    </div></div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🎓 Aprendices</div><div class="kpi-num text-sena">{{ total_aprendices }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🏫 Instructores</div><div class="kpi-num" style="color:#0067B1;">{{ total_instructores }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🎟️ Invitados</div><div class="kpi-num" style="color:#F57C00;">{{ total_invitados }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🎯 Proyectos / Colegios</div><div class="kpi-num" style="color:#6f42c1;">{{ total_proyectos }} / {{ total_colegios }}</div></div></div>
+  </div>
+
+  <div class="card p-4 mb-4">
+    <h4 class="text-sena mb-3">📈 Avance logístico (3 gráficos simples)</h4>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="h6 mb-2 small text-muted">Asistencia general</div>
+        <canvas id="chart-1" height="190"></canvas>
+      </div>
+      <div class="col-md-4">
+        <div class="h6 mb-2 small text-muted">Logística Refrigerios</div>
+        <canvas id="chart-2" height="190"></canvas>
+      </div>
+      <div class="col-md-4">
+        <div class="h6 mb-2 small text-muted">Entrega Certificados</div>
+        <canvas id="chart-3" height="190"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-4">
+    <h4 class="text-sena mb-3">🎓 Totales por tipo persona</h4>
+    <canvas id="chart-4" height="100"></canvas>
+  </div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+  function esperarChart(cb,i){i=i||0;if(typeof window.Chart==='function')return cb();if(i>120)return;setTimeout(()=>esperarChart(cb,i+1),100);}
+  esperarChart(()=>{
+    const S='#39A900',A='#0067B1',N='#F57C00',R='#C9222B',G='#adb5bd';
+    Chart.defaults.font.family="'Work Sans','Segoe UI',sans-serif";
+    new Chart(document.getElementById('chart-1'),{type:'doughnut',data:{labels:['Asistentes','Ausentes'],datasets:[{data:[{{ asistentes }},{{ ausentes }}],backgroundColor:[S,R],borderWidth:0}]},options:{cutout:'62%',plugins:{legend:{position:'bottom'}}}});
+    new Chart(document.getElementById('chart-2'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Almuerzos',data:[{{ refrigerios_entregados }},{{ refrigerios_pendientes }}],backgroundColor:[N,G],borderRadius:6}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
+    new Chart(document.getElementById('chart-3'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Certificados',data:[{{ certificados_entregados }},{{ certificados_pendientes }}],backgroundColor:[A,G],borderRadius:6}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
+    new Chart(document.getElementById('chart-4'),{type:'bar',data:{labels:['Aprendices','Instructores','Invitados'],datasets:[{label:'Total inscritos',data:[{{ total_aprendices }},{{ total_instructores }},{{ total_invitados }}],backgroundColor:[S,A,N],borderRadius:8,barThickness:38}]},options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
+  });
+</script>
+{% endblock %}

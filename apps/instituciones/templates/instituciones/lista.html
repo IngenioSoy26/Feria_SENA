@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}Instituciones - SENA Feria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Instituciones Educativas</h1>
+        <p class="text-muted mb-0">Total registros: <strong>{{ total }}</strong></p>
+    </div>
+    {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+    <a href="{% url 'instituciones:create' %}" class="btn btn-sena">
+        <i class="bi bi-plus-lg me-1"></i>Nueva Institución
+    </a>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Buscar por nombre o código</label>
+                <input type="text" name="q" class="form-control" placeholder="Ej: Institución 1, COD-001" value="{{ q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Municipio</label>
+                <input type="text" name="municipio" class="form-control" placeholder="Ej: Riohacha" value="{{ municipio }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="activo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="1" {% if activo == '1' %}selected{% endif %}>Activo</option>
+                    <option value="0" {% if activo == '0' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sena flex-grow-1">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+                <a href="{% url 'instituciones:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Municipio</th>
+                        <th>Secretaría</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in instituciones %}
+                    <tr>
+                        <td><code class="text-sena-verde fw-semibold">{{ inst.codigo }}</code></td>
+                        <td>
+                            <a href="{% url 'instituciones:detail' inst.pk %}" class="fw-medium text-sena-verde-hover">
+                                {{ inst.nombre }}
+                            </a>
+                        </td>
+                        <td>{{ inst.municipio }}</td>
+                        <td>{{ inst.secretaria_educacion|default:"—" }}</td>
+                        <td>
+                            {% if inst.activo %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{% url 'instituciones:detail' inst.pk %}" class="btn btn-sm btn-outline-info" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+                                <a href="{% url 'instituciones:update' inst.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if request.user|has_group:'ADMINISTRADOR' %}
+                                <a href="{% url 'instituciones:delete' inst.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox display-4 d-block mb-2 opacity-50"></i>
+                            No se encontraron instituciones.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-transparent py-3">
+        <nav aria-label="Paginación">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&municipio={{ municipio }}&activo={{ activo }}&page=1">&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&municipio={{ municipio }}&activo={{ activo }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link bg-sena-verde border-sena-verde">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ q }}&municipio={{ municipio }}&activo={{ activo }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&municipio={{ municipio }}&activo={{ activo }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&municipio={{ municipio }}&activo={{ activo }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <p class="text-center small text-muted mt-2 mb-0">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

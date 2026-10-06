@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Escarapelas — Sistema Feria SENA{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h2 class="mb-1 fw-bold text-sena-verde">
+                <i class="bi bi-person-vcard me-2"></i>Generación de Escarapelas
+            </h2>
+            <p class="text-muted mb-0">Seleccione el criterio y descargue las escarapelas en PDF. Formato A6 horizontal.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Evento</label>
+                    <select name="evento" class="form-select" onchange="this.form.submit()">
+                        {% for ev in eventos %}
+                            <option value="{{ ev.id }}" {% if evento_seleccionado.id == ev.id %}selected{% endif %}>
+                                {{ ev.nombre }} — {{ ev.fecha_inicio|date:"d/m/Y" }} ({{ ev.get_estado_display }})
+                            </option>
+                        {% empty %}
+                            <option>No hay eventos activos</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    {% if evento_seleccionado %}
+                        <a href="{% url 'escarapelas:descargar_completo_id' evento_seleccionado.id %}"
+                           class="btn btn-sena-verde btn-lg fw-semibold shadow-sm">
+                            <i class="bi bi-download me-2"></i>Descargar TODO el evento
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-sena-verde text-white fw-semibold">
+                    <i class="bi bi-person me-2"></i>Individual
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p class="text-muted small mb-3">Busque y descargue la escarapela de una sola persona.</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Buscar persona</label>
+                        <input type="text" id="buscar-persona" class="form-control"
+                               placeholder="Escriba nombre o identificación...">
+                    </div>
+                    <div class="list-group flex-grow-1 overflow-auto" id="lista-personas" style="max-height:220px;">
+                        {% for p in personas %}
+                            <a href="{% url 'escarapelas:descargar_individual' p.id %}"
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center persona-item"
+                               data-nombre="{{ p.nombre_completo|lower }} {{ p.numero_identificacion }}">
+                                <div class="text-truncate me-2">
+                                    <span class="fw-semibold d-block">{{ p.nombre_completo }}</span>
+                                    <span class="small text-muted">{{ p.tipo_identificacion.codigo }} {{ p.numero_identificacion }}</span>
+                                </div>
+                                <span class="badge rounded-pill"
+                                      style="background-color:
+                                        {% if p.tipo_persona == 'APRENDIZ' %}#39A900
+                                        {% elif p.tipo_persona == 'INSTRUCTOR' %}#0067B1
+                                        {% elif p.tipo_persona == 'INVITADO' %}#F57C00
+                                        {% else %}#7B1FA2{% endif %}; color:white;">
+                                    {{ p.get_tipo_persona_display }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-sena-azul text-white fw-semibold">
+                    <i class="bi bi-folder2 me-2"></i>Por Proyecto
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Genera escarapelas de aprendices por proyecto.</p>
+                    <div class="list-group overflow-auto" style="max-height:280px;">
+                        {% for pr in proyectos %}
+                            <a href="{% url 'escarapelas:descargar_proyecto' pr.id %}"
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div class="text-truncate me-2">
+                                    <span class="fw-semibold d-block">{{ pr.codigo }}</span>
+                                    <span class="small text-muted text-truncate d-block">{{ pr.nombre }}</span>
+                                </div>
+                                <span class="badge bg-light text-dark border">{{ pr.aprendices.count }} apr.</span>
+                            </a>
+                        {% empty %}
+                            <div class="text-center text-muted py-4 small">No hay proyectos en este evento.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header text-white fw-semibold" style="background-color:#0067B1;">
+                    <i class="bi bi-building me-2"></i>Por Institución
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Genera escarapelas de aprendices por institución educativa.</p>
+                    <div class="list-group overflow-auto" style="max-height:280px;">
+                        {% for ie in instituciones %}
+                            <a href="{% url 'escarapelas:descargar_institucion' ie.id %}"
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div class="text-truncate me-2">
+                                    <span class="fw-semibold d-block text-truncate">{{ ie.nombre }}</span>
+                                    <span class="small text-muted">{{ ie.codigo }} · {{ ie.municipio }}</span>
+                                </div>
+                                <i class="bi bi-download text-sena-verde"></i>
+                            </a>
+                        {% empty %}
+                            <div class="text-center text-muted py-4 small">No hay instituciones en este evento.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header text-white fw-semibold" style="background-color:#F57C00;">
+                    <i class="bi bi-book me-2"></i>Por Programa Técnico
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Genera escarapelas de aprendices e instructores por programa.</p>
+                    <div class="list-group overflow-auto" style="max-height:280px;">
+                        {% for pg in programas %}
+                            <a href="{% url 'escarapelas:descargar_programa' pg.id %}"
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div class="text-truncate me-2">
+                                    <span class="fw-semibold d-block">{{ pg.codigo }}</span>
+                                    <span class="small text-muted text-truncate d-block">{{ pg.nombre }}</span>
+                                </div>
+                                <i class="bi bi-download text-sena-verde"></i>
+                            </a>
+                        {% empty %}
+                            <div class="text-center text-muted py-4 small">No hay programas en este evento.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header text-white fw-semibold" style="background-color:#7B1FA2;">
+                    <i class="bi bi-people me-2"></i>Por Tipo de Persona
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Genera escarapelas filtradas por el rol en el evento.</p>
+                    <div class="d-grid gap-2">
+                        {% for valor, etiqueta in tipos_persona %}
+                            <a href="{% url 'escarapelas:descargar_tipo' valor %}"
+                               class="btn btn-outline-dark text-start d-flex justify-content-between align-items-center"
+                               style="border-left:4px solid
+                                 {% if valor == 'APRENDIZ' %}#39A900
+                                 {% elif valor == 'INSTRUCTOR' %}#0067B1
+                                 {% elif valor == 'INVITADO' %}#F57C00
+                                 {% else %}#7B1FA2{% endif %};">
+                                <span>
+                                    <span class="d-inline-block rounded me-2"
+                                          style="width:12px;height:12px;background-color:
+                                            {% if valor == 'APRENDIZ' %}#39A900
+                                            {% elif valor == 'INSTRUCTOR' %}#0067B1
+                                            {% elif valor == 'INVITADO' %}#F57C00
+                                            {% else %}#7B1FA2{% endif %};"></span>
+                                    <strong>{{ etiqueta }}s</strong>
+                                </span>
+                                <i class="bi bi-download small"></i>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm h-100 border border-sena-verde">
+                <div class="card-header bg-sena-verde text-white fw-semibold">
+                    <i class="bi bi-grid-3x3-gap me-2"></i>Todo el Evento
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p class="text-muted small mb-3">Genera todas las escarapelas del evento seleccionado.</p>
+                    <div class="d-grid gap-2 mt-auto">
+                        {% if evento_seleccionado %}
+                            <div class="alert alert-light small mb-2 border">
+                                <i class="bi bi-info-circle me-1 text-sena-verde"></i>
+                                Evento: <strong>{{ evento_seleccionado.nombre }}</strong><br>
+                                <span class="text-muted">Incluye aprendices, instructores, invitados y organizadores.</span>
+                            </div>
+                            <a href="{% url 'escarapelas:descargar_completo_id' evento_seleccionado.id %}"
+                               class="btn btn-sena-verde fw-semibold shadow-sm">
+                                <i class="bi bi-download me-2"></i>Descargar Completo
+                            </a>
+                        {% else %}
+                            <div class="alert alert-warning small">No hay evento seleccionado.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-sena-azul { background-color: #0067B1 !important; }
+    .btn-sena-verde { background-color: #39A900; border-color: #39A900; color: white; }
+    .btn-sena-verde:hover { background-color: #2e8a00; border-color: #2e8a00; color: white; }
+    .border-sena-verde { border-color: #39A900 !important; }
+    .text-sena-verde { color: #39A900 !important; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('buscar-persona');
+    if (!input) return;
+    input.addEventListener('input', function () {
+        const filtro = this.value.toLowerCase().trim();
+        document.querySelectorAll('.persona-item').forEach(el => {
+            const texto = el.dataset.nombre || '';
+            el.style.display = !filtro || texto.includes(filtro) ? '' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

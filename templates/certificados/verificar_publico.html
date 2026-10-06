@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if valido %}Certificado Válido | SENA{% else %}Certificado No Válido | SENA{% endif %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/sena.css' %}">
+    <style>
+        body {
+            background-color: var(--sena-gris-claro);
+            min-height: 100vh;
+        }
+        .hero-verde {
+            background: linear-gradient(135deg, #39A900 0%, #2E7D32 100%);
+        }
+        .hero-rojo {
+            background: linear-gradient(135deg, #C62828 0%, #8B0000 100%);
+        }
+        .icono-estado {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        .icono-valido {
+            background-color: rgba(46, 125, 50);
+            color: #FFFFFF;
+            box-shadow: 0 8px 24px rgba(46, 125, 50, 0.3);
+        }
+        .icono-invalido {
+            background-color: rgba(198, 40, 40);
+            color: #FFFFFF;
+            box-shadow: 0 8px 24px rgba(198, 40, 40, 0.3);
+        }
+        .badge-verde {
+            background-color: #39A900;
+            color: #FFFFFF;
+        }
+        .badge-rojo {
+            background-color: #C62828;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column">
+    <header class="{% if valido %}hero-verde{% else %}hero-rojo{% endif %} text-white py-5 py-md-6">
+        <div class="container text-center">
+            <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 200 40" fill="currentColor" aria-label="SENA">
+                    <path d="M20 10 L5 20 L20 30 L35 20 Z M60 8 Q50 8 50 20 Q50 32 60 32 Q70 32 70 24 Q70 18 60 18 Q64 18 64 22 L58 22 L58 18 L76 18 Q76 8 60 8 Z M90 8 L90 32 L96 32 L96 22 L106 32 L112 32 L122 22 L122 32 L128 32 L128 8 L122 8 L109 22 L96 8 Z M140 8 Q130 8 130 20 Q130 32 140 32 L152 32 L152 28 L142 28 Q138 28 138 22 L154 22 Q154 8 140 8 Z M142 18 Q146 18 146 20 L138 20 Q138 18 142 18 Z M162 8 L162 20 L154 8 L148 8 L148 32 L154 32 L154 18 L162 32 L168 32 L168 8 Z M180 8 Q170 8 170 20 Q170 32 180 32 L192 32 L192 28 L182 28 Q178 28 178 22 L194 22 Q194 8 180 8 Z M182 18 Q186 18 186 20 L178 20 Q178 18 182 18 Z"/>
+                </svg>
+                <div class="text-start">
+                    <h1 class="fw-bold mb-0">SENA</h1>
+                    <p class="mb-0 opacity-90 small">Servicio Nacional de Aprendizaje</p>
+                </div>
+            </div>
+            <p class="mb-0 small opacity-90 mt-3">Verificación Pública de Certificados</p>
+        </div>
+    </header>
+
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center p-3 p-md-5">
+        <div class="container" style="max-width:720px;width:100%;">
+            <div class="card border-0 shadow-lg" style="border-radius:1.5rem;overflow:hidden;">
+                <div class="p-4 p-md-5 text-center">
+                    <div class="mb-4">
+                        <div class="icono-estado {% if valido %}icono-valido{% else %}icono-invalido{% endif %}">
+                            {% if valido %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h2 class="fw-bold mb-1" style="font-size:2.25rem;color:{% if valido %}var(--sena-verde-ok){% else %}var(--sena-rojo-error){% endif %};">
+                        {% if valido %}CERTIFICADO VÁLIDO{% else %}CERTIFICADO NO VÁLIDO{% endif %}
+                    </h2>
+                    <p class="mb-4 text-sena-gris-oscuro fs-5">
+                        {% if valido %}
+                            Este certificado se encuentra registrado oficialmente en el sistema SENA.
+                        {% else %}
+                            No se encontró ningún certificado con el código de verificación proporcionado.
+                        {% endif %}
+                    </p>
+
+                    {% if valido and certificado %}
+                    <div class="text-start border-top pt-4 mt-4">
+                        <div class="row g-4">
+                            <div class="col-12 col-md-6">
+                            <div class="mb-3">
+                                <label class="small text-uppercase fw-semibold text-sena-gris-medio mb-1 d-block" style="letter-spacing:0.03em;">Participante</label>
+                                <p class="fw-bold fs-5 mb-0 text-sena-negro">{{ persona_nombre }}</p>
+                            </div>
+                        </div>
+                            <div class="col-12 col-md-6">
+                            <div class="mb-3">
+                                <label class="small text-uppercase fw-semibold text-sena-gris-medio mb-1 d-block" style="letter-spacing:0.03em;">Evento</label>
+                                <p class="fw-bold fs-5 mb-0 text-sena-negro">{{ evento_nombre }}</p>
+                            </div>
+                        </div>
+                            <div class="col-12 col-md-6">
+                            <div class="mb-3">
+                                <label class="small text-uppercase fw-semibold text-sena-gris-medio mb-1 d-block" style="letter-spacing:0.03em;">Fecha de Entrega</label>
+                                <p class="fw-bold fs-5 mb-0 text-sena-negro">{{ fecha_entrega|date:"l j \d\e F \d\e Y \a \l\a\s H:i"|default:"—" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="mb-3">
+                                <label class="small text-uppercase fw-semibold text-sena-gris-medio mb-1 d-block" style="letter-spacing:0.03em;">Código Único</label>
+                                <p class="fw-bold fs-5 mb-0">
+                                    <span class="badge {% if valido %}badge-verde{% else %}badge-rojo{% endif %} py-2 px-3" style="font-size:1rem;border-radius:0.5rem;">{{ codigo }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="mt-4 p-3 rounded-3 bg-sena-gris-claro text-center">
+                            <p class="mb-0 small text-sena-gris-oscuro">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1 align-text-bottom text-sena-verde">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                                Documento verificado digitalmente &mdash; SENA Regional Guajira
+                            </p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mt-4 p-4 rounded-3 bg-sena-gris-claro text-center">
+                        <p class="mb-0 small text-sena-gris-oscuro">
+                            Si crees que se trata de un error, por favor contacta al administrador del evento
+                            o verifica el código QR o enlace de verificación.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="px-4 px-md-5 py-4 bg-sena-gris-claro border-top text-center">
+                    <p class="mb-0 small text-sena-gris-medio">
+                        © {{ "now"|date:"Y" }} SENA &middot; Servicio Nacional de Aprendizaje &middot; Regional Guajira
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>

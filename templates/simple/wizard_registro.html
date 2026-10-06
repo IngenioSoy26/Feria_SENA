@@ -1,0 +1,284 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Registro Ficha · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="glass-card">
+  <div class="d-flex align-items-start gap-3 mb-4">
+    <div class="ico-big d-flex align-items-center justify-content-center" style="background:#fff;border:2px solid var(--sena-50);">
+      <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;">
+    </div>
+    <div class="flex-grow-1">
+      <h3 class="card-title mb-1">Registra la ficha del proyecto y sus aprendices</h3>
+      <p class="card-sub">
+        Instituciones y programas con el <b>mismo nombre</b> se unen automáticamente · sin repeticiones.
+        Cada ficha tiene un <b>máximo de {{ max_aprendices }} aprendices</b>
+        {% if max_aprendices %}<span class="hint-sena">configurable por el administrador</span>{% endif %}.
+      </p>
+    </div>
+  </div>
+
+  <form method="post" id="form-registro-ficha" novalidate>
+    {% csrf_token %}
+
+    <div class="form-card">
+      <h5 class="mb-3 text-sena-dark">🏫 Datos del proyecto</h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Institución Educativa <span class="req">*</span></label>
+          <input name="nombre_ie" class="form-field" placeholder="Ej: Institución Educativa San José de Riohacha" autocomplete="organization" required>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Municipio</label>
+          <select name="municipio_ie" class="form-field select">
+            {% for m in municipios %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Programa Técnico <span class="req">*</span></label>
+          <input name="nombre_programa" class="form-field" placeholder="Ej: Técnico en Sistemas · Técnico en Cocina" autocomplete="off" required>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">
+            Código de Ficha <span class="req">*</span>
+            <span class="hint-sena">(7 dígitos numéricos)</span>
+          </label>
+          <div class="d-flex gap-2">
+            <input
+              name="codigo_ficha"
+              id="inp-codigo-ficha"
+              class="form-field mono flex-grow-1"
+              inputmode="numeric"
+              pattern="\d{7}"
+              maxlength="7"
+              minlength="7"
+              placeholder="1 2 3 4 5 6 7"
+              autocomplete="off"
+              list="fichas_dl"
+              required>
+            <button type="button" id="btn-cargar-ficha" class="btn-sena" style="min-height:52px;padding:12px 18px;white-space:nowrap;" title="Carga IE, Programa e Instructor desde el catálogo de Fichas">
+              🔍 Cargar
+            </button>
+          </div>
+          <datalist id="fichas_dl">
+            {% for f in fichas_activas %}
+              <option value="{{ f.numero }}"
+                data-ie="{{ f.institucion.nombre|default:'' }}"
+                data-municipio="{{ f.municipio|default:f.institucion.municipio|default:'' }}"
+                data-programa="{{ f.programa.nombre|default:'' }}"
+                data-instructor="{{ f.instructor_lider.persona.nombre_completo|default:'' }}"
+                data-cedula="{{ f.instructor_lider.persona.numero_identificacion|default:'' }}"
+                >{{ f.numero }} · {{ f.programa.nombre|default:'' }} · {{ f.institucion.nombre|default:'' }}</option>
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Nombre del proyecto <span class="req">*</span></label>
+          <input name="nombre_proyecto" class="form-field" placeholder="Ej: Aplicación para control de asistencia en la feria" required>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Instructor líder</label>
+          <input name="instructor_nombre" class="form-field" placeholder="Nombre y apellidos completos" autocomplete="name">
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Cédula del instructor líder</label>
+          <input name="instructor_cedula" class="form-field mono" inputmode="numeric" placeholder="Ej: 1012345678">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card mt-4">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h5 class="mb-0 text-sena-dark">👨‍🎓 Aprendices del proyecto</h5>
+          <div class="muted-small">
+            Agrega cada aprendiz con su documento y teléfono · máximo
+            <b id="max-ap-label">{{ max_aprendices|default:3 }}</b> por ficha.
+          </div>
+        </div>
+        <button type="button" class="btn-outline-sena" id="btn-add-aprendiz" style="min-height:48px;padding:10px 18px;">
+          ➕ Agregar aprendiz
+        </button>
+      </div>
+
+      <div id="aprendices-container" data-max="{{ max_aprendices|default:3 }}"></div>
+
+      <div id="aprendices-vacio" class="py-4 px-3 text-center rounded-3" style="background:#f5faeed9;border:1.5px dashed #cfe7b1;">
+        <div style="font-size:36px;">👨‍🎓</div>
+        <div class="muted-small mt-2">
+          Aún no hay aprendices cargados. Toca <b>➕ Agregar aprendiz</b> para empezar.
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <a href="{% url 'simple:home' %}" class="btn-ghost">← Volver al inicio</a>
+      <button class="btn-sena btn-big" type="submit">
+        💾 Guardar Ficha completa
+        <span class="btn-sub">→ Proyecto + Aprendices juntos</span>
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const MAX = parseInt(document.getElementById('aprendices-container').dataset.max || '3', 10) || 3;
+  const container = document.getElementById('aprendices-container');
+  const vacio = document.getElementById('aprendices-vacio');
+  const btnAdd = document.getElementById('btn-add-aprendiz');
+  const maxLabel = document.getElementById('max-ap-label');
+  if (maxLabel) maxLabel.textContent = String(MAX);
+
+  const TIPOS = ['CC','TI','PPT'];
+  let idx = 0;
+
+  function actualizarVacio(){
+    const rows = container.querySelectorAll('.aprendiz-row');
+    vacio.style.display = rows.length === 0 ? '' : 'none';
+    btnAdd.disabled = rows.length >= MAX;
+    btnAdd.style.opacity = rows.length >= MAX ? '0.55' : '1';
+    btnAdd.style.cursor = rows.length >= MAX ? 'not-allowed' : 'pointer';
+    if (rows.length >= MAX) btnAdd.textContent = '✔ Máximo ' + MAX + ' alcanzado';
+    else btnAdd.innerHTML = '➕ Agregar aprendiz';
+    rows.forEach((row, i) => {
+      const num = row.querySelector('.ap-num');
+      if (num) num.textContent = String(i + 1);
+    });
+  }
+
+  function agregarAprendiz(prefill){
+    const rows = container.querySelectorAll('.aprendiz-row');
+    if (rows.length >= MAX) return;
+    idx++;
+    const id = 'apr-' + idx + '-' + Math.random().toString(36).slice(2,7);
+    const div = document.createElement('div');
+    div.className = 'aprendiz-row mb-3';
+    div.style.cssText = 'padding:14px;border-radius:14px;background:linear-gradient(180deg,#fff 0%,#f8fdf2 100%);border:1.5px solid #e1efcd;box-shadow:0 4px 14px rgba(57,169,0,.06);';
+    const tiposOpts = TIPOS.map(t => `<option value="${t}" ${(prefill && prefill.tipo===t)?'selected':''}>${t}</option>`).join('');
+    div.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="ap-num" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:linear-gradient(180deg,#4ec400 0%, #1c7a00 100%);color:white;font-weight:800;font-size:.9rem;">1</span>
+          <b style="color:var(--sena-deep);">Aprendiz</b>
+          <span class="muted-small">(Todos los campos son obligatorios excepto teléfono)</span>
+        </div>
+        <button type="button" class="aprendiz-quitar" aria-label="Quitar aprendiz"
+                style="min-height:38px;padding:6px 12px;border-radius:10px;border:1.5px solid #eecaca;background:#fff5f5;color:#a71a24;font-weight:700;font-size:.84rem;cursor:pointer;">
+          🗑️ Quitar
+        </button>
+      </div>
+      <div class="row g-2 g-md-3">
+        <div class="col-12 col-md-3">
+          <label class="form-label mb-1" style="font-size:.82rem;">Tipo documento</label>
+          <select name="apr_tipo_doc[]" class="form-field select apr-tipo" style="min-height:48px;">
+            ${tiposOpts}
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label mb-1" style="font-size:.82rem;">N° Documento</label>
+          <input type="text" name="apr_num_doc[]" class="form-field mono apr-numdoc" inputmode="numeric"
+                 placeholder="Ej: 1012345678" style="min-height:48px;" required>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1" style="font-size:.82rem;">Nombres y apellidos completos</label>
+          <input type="text" name="apr_nombre[]" class="form-field apr-nombre" autocomplete="name"
+                 placeholder="Ej: Juan Sebastián Pérez Gómez" style="min-height:48px;" required>
+        </div>
+        <div class="col-12 col-md-2">
+          <label class="form-label mb-1" style="font-size:.82rem;">Teléfono</label>
+          <input type="text" name="apr_telefono[]" class="form-field mono apr-tel" inputmode="tel"
+                 placeholder="Ej: 3001234567" style="min-height:48px;">
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+    // Llenar si hay datos previos
+    if (prefill) {
+      const nd = div.querySelector('.apr-numdoc');
+      const nm = div.querySelector('.apr-nombre');
+      const tl = div.querySelector('.apr-tel');
+      if (nd) nd.value = prefill.num_doc || '';
+      if (nm) nm.value = prefill.nombre || '';
+      if (tl) tl.value = prefill.telefono || '';
+    }
+    // Botón quitar
+    div.querySelector('.aprendiz-quitar').addEventListener('click', () => {
+      div.remove();
+      actualizarVacio();
+    });
+    // Limpieza inputs numéricos
+    const numdoc = div.querySelector('.apr-numdoc');
+    const tel = div.querySelector('.apr-tel');
+    if (numdoc) numdoc.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,15); });
+    if (tel) tel.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,15); });
+    actualizarVacio();
+    // Foco en el primer campo
+    setTimeout(() => { const f = div.querySelector('.apr-numdoc'); if (f) f.focus(); }, 30);
+  }
+
+  btnAdd.addEventListener('click', () => agregarAprendiz());
+
+  // Inicial: 1 fila vacía para que el usuario empiece a digitar
+  if (container.querySelectorAll('.aprendiz-row').length === 0) {
+    agregarAprendiz();
+  }
+  actualizarVacio();
+})();
+
+(function(){
+  const dl = document.getElementById('fichas_dl');
+  const inp = document.getElementById('inp-codigo-ficha');
+  const btn = document.getElementById('btn-cargar-ficha');
+  if(!dl || !inp) return;
+  function buscarYCompletar(skipMsj){
+    const val = (inp.value || '').trim();
+    if(val.length !== 7) return false;
+    const opts = Array.from(dl.querySelectorAll('option'));
+    const match = opts.find(o => (o.value || '').trim() === val);
+    if(!match) return false;
+    const ie = match.dataset.ie || '';
+    const mp = match.dataset.municipio || '';
+    const pr = match.dataset.programa || '';
+    const ins = match.dataset.instructor || '';
+    const ced = match.dataset.cedula || '';
+    const fields = [
+      ['nombre_ie', ie],
+      ['nombre_programa', pr],
+      ['instructor_nombre', ins],
+      ['instructor_cedula', ced],
+    ];
+    fields.forEach(([nm, v]) => {
+      const el = document.querySelector(`[name="${nm}"]`);
+      if(el && v){ el.value = v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+    });
+    if(mp){
+      const sel = document.querySelector('[name="municipio_ie"]');
+      if(sel){
+        let found = false;
+        for(const o of sel.options){ if(o.value===mp || (o.textContent||'').trim()===mp){ sel.value=o.value; found=true; break; } }
+        if(!found){ const n=document.createElement('option'); n.value=mp; n.textContent=mp; sel.appendChild(n); sel.value=mp; }
+      }
+    }
+    if(!skipMsj){
+      const t = document.createElement('div');
+      t.className = 'alert alert-success py-2 px-3 small mt-2 mb-0 show fade';
+      t.style.cssText='border:0;border-radius:12px;border-left:5px solid #39A900;background:#eefbe0;';
+      t.innerHTML = '✔ Ficha #<b>' + val + '</b> cargada: Institución, Programa, Municipio e Instructor <b>pre-llenados</b> desde el catálogo.';
+      btn.after(t);
+      setTimeout(()=>{ try{t.remove();}catch(e){} }, 6000);
+    }
+    return true;
+  }
+  if(btn) btn.addEventListener('click', ()=>buscarYCompletar(false));
+  inp.addEventListener('blur', ()=>buscarYCompletar(true));
+  inp.addEventListener('change', ()=>buscarYCompletar(true));
+})();
+</script>
+{% endblock %}

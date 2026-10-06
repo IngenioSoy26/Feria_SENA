@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}Tipos de Identificación - SENA Feria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Tipos de Identificación</h1>
+        <p class="text-muted mb-0">Catálogo de documentos de identidad</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ back_url|default:'/' }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+        {% if request.user|has_group:'ADMINISTRADOR' %}
+        <a href="{% url 'eventos:tipos_identificacion_create' %}" class="btn btn-sena">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Tipo
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in tipos %}
+                            <tr>
+                                <td><code class="text-sena-verde fw-semibold">{{ t.codigo }}</code></td>
+                                <td class="fw-medium">{{ t.nombre }}</td>
+                                <td>
+                                    {% if t.activo %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        {% if request.user|has_group:'ADMINISTRADOR' %}
+                                        <a href="{% url 'eventos:tipos_identificacion_update' t.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    No hay tipos de identificación registrados.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

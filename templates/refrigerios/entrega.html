@@ -1,0 +1,33 @@
+{% extends 'base_operador.html' %}
+{% load static %}
+
+{% block title %}Entrega de Refrigerios | SENA Feria{% endblock %}
+
+{% block operador_titulo %}Entrega de Refrigerios{% endblock %}
+{% block operador_subtitulo %}Escanea o busca al participante para entregar su refrigerio{% endblock %}
+{% block operador_color %}#F57C00{% endblock %}
+
+{% block operador_content %}
+<div class="text-center py-4">
+    <div class="mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#F57C00" stroke-width="1.5" class="mx-auto">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+            <line x1="6" y1="1" x2="6" y2="4"></line>
+            <line x1="10" y1="1" x2="10" y2="4"></line>
+            <line x1="14" y1="1" x2="14" y2="4"></line>
+        </svg>
+    </div>
+    <h3 class="fw-bold mb-2 text-sena-negro">Módulo de Refrigerios</h3>
+    <p class="text-sena-gris-oscuro mb-4">Aquí podrás registrar la entrega de refrigerios a los participantes autorizados.</p>
+    <div class="d-grid gap-2 col-md-8 col-lg-6 mx-auto">
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control form-control-lg" id="buscarParticipante" placeholder="Número de identificación, nombre o QR..." autofocus>
+            <label for="buscarParticipante">Buscar participante</label>
+        </div>
+        <button class="btn btn-lg fw-semibold text-white py-3" style="background-color:#F57C00;border-color:#F57C00;">
+            Registrar Entrega
+        </button>
+    </div>
+</div>
+{% endblock %}

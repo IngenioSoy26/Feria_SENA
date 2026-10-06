@@ -1,0 +1,105 @@
+{% extends "simple/base_simple.html" %}
+{% block titulo %}Editar certificado {{ tipo }}{% endblock %}
+{% block contenido %}
+<div class="row justify-content-between mb-3 flex-wrap gap-2 align-items-center">
+  <div>
+    <h2 class="text-sena mb-1">
+      {% if tipo == 'ASISTENCIA' %}📜 Certificado de ASISTENCIA · <span class="text-muted" style="font-weight:500;">editar y descargar</span>
+      {% else %}🏆 Certificado de PARTICIPACIÓN · <span class="text-muted" style="font-weight:500;">editar y descargar</span>{% endif %}
+    </h2>
+    <div class="text-muted small">👤 {{ persona.get_full_name }} · {{ persona.tipo_persona|default:"PARTICIPANTE" }}</div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'simple:listados' 'aprendices' %}">← Volver</a>
+    <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapela_persona' persona.id %}">🎫 Ver escarapela</a>
+    {% if tipo == 'ASISTENCIA' %}
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificado_editar' persona.id 'PARTICIPACION' %}">↪ 🏆 Ver plantilla Participación</a>
+    {% else %}
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificado_editar' persona.id 'ASISTENCIA' %}">↪ 📜 Ver plantilla Asistencia</a>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" id="form-cert">
+  {% csrf_token %}
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card p-4 campo-edit">
+        <h5 class="text-sena mb-3">✏️ Personaliza los campos del documento</h5>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label fw-bold">Nombre completo</label><input name="NOMBRE_COMPLETO" class="form-control" value="{{ vars_.NOMBRE_COMPLETO }}"></div>
+          <div class="col-md-3"><label class="form-label fw-bold">Tipo ID</label><input name="TIPO_ID" class="form-control" value="{{ vars_.TIPO_ID }}"></div>
+          <div class="col-md-3"><label class="form-label fw-bold">Número ID</label><input name="NUMERO_ID" class="form-control" value="{{ vars_.NUMERO_ID }}"></div>
+          <hr class="my-2"/>
+          <div class="col-md-12"><label class="form-label fw-bold">Nombre del evento</label><input name="EVENTO" class="form-control" value="{{ vars_.EVENTO }}"></div>
+          <div class="col-md-4"><label class="form-label fw-bold">Lugar</label><input name="LUGAR" class="form-control" value="{{ vars_.LUGAR }}"></div>
+          <div class="col-md-4"><label class="form-label fw-bold">Municipio</label><input name="MUNICIPIO" class="form-control" value="{{ vars_.MUNICIPIO }}"></div>
+          <div class="col-md-2"><label class="form-label fw-bold">Fecha inicio</label><input name="FECHA_INICIO" type="date" class="form-control" value="{{ evento.fecha_inicio|default:fecha_hoy }}"></div>
+          <div class="col-md-2"><label class="form-label fw-bold">Fecha fin</label><input name="FECHA_FIN" type="date" class="form-control" value="{{ evento.fecha_fin|default:fecha_hoy }}"></div>
+          {% if tipo == 'PARTICIPACION' %}
+          <hr class="my-2"/>
+          <div class="col-md-2"><label class="form-label fw-bold">Rol</label>
+            <select name="ROL" class="form-select">
+              <option value="Aprendiz" {% if vars_.ROL == 'Aprendiz' %}selected{% endif %}>Aprendiz</option>
+              <option value="Instructor" {% if vars_.ROL == 'Instructor' %}selected{% endif %}>Instructor</option>
+              <option value="Invitado" {% if vars_.ROL == 'Invitado' %}selected{% endif %}>Invitado</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label fw-bold">Nombre proyecto</label><input name="NOMBRE_PROYECTO" class="form-control" value="{{ vars_.NOMBRE_PROYECTO }}"></div>
+          <div class="col-md-2"><label class="form-label fw-bold">Código proyecto</label><input name="CODIGO_PROYECTO" class="form-control" value="{{ vars_.CODIGO_PROYECTO }}"></div>
+          <div class="col-md-2"><label class="form-label fw-bold">Institución</label><input name="INSTITUCION" class="form-control" value="{{ vars_.INSTITUCION }}"></div>
+          {% else %}
+          <input type="hidden" name="ROL" value="{{ vars_.ROL }}">
+          {% endif %}
+          <hr class="my-2"/>
+          <div class="col-md-3"><label class="form-label fw-bold">Fecha de expedición</label><input name="FECHA_EMISION" type="date" class="form-control" value="{{ fecha_hoy }}"></div>
+          <div class="col-md-3"><label class="form-label fw-bold">Firma 1 · Nombre</label><input name="FIRMA_1_NOMBRE" class="form-control" value="{{ vars_.FIRMA_1_NOMBRE }}"></div>
+          <div class="col-md-3"><label class="form-label fw-bold">Firma 1 · Cargo</label><input name="FIRMA_1_CARGO" class="form-control" value="{{ vars_.FIRMA_1_CARGO }}"></div>
+          <div class="col-md-3"></div>
+          <div class="col-md-3"></div>
+          <div class="col-md-3"><label class="form-label fw-bold">Firma 2 · Nombre</label><input name="FIRMA_2_NOMBRE" class="form-control" value="{{ vars_.FIRMA_2_NOMBRE }}"></div>
+          <div class="col-md-3"><label class="form-label fw-bold">Firma 2 · Cargo</label><input name="FIRMA_2_CARGO" class="form-control" value="{{ vars_.FIRMA_2_CARGO }}"></div>
+        </div>
+        <hr class="my-3"/>
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+          <button type="submit" name="accion" value="previsualizar" class="btn btn-outline-primary btn-grande px-4">👁️ Previsualizar PDF</button>
+          <button type="submit" name="accion" value="descargar" class="btn btn-sena btn-grande px-5">⬇ Descargar certificado</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card p-4 h-100">
+        <h5 class="text-sena mb-3">📘 Previsualización del texto que va a aparecer</h5>
+        <div class="bg-light rounded p-3 border" style="white-space:pre-wrap;">
+          <h6 class="text-center text-sena fw-bold mb-2">{{ plantilla.titulo }}</h6>
+          <p class="small text-center text-muted">{{ plantilla.parrafo_intro }}</p>
+          <p class="text-muted small">{{ plantilla.parrafo_central }}</p>
+          <p class="text-muted small">{{ plantilla.parrafo_final }}</p>
+          <hr/>
+          <h6 class="text-sena mb-2">🎯 Datos actuales para la descarga:</h6>
+          <ul class="small list-unstyled mb-0">
+            <li><b>Nombre:</b> <span class="text-primary">{{ vars_.NOMBRE_COMPLETO }}</span></li>
+            <li><b>Tipo/N° ID:</b> {{ vars_.TIPO_ID }} · {{ vars_.NUMERO_ID }}</li>
+            <li><b>Evento:</b> {{ vars_.EVENTO }}</li>
+            <li><b>Lugar / Municipio:</b> {{ vars_.LUGAR }} · {{ vars_.MUNICIPIO }}</li>
+            <li><b>Fecha:</b> {{ vars_.FECHA_INICIO }} al {{ vars_.FECHA_FIN }}</li>
+            {% if tipo == 'PARTICIPACION' %}
+            <li><b>Proyecto:</b> {{ vars_.NOMBRE_PROYECTO }} ({{ vars_.CODIGO_PROYECTO }})</li>
+            <li><b>Institución / Rol:</b> {{ vars_.INSTITUCION }} · <span class="badge badge-naranja">{{ vars_.ROL }}</span></li>
+            {% endif %}
+            <li><b>Expedido el:</b> {{ vars_.FECHA_EMISION }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  function setVal(name,value){const i=document.querySelector('[name="'+name+'"]');if(i && i.value!==undefined){i.value=value;document.getElementById('vista-'+name)&&(document.getElementById('vista-'+name).textContent=value);}}
+  // Al cambiar inputs reflejamos en el resumen (por ahora no hay vistas inline; guardan y luego se refleja al previsualizar)
+  // Prevenir envío doble
+  let enviando=false;document.getElementById('form-cert').addEventListener('submit',(e)=>{if(enviando){e.preventDefault();return;}enviando=true;});
+</script>
+{% endblock %}

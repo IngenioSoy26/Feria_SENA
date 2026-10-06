@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Auditoría del Sistema | SENA Feria{% endblock %}
+
+{% block content %}
+<div class="main-wrapper">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+        <div>
+            <h2 class="h3 fw-bold mb-1 text-sena-negro">Registros de Auditoría</h2>
+            <p class="mb-0 text-sena-gris-oscuro small">Historial de acciones del sistema &middot; {{ total }} registro{{ total|pluralize }}</p>
+        </div>
+        <div>
+            <a href="?{{ querystring_limpia }}{% if querystring_limpia %}&{% endif %}exportar=excel" class="btn btn-sena fw-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1 align-text-bottom">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Exportar Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small fw-semibold">Usuario</label>
+                    <select name="usuario" class="form-select">
+                        <option value="">Todos los usuarios</option>
+                        {% for u in usuarios %}
+                        <option value="{{ u.id }}" {% if filtro_usuario == u.id|stringformat:"s" %}selected{% endif %}>
+                            {{ u.nombre_completo|default:u.username }} ({{ u.rol_sistema }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold">Acción</label>
+                    <select name="accion" class="form-select">
+                        <option value="">Todas</option>
+                        {% for a in acciones %}
+                        <option value="{{ a }}" {% if filtro_accion == a %}selected{% endif %}>{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small fw-semibold">Módulo</label>
+                    <input type="text" name="modulo" class="form-control" placeholder="Ej: usuarios" value="{{ filtro_modulo }}">
+                </div>
+                <div class="col-12 col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold">Fecha desde</label>
+                    <input type="date" name="fecha_desde" class="form-control" value="{{ filtro_fecha_desde }}">
+                </div>
+                <div class="col-12 col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold">Fecha hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control" value="{{ filtro_fecha_hasta }}">
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end pt-1">
+                    <a href="{% url 'auditoria:lista' %}" class="btn btn-outline-secondary fw-semibold">Limpiar</a>
+                    <button type="submit" class="btn btn-sena fw-semibold">Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:160px;">Fecha/Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Módulo</th>
+                        <th>Entidad</th>
+                        <th>ID</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in registros %}
+                    <tr>
+                        <td class="small">{{ log.fecha_hora|date:"Y-m-d H:i:s" }}</td>
+                        <td>
+                            <div class="fw-semibold">
+                                {% if log.usuario %}
+                                    {{ log.usuario.nombre_completo|default:log.usuario.username }}
+                                    {% if log.usuario.rol_sistema %}
+                                    <span class="badge badge-invitado ms-2 small">{{ log.usuario.rol_sistema }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-sena-gris-medio">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-aprendiz">{{ log.get_accion_display|default:log.accion }}</span>
+                        </td>
+                        <td class="fw-semibold">{{ log.modulo|default:"—" }}</td>
+                        <td class="small">{{ log.entidad|default:"—" }}</td>
+                        <td class="small">{{ log.id_entidad|default:"—" }}</td>
+                        <td class="small text-sena-gris-oscuro">{{ log.ip|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-sena-gris-medio">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mb-3 opacity-75">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <p class="mb-0 fw-semibold">No hay registros para los filtros seleccionados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if total_paginas > 1 %}
+        <div class="card-footer bg-white border-top d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <p class="mb-0 small text-sena-gris-oscuro">
+                Página <strong>{{ pagina_actual }}</strong> de <strong>{{ total_paginas }}</strong> &middot; {{ total }} registro{{ total|pluralize }}
+            </p>
+            <nav aria-label="Paginación auditoría">
+                <ul class="pagination mb-0">
+                    <li class="page-item {% if not tiene_anterior %}disabled{% endif %}">
+                        <a class="page-link" href="?{% if querystring_limpia %}{{ querystring_limpia }}&{% endif %}page={{ pagina_anterior }}" tabindex="-1" aria-disabled="true">Anterior</a>
+                    </li>
+                    {% with qs_base=querystring_limpia %}
+                    {% for p in rango_paginas %}
+                        {% if forloop.first and p > 1 %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                        <li class="page-item {% if p == pagina_actual %}active{% endif %}">
+                            <a class="page-link" href="?{% if querystring_limpia %}{{ querystring_limpia }}&{% endif %}page={{ p }}">{{ p }}</a>
+                        </li>
+                        {% if forloop.last and p < total_paginas %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% endwith %}
+                    <li class="page-item {% if not tiene_siguiente %}disabled{% endif %}">
+                        <a class="page-link" href="?{% if querystring_limpia %}{{ querystring_limpia }}&{% endif %}page={{ pagina_siguiente }}">Siguiente</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

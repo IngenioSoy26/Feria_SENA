@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión | Sistema Feria SENA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/sena.css' %}">
+</head>
+<body class="min-vh-100 d-flex flex-column bg-sena-gris-claro">
+    <div class="bg-sena-verde text-white py-4 py-md-5">
+        <div class="container text-center">
+            <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 200 40" fill="currentColor" aria-label="SENA">
+                    <path d="M20 10 L5 20 L20 30 L35 20 Z M60 8 Q50 8 50 20 Q50 32 60 32 Q70 32 70 24 Q70 18 60 18 Q64 18 64 22 L58 22 L58 18 L76 18 Q76 8 60 8 Z M90 8 L90 32 L96 32 L96 22 L106 32 L112 32 L122 22 L122 32 L128 32 L128 8 L122 8 L109 22 L96 8 Z M140 8 Q130 8 130 20 Q130 32 140 32 L152 32 L152 28 L142 28 Q138 28 138 22 L154 22 Q154 8 140 8 Z M142 18 Q146 18 146 20 L138 20 Q138 18 142 18 Z M162 8 L162 20 L154 8 L148 8 L148 32 L154 32 L154 18 L162 32 L168 32 L168 8 Z M180 8 Q170 8 170 20 Q170 32 180 32 L192 32 L192 28 L182 28 Q178 28 178 22 L194 22 Q194 8 180 8 Z M182 18 Q186 18 186 20 L178 20 Q178 18 182 18 Z"/>
+                </svg>
+                <div class="text-start">
+                    <h1 class="fw-bold mb-0">SENA</h1>
+                    <p class="mb-0 opacity-90 small">Servicio Nacional de Aprendizaje</p>
+                </div>
+            </div>
+            <h2 class="h4 fw-semibold mb-0 mt-3">Feria de Proyectos Productivos</h2>
+            <p class="mb-0 small opacity-90 mt-1">Regional Guajira — Programa Articulación Media</p>
+        </div>
+    </div>
+
+    <div class="flex-grow-1 d-flex align-items-center justify-content-center p-3 p-md-4">
+        <div class="card border-0 shadow-lg" style="width:100%;max-width:440px;">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="text-center fw-bold mb-1 text-sena-negro">Iniciar sesión</h3>
+                <p class="text-center text-sena-gris-medio small mb-4">Ingresa con tus credenciales institucionales</p>
+
+                {% if form.errors %}
+                <div class="alert alert-danger alert-dismissible fade show auto-dismiss mb-4" role="alert">
+                    <p class="mb-0 small"><strong>Error de autenticación.</strong> Usuario o contraseña incorrectos. Inténtalo de nuevo.</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+
+                {% if next %}
+                    {% if user.is_authenticated %}
+                    <div class="alert alert-warning auto-dismiss mb-4" role="alert">
+                        <p class="mb-0 small">Tu cuenta no tiene acceso a esta página. Por favor inicia sesión con una cuenta autorizada.</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info auto-dismiss mb-4" role="alert">
+                        <p class="mb-0 small">Por favor inicia sesión para ver esta página.</p>
+                    </div>
+                    {% endif %}
+                {% endif %}
+
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show auto-dismiss mb-3" role="alert">
+                        <p class="mb-0 small">{{ message }}</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label fw-semibold text-sena-gris-oscuro">Usuario</label>
+                        <input type="text" name="username" id="id_username" class="form-control form-control-lg" placeholder="Ingresa tu usuario" required autofocus autocomplete="username">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label fw-semibold text-sena-gris-oscuro">Contraseña</label>
+                        <input type="password" name="password" id="id_password" class="form-control form-control-lg" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
+                    </div>
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="remember_me" id="id_remember_me">
+                        <label class="form-check-label text-sena-gris-oscuro small" for="id_remember_me">
+                            Recordar mi usuario en este equipo
+                        </label>
+                    </div>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-sena btn-lg fw-semibold py-3">
+                            Ingresar al sistema
+                        </button>
+                    </div>
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <p class="text-sena-gris-medio small mb-1">
+                        ¿Problemas para acceder?
+                    </p>
+                    <p class="text-sena-gris-oscuro small mb-0">
+                        Contacta al administrador del sistema
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-sena-verde text-white py-3">
+        <div class="container text-center small opacity-90">
+            © {{ "now"|date:"Y" }} SENA · Regional Guajira · Feria Proyectos Productivos · Todos los derechos reservados
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        (function(){
+            var u = document.getElementById('id_username'), p = document.getElementById('id_password');
+            if (u) { u.classList.add('form-control','form-control-lg'); }
+            if (p) { p.classList.add('form-control','form-control-lg'); }
+            try {
+                var remember = localStorage.getItem('sena_remember_user');
+                if (remember && u && !u.value) { u.value = remember; document.getElementById('id_remember_me').checked = true; }
+            } catch(e){}
+            document.querySelector('form').addEventListener('submit', function(){
+                try {
+                    var chk = document.getElementById('id_remember_me').checked;
+                    if (chk && u && u.value) localStorage.setItem('sena_remember_user', u.value);
+                    else localStorage.removeItem('sena_remember_user');
+                } catch(e){}
+            });
+        })();
+    </script>
+</body>
+</html>

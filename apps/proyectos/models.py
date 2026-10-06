@@ -1,0 +1,141 @@
+import re
+import uuid
+
+from django.db import models
+
+
+class Ficha(models.Model):
+    numero = models.CharField(max_length=7, unique=True, db_index=True)
+    institucion = models.ForeignKey(
+        'instituciones.InstitucionEducativa',
+        on_delete=models.PROTECT,
+        related_name='fichas',
+    )
+    programa = models.ForeignKey(
+        'programas.ProgramaTecnico',
+        on_delete=models.PROTECT,
+        related_name='fichas',
+    )
+    grado = models.CharField(max_length=10, blank=True, default='11')
+    municipio = models.CharField(max_length=100, blank=True)
+    instructor_lider = models.ForeignKey(
+        'instructores.Instructor',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='fichas_dirigidas',
+    )
+    telefono_instructor = models.CharField(max_length=30, null=True, blank=True)
+    correo_instructor = models.EmailField(max_length=180, null=True, blank=True)
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin = models.DateField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Ficha'
+        verbose_name_plural = 'Fichas'
+        ordering = ['numero']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['numero'],
+                name='uq_ficha_numero',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.numero} - {self.programa.nombre if self.programa_id else "Sin programa"}'
+
+    def save(self, *args, **kwargs):
+        if self.numero:
+            self.numero = re.sub(r'\D', '', str(self.numero))[:7].zfill(7)
+        super().save(*args, **kwargs)
+
+
+class Proyecto(models.Model):
+    ESTADOS = (
+        ('INSCRITO', 'Inscrito'),
+        ('APROBADO', 'Aprobado'),
+        ('RETIRADO', 'Retirado'),
+    )
+
+    evento = models.ForeignKey(
+        'eventos.Evento',
+        on_delete=models.PROTECT,
+        related_name='proyectos',
+    )
+    ficha = models.ForeignKey(
+        Ficha,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='proyectos',
+    )
+    codigo = models.CharField(max_length=40, db_index=True)
+    nombre = models.CharField(max_length=250)
+    descripcion = models.TextField(blank=True)
+    institucion = models.ForeignKey(
+        'instituciones.InstitucionEducativa',
+        on_delete=models.PROTECT,
+        related_name='proyectos',
+    )
+    programa = models.ForeignKey(
+        'programas.ProgramaTecnico',
+        on_delete=models.PROTECT,
+        related_name='proyectos',
+    )
+    instructor_responsable = models.ForeignKey(
+        'instructores.Instructor',
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name='proyectos_dirigidos',
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default='INSCRITO',
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['evento', 'codigo'],
+                name='uq_proyecto_evento_codigo',
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.ficha_id and not self.codigo:
+            self.codigo = str(self.ficha.numero)
+        if self.ficha_id:
+            if not self.institucion_id:
+                self.institucion = self.ficha.institucion
+            if not self.programa_id:
+                self.programa = self.ficha.programa
+            if not self.instructor_responsable_id and self.ficha.instructor_lider_id:
+                self.instructor_responsable = self.ficha.instructor_lider
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.codigo} - {self.nombre}'
+
+
+class Aprendiz(models.Model):
+    persona = models.OneToOneField(
+        'personas.Persona',
+        on_delete=models.CASCADE,
+        related_name='perfil_aprendiz',
+    )
+    proyecto = models.ForeignKey(
+        Proyecto,
+        on_delete=models.PROTECT,
+        related_name='aprendices',
+    )
+    grado = models.CharField(max_length=10, default='11')
+
+    class Meta:
+        ordering = ['persona__apellidos', 'persona__nombres']
+
+    def __str__(self):
+        return str(self.persona)

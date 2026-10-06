@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}Proyectos - SENA Feria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Proyectos Productivos</h1>
+        <p class="text-muted mb-0">Total registros: <strong>{{ total }}</strong></p>
+    </div>
+    {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+    <a href="{% url 'proyectos:create' %}" class="btn btn-sena">
+        <i class="bi bi-plus-lg me-1"></i>Nuevo Proyecto
+    </a>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Buscar (nombre, código, descripción)</label>
+                <input type="text" name="q" class="form-control" placeholder="Ej: Proyecto X, COD-001..." value="{{ q }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Evento</label>
+                <select name="evento" class="form-select">
+                    <option value="">Todos los eventos</option>
+                    {% for e in eventos_list %}
+                    <option value="{{ e.pk }}" {% if evento == e.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ e.nombre }} ({{ e.fecha_inicio|date:"Y" }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Institución Educativa</label>
+                <select name="institucion" class="form-select">
+                    <option value="">Todas las instituciones</option>
+                    {% for i in instituciones_list %}
+                    <option value="{{ i.pk }}" {% if institucion == i.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ i.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Programa Técnico</label>
+                <select name="programa" class="form-select">
+                    <option value="">Todos los programas</option>
+                    {% for p in programas_list %}
+                    <option value="{{ p.pk }}" {% if programa == p.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ p.codigo }} - {{ p.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Instructor Responsable</label>
+                <select name="instructor" class="form-select">
+                    <option value="">Todos los instructores</option>
+                    {% for i in instructores_list %}
+                    <option value="{{ i.pk }}" {% if instructor == i.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ i.persona.nombre_completo }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    {% for k, v in estados_choices %}
+                    <option value="{{ k }}" {% if estado == k %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sena flex-grow-1">
+                    <i class="bi bi-search me-1"></i>Filtrar
+                </button>
+                <a href="{% url 'proyectos:list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre Proyecto</th>
+                        <th>Evento</th>
+                        <th>Institución</th>
+                        <th>Programa</th>
+                        <th>Instructor</th>
+                        <th>Aprend.</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in proyectos %}
+                    <tr>
+                        <td><code class="text-sena-verde fw-semibold">{{ p.codigo }}</code></td>
+                        <td>
+                            <a href="{% url 'proyectos:detail' p.pk %}" class="fw-medium text-sena-verde-hover d-block">
+                                {{ p.nombre }}
+                            </a>
+                            <small class="text-muted d-block" style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                {{ p.descripcion|default:"Sin descripción" }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="d-block">{{ p.evento.nombre|default:"—" }}</span>
+                            <small class="text-muted">{{ p.evento.fecha_inicio|date:"Y" }}</small>
+                        </td>
+                        <td>
+                            <small>{{ p.institucion.nombre|default:"—" }}</small>
+                        </td>
+                        <td>
+                            <small class="d-block">{{ p.programa.codigo|default:"—" }}</small>
+                            <small class="text-muted">{{ p.programa.nombre|default:"" }}</small>
+                        </td>
+                        <td>
+                            {% if p.instructor_responsable %}
+                            <a href="{% url 'instructores:detail' p.instructor_responsable.pk %}" class="text-sena-verde-hover">
+                                <small>{{ p.instructor_responsable.persona.nombre_completo|default:"—" }}</small>
+                            </a>
+                            {% else %}
+                            <small class="text-muted">Sin asignar</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge rounded-pill bg-info">{{ p.num_aprendices }}</span>
+                        </td>
+                        <td>
+                            {% if p.estado == 'INSCRITO' %}
+                            <span class="badge bg-primary">Inscrito</span>
+                            {% elif p.estado == 'APROBADO' %}
+                            <span class="badge bg-success">Aprobado</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Retirado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a href="{% url 'proyectos:detail' p.pk %}" class="btn btn-sm btn-outline-info" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+                                <a href="{% url 'proyectos:update' p.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if request.user|has_group:'ADMINISTRADOR' %}
+                                <a href="{% url 'proyectos:delete' p.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-diagram-3 display-4 d-block mb-2 opacity-50"></i>
+                            No se encontraron proyectos.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-transparent py-3">
+        <nav aria-label="Paginación">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&evento={{ evento }}&institucion={{ institucion }}&programa={{ programa }}&instructor={{ instructor }}&estado={{ estado }}&page=1">&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&evento={{ evento }}&institucion={{ institucion }}&programa={{ programa }}&instructor={{ instructor }}&estado={{ estado }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link bg-sena-verde border-sena-verde">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ q }}&evento={{ evento }}&institucion={{ institucion }}&programa={{ programa }}&instructor={{ instructor }}&estado={{ estado }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&evento={{ evento }}&institucion={{ institucion }}&programa={{ programa }}&instructor={{ instructor }}&estado={{ estado }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&evento={{ evento }}&institucion={{ institucion }}&programa={{ programa }}&instructor={{ instructor }}&estado={{ estado }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <p class="text-center small text-muted mt-2 mb-0">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

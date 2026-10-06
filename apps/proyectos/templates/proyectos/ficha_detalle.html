@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load sena %}
+
+{% block title %}Ficha {{ ficha.numero }} - Detalle{% endblock %}
+
+{% block content %}
+{% if confirm_delete %}
+<div class="row justify-content-center mb-4">
+    <div class="col-lg-8">
+        <div class="alert alert-danger" role="alert">
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div><i class="bi bi-exclamation-triangle-fill display-6"></i></div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">¿Eliminar esta ficha?</h5>
+                        <p class="mb-0">Esta acción no se puede deshacer. Se eliminará la ficha: <strong>{{ ficha.numero }}</strong></p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Sí, eliminar
+                        </button>
+                        <a href="{% url 'proyectos:ficha_detail' ficha.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Ficha {{ ficha.numero }}</h1>
+        <p class="text-muted mb-0">
+            {{ ficha.programa.nombre|default:"Sin programa" }}
+            {% if ficha.activo %}
+                <span class="badge bg-success ms-2">Activo</span>
+            {% else %}
+                <span class="badge bg-secondary ms-2">Inactivo</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'proyectos:ficha_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+        {% if request.user|has_group:'ADMINISTRADOR' or request.user|has_group:'REGISTRO' %}
+        <a href="{% url 'proyectos:ficha_update' ficha.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        {% endif %}
+        {% if request.user|has_group:'ADMINISTRADOR' %}
+        <a href="{% url 'proyectos:ficha_delete' ficha.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash me-1"></i>Eliminar
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">Información General</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Número</dt>
+                    <dd class="col-sm-8"><code class="text-sena-verde">{{ ficha.numero }}</code></dd>
+
+                    <dt class="col-sm-4 text-muted">Institución</dt>
+                    <dd class="col-sm-8 fw-medium">{{ ficha.institucion.nombre|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Programa Técnico</dt>
+                    <dd class="col-sm-8 fw-medium">{{ ficha.programa.nombre|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Grado</dt>
+                    <dd class="col-sm-8">{{ ficha.grado|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Municipio</dt>
+                    <dd class="col-sm-8">{{ ficha.municipio|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Estado</dt>
+                    <dd class="col-sm-8">
+                        {% if ficha.activo %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">Instructor Líder y Fechas</h5></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Instructor Líder</dt>
+                    <dd class="col-sm-8 fw-medium">
+                        {% if ficha.instructor_lider %}
+                            {{ ficha.instructor_lider.persona.nombre_completo }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Teléfono</dt>
+                    <dd class="col-sm-8">{{ ficha.telefono_instructor|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Correo</dt>
+                    <dd class="col-sm-8">{{ ficha.correo_instructor|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Fecha Inicio</dt>
+                    <dd class="col-sm-8">{{ ficha.fecha_inicio|date:"d/m/Y"|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Fecha Fin</dt>
+                    <dd class="col-sm-8">{{ ficha.fecha_fin|date:"d/m/Y"|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Creada</dt>
+                    <dd class="col-sm-8">{{ ficha.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Proyectos Asociados</h5>
+        <span class="badge bg-sena-verde">{{ proyectos_asociados|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if proyectos_asociados %}
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre Proyecto</th>
+                        <th>Evento</th>
+                        <th>Institución</th>
+                        <th>Instructor</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in proyectos_asociados %}
+                    <tr>
+                        <td><code class="text-sena-verde small">{{ p.codigo }}</code></td>
+                        <td class="fw-medium">{{ p.nombre }}</td>
+                        <td>{{ p.evento.nombre|default:"—" }}</td>
+                        <td>{{ p.institucion.nombre|default:"—" }}</td>
+                        <td>
+                            {% if p.instructor_responsable %}
+                                {{ p.instructor_responsable.persona.nombre_completo }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if p.estado == 'APROBADO' %}bg-success{% elif p.estado == 'RETIRADO' %}bg-danger{% else %}bg-info{% endif %}">
+                                {{ p.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'proyectos:detail' p.pk %}" class="btn btn-sm btn-outline-info" title="Ver proyecto">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4 mb-0">
+            <i class="bi bi-folder2-open display-6 d-block mb-2 opacity-50"></i>
+            No hay proyectos asociados a esta ficha.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
