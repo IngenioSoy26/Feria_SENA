@@ -19,11 +19,14 @@ argon2-cffi==23.1.0
 gunicorn==22.0.0
 #
 # Driver Postgres NUEVA GENERACION (compatible Python 3.10-3.13 Railway):
-#   'psycopg[binary]==3.2.2' incluye el binario pure-python con wheels
-#   compilados para Linux x86/arm64 (incluye OpenSSL embebido, evita
-#   fallos de compilacion gcc que habian con psycopg2-binary 2.9.9 en
-#   Railway Buildpack con Python 3.13 pre-release).
-psycopg[binary]==3.2.2
+#   'psycopg[binary]' incluye wheels pre-compilados para:
+#     - Linux x86_64 CPython 3.8-3.13 (incluye OpenSSL embebido)
+#     - Linux aarch64 CPython 3.8-3.13
+#   Con esto evitamos fallos de compilacion gcc (el error "Failed building
+#   wheel") que sucedian tanto con psycopg2-binary 2.9.9 como con versiones
+#   antiguas de psycopg3 en Buildpack Python 3.13 pre-release.
+#   Version 3.2.3: ultima estable Oct-2026; trae wheels oficiales para 3.13.
+psycopg[binary]==3.2.3
 #
 # Parser de la variable estandar DATABASE_URL que inyecta Railway
 dj-database-url==2.3.0
