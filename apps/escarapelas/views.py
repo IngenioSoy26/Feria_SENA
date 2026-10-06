@@ -30,6 +30,9 @@ def _respuesta_pdf(buffer, nombre_archivo):
         content_type='application/pdf',
     )
     response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
     return response
 
 

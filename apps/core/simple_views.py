@@ -675,6 +675,9 @@ class DescargarEscarapelaIndividual(LoginRequiredMixin, View):
         buffer = generar_escarapela_individual(p, evento=evento, proyecto=proyecto)
         resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         resp['Content-Disposition'] = f'inline; filename="escarapela_{p.numero_identificacion or p.id}.pdf"'
+        resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp['Pragma'] = 'no-cache'
+        resp['Expires'] = '0'
         return resp
 
 
@@ -735,6 +738,9 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
         buffer = generar_escarapelas_lote(items, evento=evento, nombre_archivo=f'escarapelas_{grupo}.pdf')
         resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         resp['Content-Disposition'] = f'inline; filename="escarapelas_{grupo}.pdf"'
+        resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp['Pragma'] = 'no-cache'
+        resp['Expires'] = '0'
         return resp
 
 
@@ -805,6 +811,9 @@ class EditarCertificadoView(LoginRequiredMixin, View):
             resp['Content-Disposition'] = f'inline; filename="{filename}"'
         else:
             resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+        resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp['Pragma'] = 'no-cache'
+        resp['Expires'] = '0'
         return resp
 
 
@@ -853,4 +862,7 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         buffer = generar_certificados_lote(lista, tipo=tipo, evento=evento)
         resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         resp['Content-Disposition'] = f'inline; filename="certificados_{tipo}_{grupo}.pdf"'
+        resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp['Pragma'] = 'no-cache'
+        resp['Expires'] = '0'
         return resp

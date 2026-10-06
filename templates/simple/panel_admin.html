@@ -132,6 +132,27 @@
           </div>
         </div>
       </div>
+
+      <div class="kpi-card" style="background:linear-gradient(180deg,#f7fff0,#fff);">
+        <div class="kpi-label">🎟️ Generar Escarapelas · A6 dúplex</div>
+        <div class="kpi-num text-sena">PDF nuevo diseño<small class="text-muted fs-6 ms-2">2 pags/persona</small></div>
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a class="mini-link bg-sena-verde text-white" href="{% url 'escarapelas:listar' %}">📋 Panel Escarapelas (6 filtros)</a>
+          <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'todos' %}">⬇ Todos</a>
+          <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'aprendices' %}">Aprendices</a>
+          <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'instructores' %}">Instructores</a>
+        </div>
+      </div>
+
+      <div class="kpi-card" style="background:linear-gradient(180deg,#f5fbff,#fff);">
+        <div class="kpi-label">📜 Certificados + Entrega Operador</div>
+        <div class="kpi-num" style="color:#0067B1;">Asistencia / Participación<small class="text-muted fs-6 ms-2">Edición previa</small></div>
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a class="mini-link text-white" style="background:#0067B1;" href="{% url 'certificados:entrega' %}">👩‍💼 Operador Entrega QR</a>
+          <a class="mini-link" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'asistentes' %}">⬇ Lote Asistencia</a>
+          <a class="mini-link" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'todos' %}">⬇ Lote Participación</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
