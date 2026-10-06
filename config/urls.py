@@ -28,6 +28,7 @@ urlpatterns = [
     path('refrigerios/', include('apps.refrigerios.urls', namespace='refrigerios')),
     path('certificados/', include('apps.certificados.urls', namespace='certificados')),
     path('dashboard/', include('apps.dashboard.urls', namespace='dashboard')),
+    path('reportes/', include('apps.reportes.urls', namespace='reportes')),
     path('auditoria/', include('apps.auditoria.urls', namespace='auditoria')),
 
     path('accounts/login/', CustomLoginView.as_view(), name='login'),

@@ -128,6 +128,13 @@ def menu_dinamico_por_rol(request):
     })
 
     menu.append({
+        'nombre': 'Reportes',
+        'url': 'reportes:index',
+        'icono': 'chart-bar',
+        'mostrar': es_admin or es_coordinador or es_auditor,
+    })
+
+    menu.append({
         'nombre': 'Auditoría',
         'url': 'auditoria:listar',
         'icono': 'history',
