@@ -72,18 +72,24 @@ _db_url = os.environ.get('DATABASE_URL', '').strip()
 _db_engine_explicit = os.environ.get('DJANGO_DB_ENGINE', '').strip()
 
 if _db_url:
-    # Railway inyecta postgres:// que dj_database_url soporta;
-    # además activamos sslmode prefer para Postgres cloud.
-    _opts = {}
-    if _db_url.startswith('postgres'):
-        _opts['sslmode'] = os.environ.get('PGSSLMODE', 'require')
+    # Railway entrega a veces postgres:// (antiguo) y a veces postgresql://.
+    # dj_database_url con dj-database-url>=2.2 normaliza ambos a psycopg 3
+    # engine django.db.backends.postgresql (NO psycopg2).
+    _pg_sslmode = os.environ.get('PGSSLMODE', 'require')
+    # Si la URL NO trae query params de sslmode, inyectarlo:
+    if _db_url.startswith('postgres') and 'sslmode=' not in _db_url:
+        _sep = '&' if '?' in _db_url else '?'
+        _db_url = f"{_db_url}{_sep}sslmode={_pg_sslmode}"
     DATABASES['default'] = dj_database_url.config(
         default=_db_url,
         conn_max_age=600,
         conn_health_checks=True,
     )
-    if _opts:
-        DATABASES['default'].setdefault('OPTIONS', {}).update(_opts)
+    # psycopg 3 (driver moderno) necesita sslmode en OPTIONS aparte para
+    # conexiones fuera de la URL. Asegurarlo siempre:
+    if DATABASES['default'].get('ENGINE', '').endswith('postgresql'):
+        DATABASES['default'].setdefault('OPTIONS', {})
+        DATABASES['default']['OPTIONS'].setdefault('sslmode', _pg_sslmode)
 elif _db_engine_explicit:
     DATABASES['default'] = {
         'ENGINE': _db_engine_explicit,
