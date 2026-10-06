@@ -1,5 +1,7 @@
-# Dependencias principales del proyecto
-# Versiones exactas compatibles con PythonAnywhere (Python 3.10)
+# Dependencias del proyecto SENA Feria 2026
+# Compatibles: Python 3.10 / 3.11 / 3.12
+# Despliegue: Railway (Postgres) + PythonAnywhere (SQLite)
+# Nota: Django 5.1 LTS. Todas las versiones pinneadas para reproducibilidad.
 
 Django==5.1.2
 python-dotenv==1.0.1
@@ -11,3 +13,11 @@ whitenoise==6.7.0
 django-csp==3.8
 pandas==2.3.3
 argon2-cffi==23.1.0
+
+# -------- PARA DESPLIEGUE PRODUCCION (Railway) --------
+# Servidor WSGI multiproceso (reemplaza runserver)
+gunicorn==22.0.0
+# Driver nativo Postgres (requisito Railway Postgres Add-on)
+psycopg2-binary==2.9.9
+# Parser de la variable estandar DATABASE_URL que inyecta Railway
+dj-database-url==2.3.0
