@@ -111,11 +111,19 @@ def _permitido(request, token_esperado):
 def _solicitar_login_o_token(request, tipo='registro'):
     token_publico = settings.TOKEN_REGISTRO_PUBLICO if tipo == 'registro' else settings.TOKEN_OPERADORES_PUBLICO
     tok_kw = 'token_registro' if tipo == 'registro' else 'token_operador'
+    header_nombre = 'X-Registro-Token' if tipo == 'registro' else 'X-Operador-Token'
+    cookie_nombre = 'TOKEN_REGISTRO' if tipo == 'registro' else 'TOKEN_OPERADORES'
     ruta_kwargs = getattr(getattr(request, 'resolver_match', None), 'kwargs', None) or {}
-    tok_recibido = ruta_kwargs.get(tok_kw) or ''
+    tok_recibido = (
+        ruta_kwargs.get(tok_kw) or
+        (request.headers.get(header_nombre) or '').strip() or
+        (request.COOKIES.get(cookie_nombre) or '').strip() or
+        (request.GET.get('token') or '').strip() or
+        ''
+    )
     if tok_recibido:
         if token_publico and tok_recibido == token_publico:
-            return None  # token OK
+            return None
         return HttpResponse('Enlace no autorizado o caducado. Verifica con el administrador el enlace correcto.', status=403)
     if request.user.is_authenticated:
         return None
@@ -503,6 +511,7 @@ class OperadorMobileView(View):
                 porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             except Exception:
                 pass
+        tok_pub = getattr(settings, 'TOKEN_OPERADORES_PUBLICO', '') or ''
         return render(request, 'simple/operador_mobile.html', {
             'tipo': tipo,
             'evento': evento,
@@ -510,6 +519,7 @@ class OperadorMobileView(View):
             'stats_iniciales': {
                 'total': total, 'ingresaron': ingresaron, 'faltan': faltan, 'porcentaje': porcentaje,
             },
+            'token_operadores_publico': tok_pub,
         })
 
 

@@ -133,11 +133,21 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous"></script>
 <script>
   const TIPO_OP='{{ tipo }}';
+  const TOKEN_OP = '{{ token_operadores_publico|default:"" }}';
+  if(TOKEN_OP){
+    try{document.cookie='TOKEN_OPERADORES='+encodeURIComponent(TOKEN_OP)+'; path=/; SameSite=Lax;';}catch(e){}
+  }
   // Construir ENDPOINT (registrar) y STATS_URL basados en URL pública o interna
   const cur = (window.location.pathname || '').replace(/\/+$/, '');
   const mPub = cur.match(/^(.+\/o\/[^\/]+)/);
   window.ENDPOINT = mPub ? (mPub[0] + '/api/registrar/') : '{% url "simple:api_registrar" %}';
   window.STATS_URL = mPub ? (mPub[0] + '/api/stats/?tipo=' + TIPO_OP) : '{% url "simple:api_stats_operador" %}' + '?tipo=' + TIPO_OP;
+
+  function _headersConToken(){
+    const h = {'Accept':'application/json','Content-Type':'application/json'};
+    if(TOKEN_OP){h['X-Operador-Token']=TOKEN_OP;}
+    return h;
+  }
   const panel=document.getElementById('panel-resultado');
   const pIcon=document.getElementById('panel-icon');
   const pTipoAsistente=document.getElementById('panel-tipo-asistente');
@@ -178,7 +188,7 @@
 
   async function refreshStats(){
     try{
-      const r=await fetch(STATS_URL,{method:'GET',headers:{'Accept':'application/json'}});
+      const r=await fetch(STATS_URL,{method:'GET',headers:_headersConToken()});
       if(!r.ok){return;}
       const d=await r.json();
       if(d && d.ok){aplicarStats(d);}
@@ -209,9 +219,14 @@
   }
 
   function mostrarPanel(data){
+    // Resetear botón a color por defecto (verde) antes de decidir
+    if(bVal){
+      bVal.style.background='linear-gradient(160deg,#39A900,#2e7a00)';
+      bVal.style.boxShadow='0 10px 30px rgba(57,169,0,.35)';
+    }
     // Normalizar caso por defecto
     if(!data || (!data.ok && (!data.status || data.status==='ROJO') && !data.es_duplicado && !data.es_nuevo)){
-      // Caso 3: persona NO existe / NO registrada en evento
+      // Caso 3: persona NO existe / NO registrada en evento / autenticación fallida
       pTipoAsistente.textContent='Sin registro';
       pNombre.textContent='—';
       pTipoDoc.textContent='-';
@@ -219,7 +234,11 @@
       pDetalles.innerHTML='';
       pMensaje.textContent= (data && data.mensaje) ? data.mensaje : textoCasoNoExiste();
       if(pDatosBox){pDatosBox.style.display='none';}
-      if(bVal){bVal.textContent='❌ ENTENDIDO · CERRAR';}
+      if(bVal){
+        bVal.textContent='❌ ENTENDIDO · CERRAR';
+        bVal.style.background='linear-gradient(160deg,#C62828,#9a0007)';
+        bVal.style.boxShadow='0 10px 30px rgba(198,40,40,.35)';
+      }
       pIcon.textContent='❌';panel.classList.remove('ok','warn');panel.classList.add('err','d-none');panel.classList.remove('d-none');
       pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
       if(scanner && escaneando){try{scanner.pause();}catch(e){}}
@@ -250,10 +269,22 @@
         if(pdTelefono){pdTelefono.textContent=data.telefono||'—';}
         if(pdDireccion){pdDireccion.textContent=data.direccion||'—';}
         if(pdGenero){pdGenero.textContent=data.genero||'—';}
-        if(bVal){bVal.textContent='✅ ACEPTAR · Confirmar y Continuar';}
+        if(bVal){
+          bVal.textContent='✅ ACEPTAR · Confirmar y Continuar';
+          bVal.style.background='linear-gradient(160deg,#39A900,#2e7a00)';
+          bVal.style.boxShadow='0 10px 30px rgba(57,169,0,.35)';
+        }
       }else{
         pDatosBox.style.display='none';
-        if(bVal){bVal.textContent=esDuplicado?'⚠ OK · CERRAR':'❌ ENTENDIDO · CERRAR';}
+        if(esDuplicado && bVal){
+          bVal.textContent='⚠ OK · CERRAR';
+          bVal.style.background='linear-gradient(160deg,#F57C00,#c44e00)';
+          bVal.style.boxShadow='0 10px 30px rgba(245,124,0,.35)';
+        }else if(bVal){
+          bVal.textContent='❌ ENTENDIDO · CERRAR';
+          bVal.style.background='linear-gradient(160deg,#C62828,#9a0007)';
+          bVal.style.boxShadow='0 10px 30px rgba(198,40,40,.35)';
+        }
       }
     }
 
@@ -270,6 +301,11 @@
       pMensaje.textContent=data.mensaje||textoCasoNoExiste();
       pIcon.textContent='❌';panel.classList.remove('ok','warn','d-none');panel.classList.add('err');
       pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
+      if(bVal){
+        bVal.textContent='❌ ENTENDIDO · CERRAR';
+        bVal.style.background='linear-gradient(160deg,#C62828,#9a0007)';
+        bVal.style.boxShadow='0 10px 30px rgba(198,40,40,.35)';
+      }
     }
     if(scanner && escaneando){try{scanner.pause();}catch(e){}}
   }
@@ -279,10 +315,34 @@
     if(token===ultimoToken && ahora-tsUltimo<3000){return;}
     ultimoToken=token;tsUltimo=ahora;
     try{
-      const r=await fetchJSON(ENDPOINT,{method:'POST',body:{token:token,tipo:TIPO_OP,medio:'QR'}});
-      mostrarPanel(r);
+      const body = JSON.stringify({token:token,tipo:TIPO_OP,medio:'QR'});
+      const resp=await fetch(ENDPOINT,{method:'POST',headers:_headersConToken(),body:body});
+      let data = {ok:false,status:'ROJO',mensaje:'Error al procesar el escaneo (respuesta inválida del servidor).'};
+      try{
+        const ct = resp.headers.get('Content-Type') || '';
+        if(!ct || ct.indexOf('application/json')<0){
+          const txt = await resp.text();
+          if(txt.indexOf('Autenticación requerida')>=0 || txt.indexOf('Enlace no autorizado')>=0 || resp.status===403 || resp.status===302){
+            data = {ok:false,status:'ROJO',mensaje:'❌ Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.'};
+          }else if(txt.indexOf('Sin registro')>=0){
+            data = {ok:false,status:'ROJO',mensaje:textoCasoNoExiste()};
+          }else{
+            data = {ok:false,status:'ROJO',mensaje:'Respuesta inválida del servidor ('+resp.status+'). Vuelva a intentarlo.'};
+          }
+        }else{
+          data = await resp.json();
+          if(resp.status===403 || (data && data.mensaje && (String(data.mensaje).indexOf('Autenticación')>=0 || String(data.mensaje).indexOf('autorizado')>=0))){
+            data = {ok:false,status:'ROJO',mensaje:'❌ Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.'};
+          }else if(!resp.ok && !(data && (data.status || data.es_duplicado || data.es_nuevo))){
+            data = {ok:false,status:'ROJO',mensaje: (data && data.mensaje) ? data.mensaje : textoCasoNoExiste()};
+          }
+        }
+      }catch(e){
+        data = {ok:false,status:'ROJO',mensaje:'Respuesta inválida del servidor. Vuelve a intentarlo.'};
+      }
+      mostrarPanel(data);
     }catch(err){
-      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+err,
+      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+String(err||'desconocido'),
         nombre:'',rol:'',extra:'',tipo_asistente:'Error',tipo_documento:'-',numero_documento:'',
         nombre_proyecto:'',codigo_ficha:''});
     }
