@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
@@ -591,6 +593,7 @@ class OperadorMobileView(View):
 # STATS EN VIVO — Polling Panel Operador Móvil (2 tarjetas)
 #   Parámetro URL: ?tipo=asistencia|refrigerios|certificados
 # ============================================================
+@method_decorator(csrf_exempt, name='dispatch')
 class StatsOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
@@ -687,6 +690,7 @@ class StatsOperativosAjax(LoginRequiredMixin, RoleRequiredMixin, View):
             return JsonResponse({'ok': False, 'error': str(e)})
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RegistrarOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
