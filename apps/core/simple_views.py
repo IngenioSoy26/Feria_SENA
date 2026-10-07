@@ -475,11 +475,93 @@ class OperadorMobileView(View):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, tipo='asistencia', **_ignorado):
+        evento = _evento_activo()
+        total = 0
+        ingresaron = 0
+        faltan = 0
+        porcentaje = 0
+        if evento:
+            try:
+                from django.db.models import Q
+                qs = Persona.objects.filter(
+                    Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']),
+                    activo=True,
+                )
+                total = qs.count()
+                if tipo == 'asistencia':
+                    ids = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                    ingresaron = len(ids)
+                elif tipo == 'refrigerios':
+                    svc = _servicio_almuerzo(evento)
+                    if svc:
+                        ids = set(EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).values_list('persona_id', flat=True))
+                        ingresaron = len(ids)
+                elif tipo == 'certificados':
+                    ids = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                    ingresaron = len(ids)
+                faltan = max(total - ingresaron, 0)
+                porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
+            except Exception:
+                pass
         return render(request, 'simple/operador_mobile.html', {
             'tipo': tipo,
-            'evento': _evento_activo(),
-            'servicio': _servicio_almuerzo(_evento_activo()) if tipo == 'refrigerios' else None,
+            'evento': evento,
+            'servicio': _servicio_almuerzo(evento) if tipo == 'refrigerios' else None,
+            'stats_iniciales': {
+                'total': total, 'ingresaron': ingresaron, 'faltan': faltan, 'porcentaje': porcentaje,
+            },
         })
+
+
+# ============================================================
+# STATS EN VIVO — Polling Panel Operador Móvil (2 tarjetas)
+#   Parámetro URL: ?tipo=asistencia|refrigerios|certificados
+# ============================================================
+class StatsOperadorAjax(View):
+    def dispatch(self, request, *args, **kwargs):
+        resp = _solicitar_login_o_token(request, 'operadores')
+        if resp is not None:
+            return JsonResponse({'ok': False, 'total': 0, 'ingresaron': 0, 'faltan': 0, 'ts': None})
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, **_ignorado):
+        tipo = (request.GET.get('tipo') or 'asistencia').strip().lower()
+        evento = _evento_activo()
+        if not evento:
+            return JsonResponse({'ok': False, 'tipo': tipo, 'total': 0, 'ingresaron': 0, 'faltan': 0, 'porcentaje': 0, 'ts': None})
+        try:
+            from django.db.models import Q
+            qs_personas_feria = Persona.objects.filter(
+                Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']),
+                activo=True,
+            )
+            total = qs_personas_feria.count()
+            if tipo == 'asistencia':
+                ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                ingresaron = len(ids_ingresados)
+            elif tipo == 'refrigerios':
+                svc = _servicio_almuerzo(evento)
+                if svc:
+                    ids_ingresados = set(EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).values_list('persona_id', flat=True))
+                    ingresaron = len(ids_ingresados)
+                else:
+                    ingresaron = 0
+            elif tipo == 'certificados':
+                ids_ingresados = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                ingresaron = len(ids_ingresados)
+            else:
+                ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                ingresaron = len(ids_ingresados)
+            faltan = max(total - ingresaron, 0)
+            porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
+            from datetime import datetime
+            return JsonResponse({
+                'ok': True, 'tipo': tipo, 'evento_id': evento.id,
+                'total': total, 'ingresaron': ingresaron, 'faltan': faltan,
+                'porcentaje': porcentaje, 'ts': datetime.now().strftime('%H:%M:%S'),
+            })
+        except Exception as e:
+            return JsonResponse({'ok': False, 'error': str(e), 'total': 0, 'ingresaron': 0, 'faltan': 0, 'porcentaje': 0, 'ts': None})
 
 
 # ============================================================

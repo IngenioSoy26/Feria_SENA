@@ -48,7 +48,9 @@ urlpatterns = [
     path('buscar/', simple_views.BuscarAjaxView.as_view(), name='buscar'),
 
     path('operador/<slug:tipo>/', simple_views.OperadorMobileView.as_view(), name='operador'),
+    path('operador/api/stats/', simple_views.StatsOperadorAjax.as_view(), name='api_stats_operador'),
     path('api/registrar/', simple_views.RegistrarOperadorAjax.as_view(), name='api_registrar'),
+    path('o/<slug:token_operador>/api/stats/', simple_views.StatsOperadorAjax.as_view(), name='public_api_stats_operador'),
 
     path('dashboard/', simple_views.DashboardSimpleView.as_view(), name='dashboard'),
     path('listados/<slug:que>/', simple_views.ListadoUnicosView.as_view(), name='listados'),

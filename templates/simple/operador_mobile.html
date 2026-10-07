@@ -38,22 +38,40 @@
     </div>
   {% endif %}
 
-  <div class="op-counters">
-    <div class="op-counter">
-      <b id="cnt-verde">0</b>
-      <span>OK / Entregado</span>
+  <div class="op-counters" style="grid-template-columns:1fr 1fr;gap:14px;">
+    <div id="kpi-ingresaron" class="op-counter op-kpi" style="background:linear-gradient(160deg,#e6ffd1,#b5f0a8);color:#0f3c00;border:none;border-radius:22px;padding:16px 18px;box-shadow:0 14px 40px rgba(16,60,0,.2);display:flex;flex-direction:column;gap:4px;min-height:104px;">
+      <div class="fw-bold opacity-85" style="font-size:.9rem;letter-spacing:0.3px;">
+        {% if tipo == 'asistencia' %}✅ INGRESARON
+        {% elif tipo == 'refrigerios' %}🍱 ENTREGADOS
+        {% else %}📜 EMITIDOS{% endif %}
+      </div>
+      <b id="num-ingresaron" style="font-size:clamp(2rem,7vw,2.6rem);line-height:1.1;">{{ stats_iniciales.ingresaron|default:0 }}</b>
+      <div class="small opacity-75">Total: <span id="num-total">{{ stats_iniciales.total|default:0 }}</span> personas</div>
     </div>
-    <div class="op-counter">
-      <b id="cnt-amarillo">0</b>
-      <span>Duplicados</span>
-    </div>
-    <div class="op-counter">
-      <b id="cnt-rojo">0</b>
-      <span>Errores</span>
+    <div id="kpi-faltan" class="op-counter op-kpi" style="background:linear-gradient(160deg,#fff7e0,#ffe6a8);color:#5a3e00;border:none;border-radius:22px;padding:16px 18px;box-shadow:0 14px 40px rgba(90,62,0,.2);display:flex;flex-direction:column;gap:4px;min-height:104px;">
+      <div class="fw-bold opacity-85" style="font-size:.9rem;letter-spacing:0.3px;">
+        {% if tipo == 'asistencia' %}⏳ FALTAN POR INGRESAR
+        {% elif tipo == 'refrigerios' %}⏳ FALTAN POR ENTREGAR
+        {% else %}⏳ FALTAN POR ENTREGAR{% endif %}
+      </div>
+      <b id="num-faltan" style="font-size:clamp(2rem,7vw,2.6rem);line-height:1.1;">{{ stats_iniciales.faltan|default:0 }}</b>
+      <div class="small opacity-75">
+        <span id="num-pct">{{ stats_iniciales.porcentaje|default:0 }}%</span> avance
+      </div>
     </div>
   </div>
 
-  <button id="btn-iniciar" class="op-big-qr">
+  <div class="mt-3">
+    <div class="progress" style="height:14px;border-radius:20px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.2);">
+      <div id="barra-avance" class="progress-bar" style="width:{{ stats_iniciales.porcentaje|default:0 }}%;background:linear-gradient(90deg,#39A900,#FFEB3B);height:100%;transition:width 0.8s ease;border-radius:20px;"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2 small opacity-80">
+      <span>En línea · en tiempo real</span>
+      <span id="kpi-ts">actualizando...</span>
+    </div>
+  </div>
+
+  <button id="btn-iniciar" class="op-big-qr" style="margin-top:22px;">
     📷 INICIAR LECTOR QR
   </button>
 
@@ -115,14 +133,11 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous"></script>
 <script>
   const TIPO_OP='{{ tipo }}';
-  // Detectar si venimos de ruta pública /o/<token>/... → la URL API debe incluir el token, usamos path relativo a /o/.../api/registrar/
-  // pero la ruta pública 'simple:public_api_registrar' usa URL /o/<token_operador>/api/registrar/.
-  // Construimos ENDPOINT basado en URL actual.
-  (function(){
-    const cur = (window.location.pathname || '').replace(/\/+$/, '');
-    const m = cur.match(/^(.+\/o\/[^\/]+)/);
-    window.ENDPOINT = m ? (m[1] + '/api/registrar/') : '{% url "simple:api_registrar" %}';
-  })();
+  // Construir ENDPOINT (registrar) y STATS_URL basados en URL pública o interna
+  const cur = (window.location.pathname || '').replace(/\/+$/, '');
+  const mPub = cur.match(/^(.+\/o\/[^\/]+)/);
+  window.ENDPOINT = mPub ? (mPub[0] + '/api/registrar/') : '{% url "simple:api_registrar" %}';
+  window.STATS_URL = mPub ? (mPub[0] + '/api/stats/?tipo=' + TIPO_OP) : '{% url "simple:api_stats_operador" %}' + '?tipo=' + TIPO_OP;
   const panel=document.getElementById('panel-resultado');
   const pIcon=document.getElementById('panel-icon');
   const pTipoAsistente=document.getElementById('panel-tipo-asistente');
@@ -140,22 +155,76 @@
   const pdTelefono=document.getElementById('pd-telefono');
   const pdDireccion=document.getElementById('pd-direccion');
   const pdGenero=document.getElementById('pd-genero');
-  const cntV=document.getElementById('cnt-verde');
-  const cntA=document.getElementById('cnt-amarillo');
-  const cntR=document.getElementById('cnt-rojo');
-  let cntVn=0,cntAn=0,cntRn=0;
+  const $ing=document.getElementById('num-ingresaron');
+  const $fal=document.getElementById('num-faltan');
+  const $tot=document.getElementById('num-total');
+  const $pct=document.getElementById('num-pct');
+  const $bar=document.getElementById('barra-avance');
+  const $ts=document.getElementById('kpi-ts');
   let scanner=null,escaneando=false,ultimoToken='',tsUltimo=0;
+
+  function aplicarStats(d){
+    const tot=Number(d.total||0);
+    const ing=Number(d.ingresaron||0);
+    const fal=Number(d.faltan||0);
+    const pct=Number(d.porcentaje||0);
+    if($ing){$ing.textContent=ing;}
+    if($fal){$fal.textContent=fal;}
+    if($tot){$tot.textContent=tot;}
+    if($pct){$pct.textContent=pct.toFixed(1)+'%';}
+    if($bar){$bar.style.width=pct+'%';}
+    if($ts){$ts.textContent=d.ts?('actualizado '+d.ts):'—';}
+  }
+
+  async function refreshStats(){
+    try{
+      const r=await fetch(STATS_URL,{method:'GET',headers:{'Accept':'application/json'}});
+      if(!r.ok){return;}
+      const d=await r.json();
+      if(d && d.ok){aplicarStats(d);}
+    }catch(e){}
+  }
+  setInterval(refreshStats, 4000);
+  setTimeout(refreshStats, 1000);
 
   function cerrarPanel(){
     panel.classList.add('d-none');
     if(pDatosBox){pDatosBox.style.display='none';}
     if(scanner && escaneando){try{scanner.resume();}catch(e){}}
+    setTimeout(refreshStats, 350);
   }
   document.getElementById('panel-cerrar').addEventListener('click',cerrarPanel);
   const bVal=document.getElementById('panel-validar');
   if(bVal){bVal.addEventListener('click',cerrarPanel);}
 
+  function textoCasoYaRegistrado(){
+    if(TIPO_OP==='refrigerios'){return '⚠️ El refrigerio ya fue entregado anteriormente a esta persona.';}
+    if(TIPO_OP==='certificados'){return '⚠️ El certificado ya fue entregado anteriormente a esta persona.';}
+    return '⚠️ La asistencia ya fue registrada anteriormente.';
+  }
+  function textoCasoNoExiste(){
+    if(TIPO_OP==='refrigerios'){return '❌ La persona no se encuentra registrada para entrega de refrigerios en este evento.';}
+    if(TIPO_OP==='certificados'){return '❌ La persona no se encuentra registrada para entrega de certificados en este evento.';}
+    return '❌ La persona no se encuentra registrada en el evento.';
+  }
+
   function mostrarPanel(data){
+    // Normalizar caso por defecto
+    if(!data || (!data.ok && (!data.status || data.status==='ROJO') && !data.es_duplicado && !data.es_nuevo)){
+      // Caso 3: persona NO existe / NO registrada en evento
+      pTipoAsistente.textContent='Sin registro';
+      pNombre.textContent='—';
+      pTipoDoc.textContent='-';
+      pNumDoc.textContent='-';
+      pDetalles.innerHTML='';
+      pMensaje.textContent= (data && data.mensaje) ? data.mensaje : textoCasoNoExiste();
+      if(pDatosBox){pDatosBox.style.display='none';}
+      if(bVal){bVal.textContent='❌ ENTENDIDO · CERRAR';}
+      pIcon.textContent='❌';panel.classList.remove('ok','warn');panel.classList.add('err','d-none');panel.classList.remove('d-none');
+      pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
+      if(scanner && escaneando){try{scanner.pause();}catch(e){}}
+      return;
+    }
     pTipoAsistente.textContent=data.tipo_asistente||data.rol||'';
     pNombre.textContent=data.nombre||'';
     pTipoDoc.textContent=(data.tipo_documento||'CC')+':';
@@ -164,14 +233,15 @@
     if(data.nombre_proyecto){detalleHtml=detalleHtml||'<b>Proyecto:</b> '+data.nombre_proyecto;}
     if(data.codigo_ficha){detalleHtml+=detalleHtml?' · ':'<b>Ficha:</b> ';detalleHtml+=data.codigo_ficha;}
     pDetalles.innerHTML=detalleHtml;
-    pMensaje.textContent=data.mensaje||'';
-    panel.classList.remove('ok','warn','err','d-none');
+
     const esDuplicado = !!data.es_duplicado || data.status==='AMARILLO';
     const esNuevo = !!data.es_nuevo || (data.status==='VERDE' && !esDuplicado);
 
     if(pDatosBox){
       if(esNuevo){
         pDatosBox.style.display='block';
+        pDatosBox.style.background='rgba(57,169,0,.10)';
+        pDatosBox.style.borderColor='rgba(57,169,0,.35)';
         if(pdInstitucion){pdInstitucion.textContent=data.institucion||'—';}
         if(pdMunicipio){pdMunicipio.textContent=data.municipio||'—';}
         if(pdProyecto){pdProyecto.textContent=data.nombre_proyecto||'—';}
@@ -180,29 +250,26 @@
         if(pdTelefono){pdTelefono.textContent=data.telefono||'—';}
         if(pdDireccion){pdDireccion.textContent=data.direccion||'—';}
         if(pdGenero){pdGenero.textContent=data.genero||'—';}
-        if(bVal){bVal.textContent='✅ Datos Verificados · ACEPTAR y CONTINUAR';}
+        if(bVal){bVal.textContent='✅ ACEPTAR · Confirmar y Continuar';}
       }else{
         pDatosBox.style.display='none';
-        if(bVal){bVal.textContent=esDuplicado?'⚠ OK · CERRAR AVISO':'❌ ENTENDIDO · CERRAR';}
+        if(bVal){bVal.textContent=esDuplicado?'⚠ OK · CERRAR':'❌ ENTENDIDO · CERRAR';}
       }
     }
 
-    if(data.status==='VERDE'){
-      pIcon.textContent='✅';panel.classList.add('ok');
-      pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';
-      cntVn++;cntV.textContent=cntVn;
-      if(pDatosBox && esNuevo){
-        pDatosBox.style.borderColor='rgba(57,169,0,.35)';
-        pDatosBox.style.background='rgba(57,169,0,.10)';
-      }
-    }else if(data.status==='AMARILLO'){
-      pIcon.textContent='⚠';panel.classList.add('warn');
+    if(esDuplicado){
+      pMensaje.textContent=textoCasoYaRegistrado();
+      pIcon.textContent='⚠';panel.classList.remove('ok','err','d-none');panel.classList.add('warn');
       pMensaje.style.background='rgba(245,124,0,.12)';pMensaje.style.color='var(--sena-naranja)';
-      cntAn++;cntA.textContent=cntAn;
+    }else if(esNuevo){
+      pMensaje.textContent=(data.mensaje||'') + ' · Revise los datos y pulse ACEPTAR.';
+      pIcon.textContent='✅';panel.classList.remove('warn','err','d-none');panel.classList.add('ok');
+      pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';
     }else{
-      pIcon.textContent='❌';panel.classList.add('err');
+      // error
+      pMensaje.textContent=data.mensaje||textoCasoNoExiste();
+      pIcon.textContent='❌';panel.classList.remove('ok','warn','d-none');panel.classList.add('err');
       pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
-      cntRn++;cntR.textContent=cntRn;
     }
     if(scanner && escaneando){try{scanner.pause();}catch(e){}}
   }
@@ -215,7 +282,9 @@
       const r=await fetchJSON(ENDPOINT,{method:'POST',body:{token:token,tipo:TIPO_OP,medio:'QR'}});
       mostrarPanel(r);
     }catch(err){
-      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+err,nombre:'',rol:'',extra:'',tipo_asistente:'Error',tipo_documento:'-',numero_documento:'',nombre_proyecto:'',codigo_ficha:''});
+      mostrarPanel({ok:false,status:'ROJO',mensaje:'Error de conexión: '+err,
+        nombre:'',rol:'',extra:'',tipo_asistente:'Error',tipo_documento:'-',numero_documento:'',
+        nombre_proyecto:'',codigo_ficha:''});
     }
   }
 
