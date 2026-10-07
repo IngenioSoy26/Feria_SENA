@@ -141,12 +141,18 @@
   const cur = (window.location.pathname || '').replace(/\/+$/, '');
   const mPub = cur.match(/^(.+\/o\/[^\/]+)/);
   window.ENDPOINT = mPub ? (mPub[0] + '/api/registrar/') : '{% url "simple:api_registrar" %}';
-  window.STATS_URL = mPub ? (mPub[0] + '/api/stats/?tipo=' + TIPO_OP) : '{% url "simple:api_stats_operador" %}' + '?tipo=' + TIPO_OP;
+  let _statsBase = mPub ? (mPub[0] + '/api/stats/') : '{% url "simple:api_stats_operador" %}';
+  window.STATS_URL = _statsBase + '?tipo=' + encodeURIComponent(TIPO_OP) + (TOKEN_OP ? ('&token_op='+encodeURIComponent(TOKEN_OP)) : '');
 
   function _headersConToken(){
     const h = {'Accept':'application/json','Content-Type':'application/json'};
     if(TOKEN_OP){h['X-Operador-Token']=TOKEN_OP;}
     return h;
+  }
+  function _fetchOptions(method, body){
+    const opt = {method: method, headers: _headersConToken(), credentials: 'same-origin'};
+    if(body){opt.body = (typeof body==='string')? body : JSON.stringify(body);}
+    return opt;
   }
   const panel=document.getElementById('panel-resultado');
   const pIcon=document.getElementById('panel-icon');
@@ -188,7 +194,7 @@
 
   async function refreshStats(){
     try{
-      const r=await fetch(STATS_URL,{method:'GET',headers:_headersConToken()});
+      const r=await fetch(STATS_URL, _fetchOptions('GET'));
       if(!r.ok){return;}
       const d=await r.json();
       if(d && d.ok){aplicarStats(d);}
@@ -200,7 +206,15 @@
   function cerrarPanel(){
     panel.classList.add('d-none');
     if(pDatosBox){pDatosBox.style.display='none';}
-    if(scanner && escaneando){try{scanner.resume();}catch(e){}}
+    if(scanner && escaneando){
+      try{scanner.resume();}
+      catch(e){
+        // Fallback si resume() falla — detener y volver a iniciar cámara para evitar "scanner pauseado"
+        try{
+          iniciarCamara().catch(()=>{});
+        }catch(_){}
+      }
+    }
     setTimeout(refreshStats, 350);
   }
   document.getElementById('panel-cerrar').addEventListener('click',cerrarPanel);
@@ -241,7 +255,7 @@
       }
       pIcon.textContent='❌';panel.classList.remove('ok','warn');panel.classList.add('err','d-none');panel.classList.remove('d-none');
       pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
-      if(scanner && escaneando){try{scanner.pause();}catch(e){}}
+      // NO PAUSAR LA CÁMARA: el operador pulsa ENTENDIDO y sigue escaneando inmediatamente
       return;
     }
     pTipoAsistente.textContent=data.tipo_asistente||data.rol||'';
@@ -292,10 +306,13 @@
       pMensaje.textContent=textoCasoYaRegistrado();
       pIcon.textContent='⚠';panel.classList.remove('ok','err','d-none');panel.classList.add('warn');
       pMensaje.style.background='rgba(245,124,0,.12)';pMensaje.style.color='var(--sena-naranja)';
+      // NO PAUSAR LA CÁMARA en duplicado — operador solo lee mensaje y pulsa OK
     }else if(esNuevo){
       pMensaje.textContent=(data.mensaje||'') + ' · Revise los datos y pulse ACEPTAR.';
       pIcon.textContent='✅';panel.classList.remove('warn','err','d-none');panel.classList.add('ok');
       pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';
+      // Caso NUEVO: sí pausar la cámara para que el operador lea datos sin escaneos accidentales
+      if(scanner && escaneando){try{scanner.pause();}catch(e){}}
     }else{
       // error
       pMensaje.textContent=data.mensaje||textoCasoNoExiste();
@@ -306,8 +323,8 @@
         bVal.style.background='linear-gradient(160deg,#C62828,#9a0007)';
         bVal.style.boxShadow='0 10px 30px rgba(198,40,40,.35)';
       }
+      // NO PAUSAR LA CÁMARA en error — operador solo lee mensaje y pulsa OK
     }
-    if(scanner && escaneando){try{scanner.pause();}catch(e){}}
   }
 
   async function registrar(token){
@@ -315,14 +332,13 @@
     if(token===ultimoToken && ahora-tsUltimo<3000){return;}
     ultimoToken=token;tsUltimo=ahora;
     try{
-      const body = JSON.stringify({token:token,tipo:TIPO_OP,medio:'QR'});
-      const resp=await fetch(ENDPOINT,{method:'POST',headers:_headersConToken(),body:body});
+      const resp=await fetch(ENDPOINT,_fetchOptions('POST',{token:token,tipo:TIPO_OP,medio:'QR'}));
       let data = {ok:false,status:'ROJO',mensaje:'Error al procesar el escaneo (respuesta inválida del servidor).'};
       try{
         const ct = resp.headers.get('Content-Type') || '';
         if(!ct || ct.indexOf('application/json')<0){
           const txt = await resp.text();
-          if(txt.indexOf('Autenticación requerida')>=0 || txt.indexOf('Enlace no autorizado')>=0 || resp.status===403 || resp.status===302){
+          if(txt.indexOf('Autenticación requerida')>=0 || txt.indexOf('Enlace no autorizado')>=0 || resp.status===401 || resp.status===403 || resp.status===302){
             data = {ok:false,status:'ROJO',mensaje:'❌ Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.'};
           }else if(txt.indexOf('Sin registro')>=0){
             data = {ok:false,status:'ROJO',mensaje:textoCasoNoExiste()};
@@ -331,7 +347,7 @@
           }
         }else{
           data = await resp.json();
-          if(resp.status===403 || (data && data.mensaje && (String(data.mensaje).indexOf('Autenticación')>=0 || String(data.mensaje).indexOf('autorizado')>=0))){
+          if(resp.status===401 || resp.status===403 || (data && data.mensaje && (String(data.mensaje).indexOf('Autenticación')>=0 || String(data.mensaje).indexOf('autorizado')>=0))){
             data = {ok:false,status:'ROJO',mensaje:'❌ Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.'};
           }else if(!resp.ok && !(data && (data.status || data.es_duplicado || data.es_nuevo))){
             data = {ok:false,status:'ROJO',mensaje: (data && data.mensaje) ? data.mensaje : textoCasoNoExiste()};

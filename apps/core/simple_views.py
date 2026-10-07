@@ -531,7 +531,7 @@ class StatsOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
         if resp is not None:
-            return JsonResponse({'ok': False, 'total': 0, 'ingresaron': 0, 'faltan': 0, 'ts': None})
+            return JsonResponse({'ok': False, 'total': 0, 'ingresaron': 0, 'faltan': 0, 'porcentaje': 0, 'ts': None, 'mensaje': 'Autenticación requerida.'}, status=401)
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, **_ignorado):
@@ -622,7 +622,10 @@ class RegistrarOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
         if resp is not None:
-            return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Autenticación requerida.'})
+            return JsonResponse({
+                'ok': False, 'status': 'ROJO',
+                'mensaje': 'Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.',
+            }, status=401)
         return super().dispatch(request, *args, **kwargs)
 
     @transaction.atomic
