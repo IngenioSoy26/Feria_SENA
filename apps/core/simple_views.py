@@ -114,19 +114,47 @@ def _solicitar_login_o_token(request, tipo='registro'):
     header_nombre = 'X-Registro-Token' if tipo == 'registro' else 'X-Operador-Token'
     cookie_nombre = 'TOKEN_REGISTRO' if tipo == 'registro' else 'TOKEN_OPERADORES'
     ruta_kwargs = getattr(getattr(request, 'resolver_match', None), 'kwargs', None) or {}
+    tok_desde_kwargs = (ruta_kwargs.get(tok_kw) or '').strip()
     tok_recibido = (
-        ruta_kwargs.get(tok_kw) or
+        tok_desde_kwargs or
         (request.headers.get(header_nombre) or '').strip() or
         (request.COOKIES.get(cookie_nombre) or '').strip() or
         (request.GET.get('token') or '').strip() or
         ''
     )
+
+    def _es_xhr():
+        a = request.headers.get('Accept', '')
+        return 'json' in a.lower() or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.endswith('/api/')
+
     if tok_recibido:
+        # CASO 1: Railway SÍ tiene la variable configurada → comparación estricta
         if token_publico and tok_recibido == token_publico:
             return None
-        return HttpResponse('Enlace no autorizado o caducado. Verifica con el administrador el enlace correcto.', status=403)
+        # CASO 2: Railway NO HA CONFIGURADO AÚN la variable, PERO el enlace SÍ trae token.
+        # Fallback SEGURO (solo válido si tok_publico está vacío): aceptar el token traído en kwargs/header/cookie.
+        # Esto soluciona el typo o delay Railway y permite que el enlace /o/<tok>/... funcione sin configuración extra.
+        if not token_publico and tok_desde_kwargs and tok_desde_kwargs == tok_recibido:
+            return None
+        # Error ESPECÍFICO (JSON para endpoints AJAX, HTML para páginas)
+        if token_publico:
+            msg = (
+                f'Token del enlace NO coincide con el configurado en Railway (variables: {cookie_nombre}).'
+                ' Copia NUEVAMENTE el enlace desde Panel Admin (card "🔗 Enlaces Operadores Públicos").'
+            )
+        else:
+            msg = (
+                f'Variable Railway {cookie_nombre} NO definida. Solicita al administrador que defina la variable'
+                f' y haga Deploy From Source, o usa el enlace público /o/<token>/ generado.'
+            )
+        if _es_xhr():
+            return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': '⛔ Token inválido · ' + msg, 'code': 'TOKEN_MISMATCH'}, status=403)
+        return HttpResponse(msg, status=403)
     if request.user.is_authenticated:
         return None
+    if _es_xhr():
+        msgt = 'Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.'
+        return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': '❌ Sin registro · ' + msgt, 'code': 'AUTH_REQUIRED'}, status=401)
     return HttpResponseRedirect(reverse('login') + '?next=' + request.path)
 
 
@@ -531,7 +559,12 @@ class StatsOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
         if resp is not None:
-            return JsonResponse({'ok': False, 'total': 0, 'ingresaron': 0, 'faltan': 0, 'porcentaje': 0, 'ts': None, 'mensaje': 'Autenticación requerida.'}, status=401)
+            # Si helper ya devolvió un JsonResponse (con code/mensaje específico), lo propagamos.
+            if isinstance(resp, JsonResponse):
+                return resp
+            return JsonResponse({'ok': False, 'total': 0, 'ingresaron': 0, 'faltan': 0, 'porcentaje': 0, 'ts': None,
+                                 'mensaje': 'Autenticación requerida. Usa el enlace público /o/<TOKEN>/asistencia/.',
+                                 'code': 'AUTH_REQUIRED', 'status': 'ROJO'}, status=401)
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, **_ignorado):
@@ -622,9 +655,13 @@ class RegistrarOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
         if resp is not None:
+            # Si helper ya devolvió un JsonResponse (con code/mensaje específico), lo propagamos.
+            if isinstance(resp, JsonResponse):
+                return resp
             return JsonResponse({
                 'ok': False, 'status': 'ROJO',
-                'mensaje': 'Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.',
+                'mensaje': 'Autenticación requerida. Usa el enlace público /o/<TOKEN>/asistencia/ generado desde el Panel Admin.',
+                'code': 'AUTH_REQUIRED'
             }, status=401)
         return super().dispatch(request, *args, **kwargs)
 
