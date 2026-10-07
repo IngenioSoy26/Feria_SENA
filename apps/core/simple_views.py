@@ -482,6 +482,50 @@ class OperadorMobileView(View):
         })
 
 
+# ============================================================
+# STATS EN VIVO — Polling Panel Admin (Ingresados vs Faltan)
+# ============================================================
+class StatsOperativosAjax(LoginRequiredMixin, RoleRequiredMixin, View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+
+    def get(self, request, **_ignorado):
+        evento = _evento_activo()
+        if not evento:
+            return JsonResponse({
+                'ok': False, 'evento': None,
+                'total_personas': 0, 'ingresaron': 0, 'faltan': 0,
+                'refrigerios': 0, 'certificados': 0, 'porcentaje': 0, 'ts': None,
+            })
+        try:
+            from django.db.models import Q
+            qs_personas_feria = Persona.objects.filter(
+                Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']),
+                activo=True,
+            )
+            total = qs_personas_feria.count()
+            ids_ingresados = set(
+                AsistenciaEvento.objects.filter(evento=evento)
+                .values_list('persona_id', flat=True)
+            )
+            ingresaron = len(ids_ingresados)
+            faltan = max(total - ingresaron, 0)
+            svc = _servicio_almuerzo(evento)
+            refrigerios = EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).count() if svc else 0
+            certificados = Certificado.objects.filter(evento=evento).count()
+            porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
+            from datetime import datetime
+            return JsonResponse({
+                'ok': True,
+                'evento': {'id': evento.id, 'nombre': evento.nombre, 'municipio': evento.municipio or ''},
+                'total_personas': total, 'ingresaron': ingresaron, 'faltan': faltan,
+                'refrigerios': refrigerios, 'certificados': certificados,
+                'porcentaje': porcentaje,
+                'ts': datetime.now().strftime('%H:%M:%S'),
+            })
+        except Exception as e:
+            return JsonResponse({'ok': False, 'error': str(e)})
+
+
 class RegistrarOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
@@ -572,6 +616,43 @@ class RegistrarOperadorAjax(View):
         except Exception as e:
             return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': f'Error: {e}'})
 
+        nombre_ie = ''
+        municipio_persona = ''
+        correo = persona.correo or ''
+        telefono = persona.telefono or ''
+        direccion = persona.direccion or ''
+        genero = ''
+        if persona.genero:
+            genero = {'M': 'Masculino', 'F': 'Femenino', 'O': 'Otro'}.get(persona.genero, '')
+        if persona.tipo_persona == 'APRENDIZ':
+            try:
+                if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz and persona.perfil_aprendiz.proyecto:
+                    proy = persona.perfil_aprendiz.proyecto
+                    if proy.institucion:
+                        nombre_ie = proy.institucion.nombre or ''
+                        if proy.institucion.municipio:
+                            municipio_persona = proy.institucion.municipio
+                    if proy.ficha and proy.ficha.numero and not ficha_codigo:
+                        ficha_codigo = proy.ficha.numero
+            except Exception:
+                pass
+        elif persona.tipo_persona == 'INSTRUCTOR':
+            try:
+                if hasattr(persona, 'perfil_instructor') and persona.perfil_instructor:
+                    if persona.perfil_instructor.municipio:
+                        municipio_persona = persona.perfil_instructor.municipio
+            except Exception:
+                pass
+        elif persona.tipo_persona == 'INVITADO':
+            try:
+                if hasattr(persona, 'perfil_invitado') and persona.perfil_invitado:
+                    if persona.perfil_invitado.institucion_procedencia:
+                        nombre_ie = persona.perfil_invitado.institucion_procedencia
+                    if persona.perfil_invitado.municipio:
+                        municipio_persona = persona.perfil_invitado.municipio
+            except Exception:
+                pass
+
         return JsonResponse({
             'ok': True,
             'status': status,
@@ -584,6 +665,14 @@ class RegistrarOperadorAjax(View):
             'numero_documento': numero_doc,
             'nombre_proyecto': nombre_proyecto,
             'codigo_ficha': ficha_codigo,
+            'institucion': nombre_ie,
+            'municipio': municipio_persona or (evento.municipio if evento else ''),
+            'correo': correo,
+            'telefono': telefono,
+            'direccion': direccion,
+            'genero': genero,
+            'es_duplicado': (status == 'AMARILLO'),
+            'es_nuevo': (status == 'VERDE'),
         })
 
 

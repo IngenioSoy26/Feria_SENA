@@ -94,23 +94,49 @@
         </div>
       </div>
       <div class="kpi-card" style="background:linear-gradient(180deg,#f5fff0,#fff);">
-        <div class="kpi-label">📊 KPIs Operativos (Evento actual)</div>
+        <div class="kpi-label">📊 Asistencia EN VIVO · Evento actual</div>
         <div class="op-counters mt-2" style="grid-template-columns:repeat(3,1fr);display:grid;gap:8px;">
           <div class="op-counter" style="background:linear-gradient(160deg,#e7ffd4,#c5efa2);color:#0f3c00;border-radius:12px;padding:8px;">
-            <b>{{ counts.asistencias|default:0 }}</b><span>✅ Asistencias</span>
+            <b id="kpi-asistencias">{{ counts.asistencias|default:0 }}</b><span>✅ Asistencias</span>
           </div>
           <div class="op-counter" style="background:linear-gradient(160deg,#fff3c2,#ffd875);color:#5a3e00;border-radius:12px;padding:8px;">
-            <b>{{ counts.refrigerios|default:0 }}</b><span>🍱 Refrigerios</span>
+            <b id="kpi-refrigerios">{{ counts.refrigerios|default:0 }}</b><span>🍱 Refrigerios</span>
           </div>
           <div class="op-counter" style="background:linear-gradient(160deg,#d8ecff,#9fc8f0);color:#003e79;border-radius:12px;padding:8px;">
-            <b>{{ counts.certificados|default:0 }}</b><span>📜 Certificados</span>
+            <b id="kpi-certificados">{{ counts.certificados|default:0 }}</b><span>📜 Certificados</span>
           </div>
         </div>
         <div class="d-flex gap-2 mt-3">
           <a class="mini-link" href="{% url 'simple:dashboard' %}">📊 Dashboard Completo</a>
           <a class="mini-link" href="{% url 'simple:operador' 'asistencia' %}">Operadores</a>
         </div>
+        <div class="mt-2">
+          <div class="progress" style="height:14px;border-radius:20px;background:#e9ecef;overflow:hidden;">
+            <div id="kpi-barra" class="progress-bar" style="width:0%;background:linear-gradient(90deg,#39A900,#8BC34A);border-radius:20px;height:100%;transition:width .8s ease;"></div>
+          </div>
+          <div class="d-flex justify-content-between mt-1 small text-muted">
+            <span id="kpi-pct">0% avance</span>
+            <span id="kpi-ts">—</span>
+          </div>
+        </div>
       </div>
+
+      <div class="kpi-card" style="background:linear-gradient(180deg,#ecffd6,#fff);outline:2px solid #c5efa2;">
+        <div class="kpi-label text-sena-dark">✅ Asistentes QUE YA INGRESARON</div>
+        <div class="kpi-num text-sena" id="kpi-ingresaron" style="font-size:2.1rem;">{{ counts.asistencias|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">personas</small></div>
+        <div class="mt-2 small text-muted">
+          Total inscritos: <b id="kpi-total">{{ counts.personas|default:0 }}</b>
+        </div>
+      </div>
+
+      <div class="kpi-card" style="background:linear-gradient(180deg,#fff7e0,#fff);outline:2px solid #ffd875;">
+        <div class="kpi-label" style="color:#7a5b00;">⏳ FALTAN POR INGRESAR</div>
+        <div class="kpi-num" id="kpi-faltan" style="font-size:2.1rem;color:#c48a00;">{{ counts.personas|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">por registrar</small></div>
+        <div class="mt-2 small text-muted">
+          Se actualiza automáticamente cada 4 segundos · sincronizado
+        </div>
+      </div>
+
       <div class="kpi-card" style="background:linear-gradient(180deg,#f5faff,#fff);">
         <div class="kpi-label">📥 Importar Excel + 🔑 Enlaces</div>
         <div class="d-flex gap-2 mt-2 flex-wrap">
@@ -202,5 +228,46 @@
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  const STATS_URL = '{% url "simple:api_stats" %}';
+  const $kpiIngresaron = document.getElementById('kpi-ingresaron');
+  const $kpiFaltan = document.getElementById('kpi-faltan');
+  const $kpiTotal = document.getElementById('kpi-total');
+  const $kpiAsistencias = document.getElementById('kpi-asistencias');
+  const $kpiRefrigerios = document.getElementById('kpi-refrigerios');
+  const $kpiCertificados = document.getElementById('kpi-certificados');
+  const $kpiBarra = document.getElementById('kpi-barra');
+  const $kpiPct = document.getElementById('kpi-pct');
+  const $kpiTs = document.getElementById('kpi-ts');
+  if(!$kpiIngresaron || !$kpiFaltan){return;}
+
+  function actualizarStats(d){
+    const pct = (d.porcentaje != null) ? Number(d.porcentaje) : 0;
+    $kpiIngresaron.innerHTML = '<b>'+(d.ingresaron ?? 0)+'</b><small class="text-muted fs-6 fw-normal ms-2">personas</small>';
+    $kpiFaltan.innerHTML = '<b>'+(d.faltan ?? 0)+'</b><small class="text-muted fs-6 fw-normal ms-2">por registrar</small>';
+    $kpiTotal.innerHTML = 'Total inscritos: <b>'+(d.total_personas ?? 0)+'</b>';
+    if($kpiAsistencias){$kpiAsistencias.textContent = (d.ingresaron ?? 0);}
+    if($kpiRefrigerios){$kpiRefrigerios.textContent = (d.refrigerios ?? 0);}
+    if($kpiCertificados){$kpiCertificados.textContent = (d.certificados ?? 0);}
+    if($kpiBarra){$kpiBarra.style.width = pct+'%';}
+    if($kpiPct){$kpiPct.textContent = pct.toFixed(1)+'% avance';}
+    if($kpiTs){$kpiTs.textContent = d.ts ? ('actualizado '+d.ts) : '—';}
+  }
+
+  async function refresh(){
+    try{
+      const res = await fetch(STATS_URL, {method:'GET',headers:{'Accept':'application/json'}});
+      if(!res.ok){return;}
+      const d = await res.json();
+      if(d && d.ok){actualizarStats(d);}
+    }catch(e){}
+  }
+
+  setInterval(refresh, 4000);
+  setTimeout(refresh, 800);
+})();
+</script>
 
 {% endblock %}

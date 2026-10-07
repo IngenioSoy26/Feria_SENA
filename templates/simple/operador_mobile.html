@@ -84,7 +84,26 @@
           </div>
         </div>
         <div id="panel-detalles" class="small mt-2 opacity-90 lh-base"></div>
+
+        <div id="panel-datos-completos" class="mt-3 p-3 rounded-4" style="background:rgba(57,169,0,.08);border:1.5px solid rgba(57,169,0,.25);display:none;">
+          <div class="fw-bold text-sena mb-2" style="font-size:1rem;">📋 Datos Completos del Asistente</div>
+          <div class="row g-2">
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🏫 Institución / Procedencia</div><div id="pd-institucion" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📍 Municipio</div><div id="pd-municipio" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🎯 Proyecto</div><div id="pd-proyecto" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🔢 Ficha (7 dígitos)</div><div id="pd-ficha" class="fw-semibold" style="font-family:ui-monospace,Consolas,monospace;"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📧 Correo</div><div id="pd-correo" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📱 Teléfono</div><div id="pd-telefono" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🏠 Dirección</div><div id="pd-direccion" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">👤 Género</div><div id="pd-genero" class="fw-semibold"></div></div>
+          </div>
+        </div>
+
         <div id="panel-mensaje" class="fw-bold mt-3 p-3 rounded-3 text-center" style="font-size:1.05rem;"></div>
+
+        <button id="panel-validar" class="mt-4 w-100 text-white fw-bold" style="min-height:64px;border:none;border-radius:18px;font-size:1.15rem;background:linear-gradient(160deg,#39A900,#2e7a00);box-shadow:0 10px 30px rgba(57,169,0,.35);letter-spacing:0.3px;">
+          ✅ ACEPTAR · VALIDAR Y CONTINUAR
+        </button>
       </div>
       <button id="panel-cerrar" class="btn btn-sm" style="min-height:38px;background:rgba(0,0,0,.1);border-radius:10px;">✖</button>
     </div>
@@ -112,13 +131,29 @@
   const pNumDoc=document.getElementById('panel-numero-documento');
   const pDetalles=document.getElementById('panel-detalles');
   const pMensaje=document.getElementById('panel-mensaje');
+  const pDatosBox=document.getElementById('panel-datos-completos');
+  const pdInstitucion=document.getElementById('pd-institucion');
+  const pdMunicipio=document.getElementById('pd-municipio');
+  const pdProyecto=document.getElementById('pd-proyecto');
+  const pdFicha=document.getElementById('pd-ficha');
+  const pdCorreo=document.getElementById('pd-correo');
+  const pdTelefono=document.getElementById('pd-telefono');
+  const pdDireccion=document.getElementById('pd-direccion');
+  const pdGenero=document.getElementById('pd-genero');
   const cntV=document.getElementById('cnt-verde');
   const cntA=document.getElementById('cnt-amarillo');
   const cntR=document.getElementById('cnt-rojo');
   let cntVn=0,cntAn=0,cntRn=0;
   let scanner=null,escaneando=false,ultimoToken='',tsUltimo=0;
 
-  document.getElementById('panel-cerrar').addEventListener('click',()=>{panel.classList.add('d-none');if(scanner && escaneando){try{scanner.resume();}catch(e){}}});
+  function cerrarPanel(){
+    panel.classList.add('d-none');
+    if(pDatosBox){pDatosBox.style.display='none';}
+    if(scanner && escaneando){try{scanner.resume();}catch(e){}}
+  }
+  document.getElementById('panel-cerrar').addEventListener('click',cerrarPanel);
+  const bVal=document.getElementById('panel-validar');
+  if(bVal){bVal.addEventListener('click',cerrarPanel);}
 
   function mostrarPanel(data){
     pTipoAsistente.textContent=data.tipo_asistente||data.rol||'';
@@ -131,14 +166,45 @@
     pDetalles.innerHTML=detalleHtml;
     pMensaje.textContent=data.mensaje||'';
     panel.classList.remove('ok','warn','err','d-none');
-    if(data.status==='VERDE'){pIcon.textContent='✅';panel.classList.add('ok');pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';cntVn++;cntV.textContent=cntVn;}
-    else if(data.status==='AMARILLO'){pIcon.textContent='⚠';panel.classList.add('warn');pMensaje.style.background='rgba(245,124,0,.12)';pMensaje.style.color='var(--sena-naranja)';cntAn++;cntA.textContent=cntAn;}
-    else{pIcon.textContent='❌';panel.classList.add('err');pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';cntRn++;cntR.textContent=cntRn;}
-    if(scanner && escaneando)try{scanner.pause();}catch(e){}
-    setTimeout(()=>{
-      panel.classList.add('d-none');
-      if(scanner && escaneando){try{scanner.resume();}catch(e){}}
-    },4000);
+    const esDuplicado = !!data.es_duplicado || data.status==='AMARILLO';
+    const esNuevo = !!data.es_nuevo || (data.status==='VERDE' && !esDuplicado);
+
+    if(pDatosBox){
+      if(esNuevo){
+        pDatosBox.style.display='block';
+        if(pdInstitucion){pdInstitucion.textContent=data.institucion||'—';}
+        if(pdMunicipio){pdMunicipio.textContent=data.municipio||'—';}
+        if(pdProyecto){pdProyecto.textContent=data.nombre_proyecto||'—';}
+        if(pdFicha){pdFicha.textContent=data.codigo_ficha||'—';}
+        if(pdCorreo){pdCorreo.textContent=data.correo||'—';}
+        if(pdTelefono){pdTelefono.textContent=data.telefono||'—';}
+        if(pdDireccion){pdDireccion.textContent=data.direccion||'—';}
+        if(pdGenero){pdGenero.textContent=data.genero||'—';}
+        if(bVal){bVal.textContent='✅ Datos Verificados · ACEPTAR y CONTINUAR';}
+      }else{
+        pDatosBox.style.display='none';
+        if(bVal){bVal.textContent=esDuplicado?'⚠ OK · CERRAR AVISO':'❌ ENTENDIDO · CERRAR';}
+      }
+    }
+
+    if(data.status==='VERDE'){
+      pIcon.textContent='✅';panel.classList.add('ok');
+      pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';
+      cntVn++;cntV.textContent=cntVn;
+      if(pDatosBox && esNuevo){
+        pDatosBox.style.borderColor='rgba(57,169,0,.35)';
+        pDatosBox.style.background='rgba(57,169,0,.10)';
+      }
+    }else if(data.status==='AMARILLO'){
+      pIcon.textContent='⚠';panel.classList.add('warn');
+      pMensaje.style.background='rgba(245,124,0,.12)';pMensaje.style.color='var(--sena-naranja)';
+      cntAn++;cntA.textContent=cntAn;
+    }else{
+      pIcon.textContent='❌';panel.classList.add('err');
+      pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
+      cntRn++;cntR.textContent=cntRn;
+    }
+    if(scanner && escaneando){try{scanner.pause();}catch(e){}}
   }
 
   async function registrar(token){
