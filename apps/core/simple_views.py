@@ -111,10 +111,28 @@ def _permitido(request, token_esperado):
 def _solicitar_login_o_token(request, tipo='registro'):
     token_publico = settings.TOKEN_REGISTRO_PUBLICO if tipo == 'registro' else settings.TOKEN_OPERADORES_PUBLICO
     tok_kw = 'token_registro' if tipo == 'registro' else 'token_operador'
+    prefijo_ruta = '/r/' if tipo == 'registro' else '/o/'
     header_nombre = 'X-Registro-Token' if tipo == 'registro' else 'X-Operador-Token'
     cookie_nombre = 'TOKEN_REGISTRO' if tipo == 'registro' else 'TOKEN_OPERADORES'
     ruta_kwargs = getattr(getattr(request, 'resolver_match', None), 'kwargs', None) or {}
     tok_desde_kwargs = (ruta_kwargs.get(tok_kw) or '').strip()
+
+    # FALLBACK DEFINITIVO: si resolver_match.kwargs no tiene token (por middleware/decorador/order issues),
+    # lo extraemos DIRECTAMENTE DEL PATH para NO depender de Django URL resolver match timing.
+    # Ej. path: /o/cBYJ7QLGj3IRAyHWN24F6unXN1F0u3U8/asistencia/  o  /o/<tok>/api/registrar/
+    if not tok_desde_kwargs:
+        try:
+            _raw = (request.path_info or request.path or '').strip()
+            _parts = [p for p in _raw.split('/') if p]
+            for idx, p in enumerate(_parts):
+                if p == ('r' if tipo == 'registro' else 'o') and (idx + 1) < len(_parts):
+                    _cand = _parts[idx + 1]
+                    if _cand and len(_cand) >= 8 and '/' not in _cand:
+                        tok_desde_kwargs = _cand
+                        break
+        except Exception:
+            tok_desde_kwargs = ''
+
     tok_recibido = (
         tok_desde_kwargs or
         (request.headers.get(header_nombre) or '').strip() or
@@ -128,19 +146,29 @@ def _solicitar_login_o_token(request, tipo='registro'):
         a = request.headers.get('Accept', '')
         return 'json' in a.lower() or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.endswith('/api/')
 
+    # DEBUG visible en Railway logs (Deploy Logs) — nos dirá exactamente qué token detectó
+    try:
+        _debug_path = (request.path_info or request.path or '')[:90]
+        _debug_kw = tok_desde_kwargs[:6]+'…' if tok_desde_kwargs else 'VACIO'
+        _debug_rec = tok_recibido[:6]+'…' if tok_recibido else 'VACIO'
+        _debug_pub = ('OK('+token_publico[:6]+'…)' ) if token_publico else 'VACIO(RAILWAY_SIN_VARIABLE)'
+        print(f'[AUTH_OPERADOR_{tipo.upper()}] path={_debug_path} | kwargs={_debug_kw} | recibido={_debug_rec} | esperado_railway={_debug_pub}', flush=True)
+    except Exception:
+        pass
+
     if tok_recibido:
         # CASO 1: Railway SÍ tiene la variable configurada → comparación estricta
         if token_publico and tok_recibido == token_publico:
             return None
-        # CASO 2: La ruta ya trae TOKEN EN LA PROPIA URL (kwargs). La URL es el origen de la verdad.
-        # Si el token del request (header/cookie/query) COINCIDE con el token EN LA RUTA kwargs → AUTORIZADO,
-        # sin importar si TOKEN_OPERADORES está vacío o es distinto (panel admin generó enlace con ese token).
+        # CASO 2 (FIJO, MÁS IMPORTANTE HOY): La ruta /o/<TOKEN>/... SÍ trae token. Si el recibido COINCIDE
+        # con el token extraído de la ruta (kwargs o fallback del path), SE AUTORIZA SIEMPRE — sin importar
+        # la variable Railway TOKEN_OPERADORES que pudo cambiar / desincronizar después de generar el enlace.
         if tok_desde_kwargs and tok_recibido == tok_desde_kwargs:
             return None
-        # CASO 3: Railway NO HA CONFIGURADO AÚN la variable. Token por header/cookie/query → lo aceptamos.
+        # CASO 3: Railway variable NO configurada (vacía). Token recibido de header/cookie/query.
         if not token_publico:
             return None
-        # Error ESPECÍFICO (JSON para endpoints AJAX, HTML para páginas)
+        # Error ESPECÍFICO
         if token_publico:
             msg = (
                 f'Token del enlace NO coincide con el configurado en Railway (variables: {cookie_nombre}).'
@@ -149,7 +177,7 @@ def _solicitar_login_o_token(request, tipo='registro'):
         else:
             msg = (
                 f'Variable Railway {cookie_nombre} NO definida. Solicita al administrador que defina la variable'
-                f' y haga Deploy From Source, o usa el enlace público /o/<token>/ generado.'
+                f' y haga Deploy From Source, o usa el enlace público {prefijo_ruta}<token>/ generado.'
             )
         if _es_xhr():
             return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': '⛔ Token inválido · ' + msg, 'code': 'TOKEN_MISMATCH'}, status=403)
@@ -157,7 +185,11 @@ def _solicitar_login_o_token(request, tipo='registro'):
     if request.user.is_authenticated:
         return None
     if _es_xhr():
-        msgt = 'Autenticación requerida. Solicita al administrador el enlace público con Token o inicia sesión antes de escanear.'
+        msgt = (
+            f'Autenticación requerida. Solicita al administrador el enlace público con Token'
+            f' (usa la URL {prefijo_ruta}<TU_TOKEN>/asistencia/  en lugar de /operador/asistencia/)'
+            ' o inicia sesión antes de escanear.'
+        )
         return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': '❌ Sin registro · ' + msgt, 'code': 'AUTH_REQUIRED'}, status=401)
     return HttpResponseRedirect(reverse('login') + '?next=' + request.path)
 
