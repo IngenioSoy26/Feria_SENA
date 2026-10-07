@@ -133,15 +133,21 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous"></script>
 <script>
   const TIPO_OP='{{ tipo }}';
-  const TOKEN_OP = '{{ token_operadores_publico|default:"" }}';
+  // Leer TOKEN PUBLICO desde la URL actual (prioridad MÁXIMA — sin depender de settings Railway).
+  // Estructura: /o/<TOKEN_OPERADOR>/<tipo>/   (asistencia | refrigerios | certificados)
+  const cur = (window.location.pathname || '').replace(/\/+$/, '');
+  const _m = cur.match(/\/o\/([^\/]+)\/?(?:[^\/]*)?$/);
+  let TOKEN_OP_DESDE_URL = _m ? _m[1] : '';
+  // Token desde settings (fallback) + URL gana:
+  const TOKEN_OP = TOKEN_OP_DESDE_URL || '{{ token_operadores_publico|default:"" }}';
+  // Guardar cookie sin importar el origen (mientras exista TOKEN):
   if(TOKEN_OP){
     try{document.cookie='TOKEN_OPERADORES='+encodeURIComponent(TOKEN_OP)+'; path=/; SameSite=Lax;';}catch(e){}
   }
-  // Construir ENDPOINT (registrar) y STATS_URL basados en URL pública o interna
-  const cur = (window.location.pathname || '').replace(/\/+$/, '');
-  const mPub = cur.match(/^(.+\/o\/[^\/]+)/);
-  window.ENDPOINT = mPub ? (mPub[0] + '/api/registrar/') : '{% url "simple:api_registrar" %}';
-  let _statsBase = mPub ? (mPub[0] + '/api/stats/') : '{% url "simple:api_stats_operador" %}';
+  // Detectar si estamos en ruta pública y forzar ENDPOINTs absolutos a la misma base /o/<tok>/
+  const mPub = TOKEN_OP_DESDE_URL ? ('/o/' + TOKEN_OP_DESDE_URL) : '';
+  window.ENDPOINT = mPub ? (mPub + '/api/registrar/') : '{% url "simple:api_registrar" %}';
+  let _statsBase = mPub ? (mPub + '/api/stats/') : '{% url "simple:api_stats_operador" %}';
   window.STATS_URL = _statsBase + '?tipo=' + encodeURIComponent(TIPO_OP) + (TOKEN_OP ? ('&token_op='+encodeURIComponent(TOKEN_OP)) : '');
 
   function _headersConToken(){
