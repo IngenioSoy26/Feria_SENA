@@ -748,7 +748,8 @@ class RegistrarOperadorAjax(View):
                 extra = ' · Invitado a la feria'
         except Exception:
             pass
-        tipo_doc = persona.tipo_identificacion.abreviatura if persona.tipo_identificacion else 'CC'
+        tipo_doc = getattr(persona.tipo_identificacion, 'codigo', None) if persona.tipo_identificacion else ''
+        tipo_doc = (tipo_doc or 'CC').strip()[:5] or 'CC'
         numero_doc = persona.numero_identificacion or ''
 
         operador = _operador_para_guardar(request)
