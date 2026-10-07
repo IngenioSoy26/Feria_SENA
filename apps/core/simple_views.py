@@ -120,6 +120,7 @@ def _solicitar_login_o_token(request, tipo='registro'):
         (request.headers.get(header_nombre) or '').strip() or
         (request.COOKIES.get(cookie_nombre) or '').strip() or
         (request.GET.get('token') or '').strip() or
+        (request.GET.get('token_op') or '').strip() or
         ''
     )
 
@@ -131,10 +132,13 @@ def _solicitar_login_o_token(request, tipo='registro'):
         # CASO 1: Railway SÍ tiene la variable configurada → comparación estricta
         if token_publico and tok_recibido == token_publico:
             return None
-        # CASO 2: Railway NO HA CONFIGURADO AÚN la variable, PERO el enlace SÍ trae token.
-        # Fallback SEGURO (solo válido si tok_publico está vacío): aceptar el token traído en kwargs/header/cookie.
-        # Esto soluciona el typo o delay Railway y permite que el enlace /o/<tok>/... funcione sin configuración extra.
-        if not token_publico and tok_desde_kwargs and tok_desde_kwargs == tok_recibido:
+        # CASO 2: La ruta ya trae TOKEN EN LA PROPIA URL (kwargs). La URL es el origen de la verdad.
+        # Si el token del request (header/cookie/query) COINCIDE con el token EN LA RUTA kwargs → AUTORIZADO,
+        # sin importar si TOKEN_OPERADORES está vacío o es distinto (panel admin generó enlace con ese token).
+        if tok_desde_kwargs and tok_recibido == tok_desde_kwargs:
+            return None
+        # CASO 3: Railway NO HA CONFIGURADO AÚN la variable. Token por header/cookie/query → lo aceptamos.
+        if not token_publico:
             return None
         # Error ESPECÍFICO (JSON para endpoints AJAX, HTML para páginas)
         if token_publico:

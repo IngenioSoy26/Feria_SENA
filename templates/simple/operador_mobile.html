@@ -133,22 +133,43 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous"></script>
 <script>
   const TIPO_OP='{{ tipo }}';
-  // Leer TOKEN PUBLICO desde la URL actual (prioridad MÁXIMA — sin depender de settings Railway).
-  // Estructura: /o/<TOKEN_OPERADOR>/<tipo>/   (asistencia | refrigerios | certificados)
-  const cur = (window.location.pathname || '').replace(/\/+$/, '');
-  const _m = cur.match(/\/o\/([^\/]+)\/?(?:[^\/]*)?$/);
-  let TOKEN_OP_DESDE_URL = _m ? _m[1] : '';
-  // Token desde settings (fallback) + URL gana:
-  const TOKEN_OP = TOKEN_OP_DESDE_URL || '{{ token_operadores_publico|default:"" }}';
-  // Guardar cookie sin importar el origen (mientras exista TOKEN):
+  // Depuración del pathname + regex.
+  const curRaw = window.location.pathname || '';
+  const cur = curRaw.replace(/\/+$/, '');
+  // Intentamos varios patrones para extraer /o/<token>/ (token no tiene "/")
+  let TOKEN_OP_DESDE_URL = '';
+  const pats = [
+    /^\/o\/([^/]+)\/.*$/,            //   /o/<tok>/<tipo>/
+    /^\/o\/([^/]+)\/?$/,             //   /o/<tok> o /o/<tok>/
+    /\/o\/([^/]+)\//,                //  .../o/<tok>/...  en cualquier posicion
+  ];
+  for(const p of pats){
+    const m = cur.match(p);
+    if(m && m[1]){ TOKEN_OP_DESDE_URL = m[1]; break; }
+  }
+  const TOKEN_OP_TPL = '{{ token_operadores_publico|default:"" }}';
+  const TOKEN_OP = (TOKEN_OP_DESDE_URL || TOKEN_OP_TPL).trim();
   if(TOKEN_OP){
     try{document.cookie='TOKEN_OPERADORES='+encodeURIComponent(TOKEN_OP)+'; path=/; SameSite=Lax;';}catch(e){}
   }
-  // Detectar si estamos en ruta pública y forzar ENDPOINTs absolutos a la misma base /o/<tok>/
-  const mPub = TOKEN_OP_DESDE_URL ? ('/o/' + TOKEN_OP_DESDE_URL) : '';
-  window.ENDPOINT = mPub ? (mPub + '/api/registrar/') : '{% url "simple:api_registrar" %}';
-  let _statsBase = mPub ? (mPub + '/api/stats/') : '{% url "simple:api_stats_operador" %}';
-  window.STATS_URL = _statsBase + '?tipo=' + encodeURIComponent(TIPO_OP) + (TOKEN_OP ? ('&token_op='+encodeURIComponent(TOKEN_OP)) : '');
+  // Forzar ENDPOINTs: si URL pública detectada, usar su path base
+  const mPub = TOKEN_OP_DESDE_URL ? ('/o/' + encodeURIComponent(TOKEN_OP_DESDE_URL)) : '';
+  const ENDPOINT_RAW = mPub ? (mPub + '/api/registrar/') : '{% url "simple:api_registrar" %}';
+  const STATS_BASE  = mPub ? (mPub + '/api/stats/')     : '{% url "simple:api_stats_operador" %}';
+  // Añadir token_op por query-string como FALLBACK TOTAL (más robusto que headers/cookies si hay CDN/cache/railway edge que los borre)
+  const sep = ENDPOINT_RAW.indexOf('?')>=0 ? '&' : '?';
+  window.ENDPOINT = ENDPOINT_RAW + (TOKEN_OP ? (sep + 'token_op='+encodeURIComponent(TOKEN_OP)) : '');
+  window.STATS_URL = STATS_BASE + '?tipo=' + encodeURIComponent(TIPO_OP) + (TOKEN_OP ? ('&token_op='+encodeURIComponent(TOKEN_OP)) : '');
+  // Alerta visible SOLO si no detecta token (sabremos de inmediato qué valor llegó al navegador)
+  (function(){
+    const msg = (
+      '[debug-op] pathname='+curRaw+
+      ' | TOKEN_OP_DESDE_URL=' + (TOKEN_OP_DESDE_URL?TOKEN_OP_DESDE_URL.slice(0,6)+'…':'VACIO')+
+      ' | TOKEN_OP_FINAL=' + (TOKEN_OP?TOKEN_OP.slice(0,6)+'…':'VACIO')+
+      ' | ENDPOINT='+window.ENDPOINT+' | STATS_URL='+window.STATS_URL
+    );
+    try{console.log(msg);}catch(e){}
+  })();
 
   function _headersConToken(){
     const h = {'Accept':'application/json','Content-Type':'application/json'};
@@ -156,7 +177,7 @@
     return h;
   }
   function _fetchOptions(method, body){
-    const opt = {method: method, headers: _headersConToken(), credentials: 'same-origin'};
+    const opt = {method: method, headers: _headersConToken(), credentials: 'include'};
     if(body){opt.body = (typeof body==='string')? body : JSON.stringify(body);}
     return opt;
   }
