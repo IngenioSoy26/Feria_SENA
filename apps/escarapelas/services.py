@@ -87,19 +87,20 @@ POS_BADGE = {
 
 POS_CAJA_NOMBRE = {
     "x": 7 * mm,
-    "y": 51 * mm,
+    "y": 56.5 * mm,
     "w": 93 * mm,
-    "h": 18 * mm,
+    "h": 12.5 * mm,
     "r": 6 * mm,
     "borde_grosor": 0,
     "padding_lados": 5 * mm,
     "fill_alpha": 0.40,
 
-    # Baselines CENTRADAS verticalmente dentro de la caja [51→69], centro=60mm
-    # Nombre: 63.2 ; IE: 58.2 → gap 5.0mm (antes 8.3mm, MUCHO MÁS JUNTAS)
-    # Centro baselines: (63.2+58.2)/2 = 60.7mm  ← CASI EXACTO al centro geométrico
-    "y_nombre": 63.2 * mm,
-    "y_institucion": 58.2 * mm,
+    # Caja reducida: rango [56.5 → 69.0], centro geométrico = 62.75mm
+    # IE en 59.5mm (gap 3.0mm sobre borde inferior → MUY CERCA como pides)
+    # Nombre en 65.0mm, gap Nombre-IE 5.5mm (juntos)
+    # Centro baselines: (65.0 + 59.5)/2 = 62.25mm  → 0.5mm vs centro geométrico 62.75 ✔ CENTRADO
+    "y_nombre": 65.0 * mm,
+    "y_institucion": 59.5 * mm,
 
     "size_nombre": 14,
     "size_institucion": 8.2,
@@ -108,14 +109,14 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 26 * mm,
-    "y": 42.7 * mm,
+    "y": 48.5 * mm,
     "w": 55 * mm,
     "h": 7.5 * mm,
     "r": 3.75 * mm,
     "borde_grosor": 0,
     "fill_alpha": 0.40,
-    "y_texto": 45.4 * mm,
-    "size": 9.5,
+    "y_texto": 51.1 * mm,
+    "size": 11.5,
 }
 
 
