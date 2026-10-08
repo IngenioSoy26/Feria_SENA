@@ -300,12 +300,9 @@
         const cod = String(x.codigo || x.codigo_dane || '').trim().toUpperCase();
         const mun = String(x.municipio || '').toUpperCase();
         const dpto = String(x.departamento || '').toUpperCase();
-        const labelPiezas = [];
-        if(cod) labelPiezas.push(cod);
-        labelPiezas.push(nom);
         return {
           value: nom,
-          label: labelPiezas.join(' · '),
+          label: nom,
           dataset: { municipio: mun || '', codigo: cod || '', departamento: dpto || '' }
         };
       }), x => x.value);
@@ -344,7 +341,7 @@
     }
     const progItems = [];
     for(const [pnom, pcod] of progSet.entries()){
-      progItems.push({ value: pnom, label: pcod? (pnom + ' · ' + pcod) : pnom, dataset: { codigo: pcod||'' } });
+      progItems.push({ value: pnom, label: pnom, dataset: { codigo: pcod||'' } });
     }
     progItems.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
     const nProg = llenarCombo(progCombo, '⬇️ Seleccione o busque un Programa Técnico', progItems);
@@ -367,7 +364,7 @@
     const fItems = fichasFiltradas
       .map(f => ({
         value: String(f.numero||''),
-        label: [f.numero, f.programa, f.ie, f.instructor].filter(Boolean).join(' · '),
+        label: String(f.numero||''),
         dataset: {
           ie: f.ie||'', municipio: f.municipio||'',
           programa: f.programa||'',
@@ -445,8 +442,14 @@
   }
 
   function completarDesdeFicha(fichaNum, skipMsj){
-    const f = window.__FICHA_DATA_BY_NUM__ && window.__FICHA_DATA_BY_NUM__.get(String(fichaNum || '').trim());
+    const fichaStr = String(fichaNum || '').trim();
+    // 🔁 Evitar LOOP / alertas duplicadas: la última ficha completada no repetir
+    if(window.__ULTIMA_FICHA_COMPLETADA__ && window.__ULTIMA_FICHA_COMPLETADA__ === fichaStr){
+      return false;
+    }
+    const f = window.__FICHA_DATA_BY_NUM__ && window.__FICHA_DATA_BY_NUM__.get(fichaStr);
     if(!f) return false;
+    window.__ULTIMA_FICHA_COMPLETADA__ = fichaStr;
     // 1) MUNICIPIO (primero, para activar cascada) — usa munCombo NUEVO habilitado
     const mun = (f.municipio || '').toUpperCase().trim();
     if(mun && munCombo){
@@ -460,28 +463,20 @@
       }
       const hiddenM = document.getElementById('hidden-municipio-ie');
       if(hiddenM) hiddenM.value = mun;
-      // Disparar change para activar cascada (llenar IE, luego Programa, luego Ficha)
-      try{ munCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
     }
     // 2) INSTITUCIÓN EDUCATIVA — la cascada ya la llenó desde Municipio, pero aseguramos valor
     const ieNom = (f.ie||'').toUpperCase().trim();
     if(ieNom && ieCombo){
       const opts = Array.from(ieCombo.options).map(o => (o.value||'').toUpperCase());
       const idx = opts.indexOf(ieNom);
-      if(idx !== -1){
-        ieCombo.value = ieCombo.options[idx].value;
-        try{ ieCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
-      }
+      if(idx !== -1){ ieCombo.value = ieCombo.options[idx].value; }
     }
     // 3) PROGRAMA TÉCNICO
     const progNom = (f.programa||'').toUpperCase().trim();
     if(progNom && progCombo){
       const opts = Array.from(progCombo.options).map(o => (o.value||'').toUpperCase());
       const idx = opts.indexOf(progNom);
-      if(idx !== -1){
-        progCombo.value = progCombo.options[idx].value;
-        try{ progCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
-      }
+      if(idx !== -1){ progCombo.value = progCombo.options[idx].value; }
     }
     // 4) Campos Instructor + Cédula (inputs simples)
     const fields = [
@@ -500,13 +495,16 @@
     }
     if(!skipMsj && fichaNum){
       try{
+        // ⚠ LIMPIAR alertas viejas similares (evitar acumulación 15+)
+        document.querySelectorAll('.alert-carga-ficha-alert').forEach(el => { try{ el.remove(); }catch(_){} });
         const t = document.createElement('div');
-        t.className = 'alert alert-success py-2 px-3 small mt-2 mb-0 show fade';
-        t.style.cssText='border:0;border-radius:12px;border-left:5px solid #39A900;background:#eefbe0;';
-        t.innerHTML = '✔ Ficha #<b>' + String(fichaNum) + '</b> cargada desde el catálogo: <b>Municipio, I.E., Programa, Instructor</b> pre-llenados automáticamente.';
+        t.className = 'alert alert-success py-2 px-3 small mt-2 mb-0 show fade alert-carga-ficha-alert';
+        t.style.cssText='border:0;border-radius:12px;border-left:5px solid #39A900;background:#eefbe0;cursor:pointer;user-select:none;';
+        t.title = 'Clic para cerrar';
+        t.innerHTML = '✔ Ficha #<b>' + String(fichaNum) + '</b> cargada desde el catálogo: <b>Municipio, I.E., Programa, Instructor</b> pre-llenados automáticamente. <i>(pinche para cerrar)</i>';
+        t.addEventListener('click', function(){ try{ t.remove(); }catch(_){} });
         const target = fichaCombo;
         if(target && target.parentElement) target.parentElement.after(t);
-        setTimeout(()=>{ try{ t.remove(); }catch(_){} }, 6000);
       }catch(_){}
     }
     return true;
