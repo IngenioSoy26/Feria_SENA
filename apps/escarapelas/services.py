@@ -373,22 +373,28 @@ class EscarapelaPDFService:
                 c.setFont('Helvetica-Bold', tam_v)
                 c.drawString(x2, yt, valor)
             else:
-                # 2 LÍNEAS (para proyectos largos:
-                # Línea 1 = "Proyecto: COD-PROY"
-                parte1 = (info['codigo_proyecto'] + ' - ' + info['proyecto'])
+                # 2 LÍNEAS (proyectos largos o nombres muy largos)
                 if info['codigo_proyecto'] and info['proyecto']:
                     linea1 = label + info['codigo_proyecto'] + ' - '
                     linea2 = info['proyecto']
+                elif info['programa'] and (' · FICHA' in valor):
+                    # Ficha / programa
+                    linea1 = label
+                    linea2 = valor
                 else:
+                    # partir valor largo: buscar separador bonito, si no partir por mitad
                     mitad = len(valor)//2
                     linea1 = valor[:mitad]
                     linea2 = valor[mitad:]
-                    for sep in (' - ', ' · ', ': ', ' de ', ' y '):
+                    for sep in (' - ', ' · ', ': ', ' de ', ' y ', ' en ', ' / '):
                         if sep in valor:
                             a, b = valor.split(sep, 1)
                             linea1 = a + sep
                             linea2 = b
                             break
+                    if not linea1 or not linea2:
+                        linea1 = label
+                        linea2 = valor
                 ancho_l1 = c.stringWidth(linea1, 'Helvetica-Bold', tam_l)
                 while ancho_l1 > max_w_total and tam_l > 7:
                     tam_l -= 0.5
