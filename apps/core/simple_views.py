@@ -1317,6 +1317,7 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
                 return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
 
             preview = ImportacionExcelService.preview(request, resultados)
+            serializados = ImportacionExcelService._serializar_para_confirmar(resultados)
             ctx = {
                 'tipos_importacion': [(t, TIPOS_IMPORTACION_LABELS.get(t, t)) for t in TIPOS_IMPORTACION],
                 'tipo_seleccionado': tipo_importacion,
@@ -1331,7 +1332,7 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
                     'TOTAL': preview['estadisticas'].get('TOTAL', 0),
                 },
                 'archivo_nombre': (archivo.name or 'archivo.xlsx')[:80],
-                '_resultados_serializados': ImportacionExcelService._serializar_para_confirmar(resultados),
+                '_resultados_serializados': serializados,
                 'clases_estado': {
                     CLASIFICACION_VALIDO: 'success',
                     CLASIFICACION_ADVERTENCIA: 'warning',
@@ -1339,21 +1340,30 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
                     CLASIFICACION_ERROR: 'danger',
                 },
             }
+            # Guardar payload en sesion (lado servidor Railway DB, sin limite 4KB)
+            session_key = f'imp_res_{tipo_importacion}'
+            try:
+                request.session[session_key] = serializados
+                request.session.modified = True
+            except Exception:
+                pass
             resp = render(request, self.template_name, ctx)
-            resp.set_cookie(
-                f'_imp_{tipo_importacion}',
-                ctx['_resultados_serializados'],
-                max_age=60 * 30,
-                httponly=True,
-                samesite='Lax',
-            )
+            try:
+                resp.delete_cookie(f'_imp_{tipo_importacion}')
+            except Exception:
+                pass
             return resp
 
         if accion == 'confirmar':
             import base64
             import json
             import zlib
-            cookie = request.COOKIES.get(f'_imp_{tipo_importacion}', '')
+            session_key = f'imp_res_{tipo_importacion}'
+            # PRIORIDAD 1: sesion lado servidor (Railway DB)
+            cookie = request.session.get(session_key, '') or ''
+            # PRIORIDAD 2: fallback hidden input enviado desde el preview (payload incrustado en HTML)
+            if not cookie:
+                cookie = (request.POST.get('_imp_payload') or '').strip()
             if not cookie:
                 messages.error(request, 'Sesión de importación expiró o no se encontró. Suba el archivo nuevamente.')
                 return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
@@ -1373,6 +1383,14 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
             except Exception as e:
                 messages.error(request, f'Error guardando datos: {e}')
                 return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+            # Limpiar sesion despues de confirmar OK (liberar memoria)
+            try:
+                if session_key in request.session:
+                    del request.session[session_key]
+                    request.session.modified = True
+            except Exception:
+                pass
 
             filas = resumen.get('filas_procesadas', 0)
             detalle = resumen.get('detalle', [])
