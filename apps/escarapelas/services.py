@@ -120,28 +120,30 @@ POS_CAJA_DOC = {
 
 
 POS_CAJA_INFERIOR = {
-    "x": 9 * mm,
+    "x": 15.5 * mm,
     "y": 4.0 * mm,
-    "w": 89 * mm,
+    "w": 76 * mm,
     "h": 33.5 * mm,
     "r": 6 * mm,
-    "borde_grosor": 1.1,
+    "borde_grosor": 0,
     "fill_alpha": 0.40,
 
-    # NOMBRE-PROYECTO solo 1 línea
-    "y_valor_solo": 32.6 * mm,
-    "size_valor_solo": 10.0,
+    # NOMBRE-PROYECTO 1 LÍNEA — ZONA ALTA, ENCIMA DEL QR (Y > QR top)
+    "y_valor_solo": 36.0 * mm,
+    "size_valor_solo": 9.6,
 
-    # PROYECTO 2 líneas (label + valor) — compactado para no invadir QR
-    "y_proyecto_1": 34.6 * mm,
-    "size_label": 8.8,
-    "y_proyecto_2": 31.8 * mm,
-    "size_valor": 9.0,
+    # PROYECTO 2 LÍNEAS — 100% ENCIMA DEL QR.
+    # QR top = y_inf 6.0 + qr_size 28 = 34.0 mm.
+    # L2 en 36.0 - 1.3 = 34.7 mm > QR top → GAP 0.7 mm ✅
+    "y_proyecto_1": 36.0 * mm,
+    "size_label": 9.0,
+    "y_proyecto_2": 36.0 * mm,
+    "size_valor": 8.8,
 
-    # QR compactado 23mm → top = y_inf + 23 = 28.8, gap 3.0mm vs L2 31.8
-    "qr_size": 23 * mm,
+    # QR 28mm (+21.7% vs 23mm).
+    "qr_size": 28 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 5.8 * mm,
+    "qr_y_inf": 6.0 * mm,
 }
 
 
@@ -667,35 +669,26 @@ class EscarapelaPDFService:
 
         # ----------------------------------------------------
         # TEXTO DEL PROYECTO
+        # - SÓLO SE PINTAN 1-2 LÍNEAS PARA APRENDIZ: nombre del proyecto.
+        # - NUNCA se muestra el label "Proyecto: CODIGO".
+        # - INSTRUCTOR / INVITADO / ORGANIZADOR: caja inferior sólo contiene
+        #   el QR; el rol ya se muestra explícitamente en el badge superior.
         # ----------------------------------------------------
-        codigo = str(info["codigo_proyecto"] or "").strip()
+        rol_key = (rol or "").strip().upper()
+
         proyecto = str(info["proyecto"] or "").strip()
+        programa = str(info["programa"] or "").strip()
 
-        if codigo and proyecto:
-            linea1 = f"Proyecto: {codigo}"
-            linea2 = proyecto
+        linea1 = ""
+        linea2 = ""
 
-        elif proyecto:
-            linea1 = "Proyecto:"
-            linea2 = proyecto
+        if rol_key == "APRENDIZ":
+            if proyecto:
+                linea2 = proyecto.upper()
+            elif programa:
+                linea2 = programa.upper()
 
-        elif info["codigo_ficha"] and info["programa"]:
-            linea1 = f"Ficha: {info['codigo_ficha']}"
-            linea2 = str(info["programa"])
-
-        elif info["programa"]:
-            linea1 = "Programa:"
-            linea2 = str(info["programa"])
-
-        elif info["extra"]:
-            linea1 = str(info["extra"])
-            linea2 = ""
-
-        else:
-            linea1 = ""
-            linea2 = ""
-
-        max_w = w - 10 * mm
+        max_w = w - 8 * mm
 
         if linea1:
             EscarapelaPDFService._centrar_en_caja(
@@ -714,7 +707,7 @@ class EscarapelaPDFService:
         if linea2:
             l2a, l2b = EscarapelaPDFService._partir_texto_dos_lineas(
                 c,
-                linea2.upper(),
+                linea2,
                 "Helvetica-Bold",
                 p["size_valor"],
                 max_w,
@@ -730,7 +723,7 @@ class EscarapelaPDFService:
                     caja_w=w,
                     y=dy + p["y_proyecto_2"] + 1.3 * mm,
                     fuente="Helvetica-Bold",
-                    tam=7.8,
+                    tam=8.0,
                     color=black,
                     max_w=max_w,
                     tam_min=6,
@@ -743,7 +736,7 @@ class EscarapelaPDFService:
                     caja_w=w,
                     y=dy + p["y_proyecto_2"] - 1.3 * mm,
                     fuente="Helvetica-Bold",
-                    tam=7.8,
+                    tam=8.0,
                     color=black,
                     max_w=max_w,
                     tam_min=6,
@@ -756,7 +749,7 @@ class EscarapelaPDFService:
                     caja_w=w,
                     y=dy + p["y_proyecto_2"],
                     fuente="Helvetica-Bold",
-                    tam=p["size_valor"],
+                    tam=p["size_valor_solo"],
                     color=black,
                     max_w=max_w,
                     tam_min=6,
