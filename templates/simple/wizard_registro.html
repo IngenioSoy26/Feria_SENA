@@ -26,7 +26,7 @@
       <div class="row g-3">
         <div class="col-12 col-md-6">
           <label class="form-label">1️⃣ Municipio <span class="req">*</span></label>
-          <select name="municipio_sel" id="inp-municipio-sel" class="form-field select combo-filtro" data-combo="municipio" required>
+          <select name="municipio_sel" id="inp-municipio-sel" class="form-field select combo-filtro" data-combo="municipio" required autofocus tabindex="1">
             <option value="">⬇️ Primero seleccione un Municipio</option>
             {% for m in municipios_list %}
               {% if m.nombre %}
@@ -528,9 +528,26 @@
     return true;
   }
 
-  document.addEventListener('DOMContentLoaded', poblarTodo);
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ poblarTodo(); }catch(_){}
+    // 🎯 FOCO INICIAL EN MUNICIPIO (no en N° de documento del aprendiz).
+    // Doble estrategia: (1) atributo HTML autofocus en <select> + (2) fallback JS por si navegador móvil ignora HTML.
+    try{
+      if (munCombo && typeof munCombo.focus === 'function') {
+        // Pequeño delay para asegurar que el navegador terminó de pintar.
+        setTimeout(() => {
+          try { munCombo.focus({preventScroll:false}); } catch(_){ try { munCombo.focus(); } catch(__){} }
+        }, 50);
+      }
+    }catch(_){}
+  });
   if(document.readyState === 'interactive' || document.readyState === 'complete'){
     try{ poblarTodo(); }catch(_){}
+    try{
+      if (munCombo && typeof munCombo.focus === 'function') {
+        setTimeout(() => { try{ munCombo.focus(); }catch(_){} }, 60);
+      }
+    }catch(_){}
   }
   // Eventos cascada — ORDEN AMARRADO: 1) MUNICIPIO → 2) IE → 3) PROGRAMA → 4) FICHA
   if(munCombo){
@@ -648,7 +665,7 @@
     });
   }
 
-  function agregarAprendiz(prefill){
+  function agregarAprendiz(prefill, autoFocusNumDoc){
     const rows = container.querySelectorAll('.aprendiz-row');
     if (rows.length >= MAX) return;
     idx++;
@@ -739,15 +756,17 @@
       }
     });
     actualizarVacio();
-    // Foco en el primer campo
-    setTimeout(() => { const f = div.querySelector('.apr-numdoc'); if (f) f.focus(); }, 30);
+    // Foco en el primer campo SÓLO SI this se llamó por botón "+ Agregar aprendiz" (no carga inicial)
+    if (autoFocusNumDoc !== false) {
+      setTimeout(() => { const f = div.querySelector('.apr-numdoc'); if (f) { try{ f.focus(); }catch(_){} } }, 30);
+    }
   }
 
-  btnAdd.addEventListener('click', () => agregarAprendiz());
+  btnAdd.addEventListener('click', () => agregarAprendiz(null, true));
 
-  // Inicial: 1 fila vacía para que el usuario empiece a digitar
+  // Inicial: 1 fila vacía para que el usuario empiece a digitar, PERO SIN PONER FOCO (foco inicial en Municipio)
   if (container.querySelectorAll('.aprendiz-row').length === 0) {
-    agregarAprendiz();
+    agregarAprendiz(null, false);
   }
   actualizarVacio();
 })();
