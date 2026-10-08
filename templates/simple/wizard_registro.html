@@ -9,12 +9,7 @@
       <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;">
     </div>
     <div class="flex-grow-1">
-      <h3 class="card-title mb-1">Registro de Proyectos y Aprendices</h3>
-      <p class="card-sub">
-        Instituciones y programas con el <b>mismo nombre</b> se unen automáticamente · sin repeticiones.
-        Cada ficha tiene un <b>máximo de {{ max_aprendices }} aprendices</b>
-        {% if max_aprendices %}<span class="hint-sena">configurable por el administrador</span>{% endif %}.
-      </p>
+      <h3 class="card-title mb-0">Registro de Proyectos y Aprendices</h3>
     </div>
   </div>
 
@@ -68,13 +63,13 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Instructor líder <span class="hint-sena">(dato catálogo Ficha, solo lectura)</span></label>
+          <label class="form-label">Instructor líder</label>
           <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case readonly-campo-bloqueado" placeholder="Se autocompleta al seleccionar la Ficha" autocomplete="name" list="instructor_dl" readonly style="background-color:#f0f2f5;cursor:not-allowed;color:#3b3b3b;opacity:0.92;">
           <datalist id="instructor_dl"></datalist>
           <div class="small text-muted mt-1">ℹ Este valor NO se puede editar aquí. Proviene del catálogo maestro de Fichas administrado por el SENA.</div>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Documento de identidad del instructor líder <span class="hint-sena">(dato catálogo Ficha)</span></label>
+          <label class="form-label">Documento de identidad del instructor líder</label>
           <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono ins-doc-limpio readonly-campo-bloqueado" inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" placeholder="Se autocompleta al seleccionar Ficha" readonly style="background-color:#f0f2f5;cursor:not-allowed;color:#3b3b3b;opacity:0.92;">
           <div class="small text-muted mt-1">ℹ Este valor NO se puede editar aquí. Si requiere corrección contacte al Administrador del sistema.</div>
         </div>
@@ -87,7 +82,7 @@
           <h5 class="mb-0 text-sena-dark">👨‍🎓 Aprendices del proyecto</h5>
           <div class="muted-small">
             Agrega cada aprendiz con su documento y teléfono · máximo
-            <b id="max-ap-label">{{ max_aprendices|default:3 }}</b> por ficha.
+            <b id="max-ap-label">{{ max_aprendices|default:3 }}</b> por proyecto.
           </div>
         </div>
         <button type="button" class="btn-outline-sena" id="btn-add-aprendiz" style="min-height:48px;padding:10px 18px;">
