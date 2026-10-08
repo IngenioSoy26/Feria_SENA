@@ -85,11 +85,12 @@
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-label">👥 Personas · Aprendices</div>
-        <div class="kpi-num">{{ counts.personas|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.aprendices|default:0 }} aprendices)</small></div>
+        <div class="kpi-label">👥 Personas · Aprendices / Invitados / Organizadores</div>
+        <div class="kpi-num">{{ counts.personas|default:0 }}<small class="text-muted fs-6 fw-normal ms-2">({{ counts.aprendices|default:0 }} aprendiz·{{ counts.invitados|default:0 }} invi·{{ counts.organizadores|default:0 }} org)</small></div>
         <div class="d-flex gap-2 mt-3 flex-wrap">
           <a class="mini-link" href="{% url 'simple:listados' 'aprendices' %}">Aprendices</a>
           <a class="mini-link" href="{% url 'simple:listados' 'invitados' %}">Invitados</a>
+          <a class="mini-link" href="{% url 'simple:listados' 'organizadores' %}">Organizadores</a>
           <a class="mini-link" href="{{ admin_root }}personas/persona/">Admin Personas</a>
         </div>
       </div>
@@ -167,6 +168,7 @@
           <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'todos' %}">⬇ Todos</a>
           <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'aprendices' %}">Aprendices</a>
           <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'instructores' %}">Instructores</a>
+          <a class="mini-link" href="{% url 'simple:escarapelas_lote' 'organizadores' %}">Organizadores</a>
         </div>
       </div>
 

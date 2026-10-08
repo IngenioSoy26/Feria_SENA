@@ -41,9 +41,10 @@
 
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🎓 Aprendices</div><div class="kpi-num text-sena">{{ total_aprendices }}</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🏫 Instructores</div><div class="kpi-num" style="color:#0067B1;">{{ total_instructores }}</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🎟️ Invitados</div><div class="kpi-num" style="color:#F57C00;">{{ total_invitados }}</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🎯 Proyectos / Colegios</div><div class="kpi-num" style="color:#6f42c1;">{{ total_proyectos }} / {{ total_colegios }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🏫 Instructores</div><div class="kpi-num" style="color:#71277A;">{{ total_instructores }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🎟️ Invitados</div><div class="kpi-num" style="color:#FDC300;">{{ total_invitados }}</div></div></div>
+    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🛡️ Organizadores</div><div class="kpi-num" style="color:#003049;">{{ total_organizadores|default:0 }}</div></div></div>
+    <div class="col-12 col-md-6 offset-md-3 mt-2"><div class="card p-3"><div class="kpi-label">🎯 Proyectos / Colegios</div><div class="kpi-num" style="color:#6f42c1;">{{ total_proyectos }} / {{ total_colegios }}</div></div></div>
   </div>
 
   <div class="card p-4 mb-4">
@@ -75,12 +76,12 @@
 <script>
   function esperarChart(cb,i){i=i||0;if(typeof window.Chart==='function')return cb();if(i>120)return;setTimeout(()=>esperarChart(cb,i+1),100);}
   esperarChart(()=>{
-    const S='#39A900',A='#0067B1',N='#F57C00',R='#C9222B',G='#adb5bd';
+    const S='#39A900',A='#71277A',N='#FDC300',O='#003049',R='#C9222B',G='#adb5bd';
     Chart.defaults.font.family="'Work Sans','Segoe UI',sans-serif";
     new Chart(document.getElementById('chart-1'),{type:'doughnut',data:{labels:['Asistentes','Ausentes'],datasets:[{data:[{{ asistentes }},{{ ausentes }}],backgroundColor:[S,R],borderWidth:0}]},options:{cutout:'62%',plugins:{legend:{position:'bottom'}}}});
     new Chart(document.getElementById('chart-2'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Almuerzos',data:[{{ refrigerios_entregados }},{{ refrigerios_pendientes }}],backgroundColor:[N,G],borderRadius:6}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
     new Chart(document.getElementById('chart-3'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Certificados',data:[{{ certificados_entregados }},{{ certificados_pendientes }}],backgroundColor:[A,G],borderRadius:6}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
-    new Chart(document.getElementById('chart-4'),{type:'bar',data:{labels:['Aprendices','Instructores','Invitados'],datasets:[{label:'Total inscritos',data:[{{ total_aprendices }},{{ total_instructores }},{{ total_invitados }}],backgroundColor:[S,A,N],borderRadius:8,barThickness:38}]},options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
+    new Chart(document.getElementById('chart-4'),{type:'bar',data:{labels:['Aprendices','Instructores','Invitados','Organizadores'],datasets:[{label:'Total inscritos',data:[{{ total_aprendices }},{{ total_instructores }},{{ total_invitados }},{{ total_organizadores|default:0 }}],backgroundColor:[S,A,N,O],borderRadius:8,barThickness:30}]},options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
   });
 </script>
 {% endblock %}

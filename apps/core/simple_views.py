@@ -246,6 +246,9 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
         c['programas'] = ProgramaTecnico.objects.count()
         c['programas_activos'] = ProgramaTecnico.objects.filter(activo=True).count()
         c['instructores'] = Instructor.objects.count()
+        from apps.organizadores.models import Organizador
+        c['organizadores'] = Organizador.objects.count()
+        c['invitados'] = Invitado.objects.count()
         c['fichas'] = Ficha.objects.count()
         c['fichas_activas'] = Ficha.objects.filter(activo=True).count()
         c['proyectos'] = Proyecto.objects.count()
@@ -1021,6 +1024,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         total_aprendices = Persona.objects.filter(tipo_persona='APRENDIZ').count()
         total_instructores = Persona.objects.filter(tipo_persona='INSTRUCTOR').count()
         total_invitados = Persona.objects.filter(tipo_persona='INVITADO').count()
+        total_organizadores = Persona.objects.filter(tipo_persona='ORGANIZADOR').count()
         total_proyectos = Proyecto.objects.filter(evento=evento).count()
         total_colegios = InstitucionEducativa.objects.count()
 
@@ -1040,6 +1044,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             'total_aprendices': total_aprendices,
             'total_instructores': total_instructores,
             'total_invitados': total_invitados,
+            'total_organizadores': total_organizadores,
             'total_proyectos': total_proyectos,
             'total_colegios': total_colegios,
             'asistentes': asistentes,
@@ -1070,6 +1075,10 @@ class ListadoUnicosView(LoginRequiredMixin, View):
         elif que == 'invitados':
             titulo = 'Invitados (únicos)'
             data = Invitado.objects.select_related('persona').order_by('persona__apellidos').all()
+        elif que == 'organizadores':
+            from apps.organizadores.models import Organizador
+            titulo = 'Organizadores (únicos)'
+            data = Organizador.objects.select_related('persona').order_by('persona__apellidos').all()
         elif que == 'proyectos':
             titulo = 'Proyectos registrados'
             data = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo').all()
@@ -1106,7 +1115,7 @@ class DescargarEscarapelaIndividual(LoginRequiredMixin, View):
 class DescargarEscarapelasLote(LoginRequiredMixin, View):
     def get(self, request, grupo='todos', **_ignorado):
         evento = _evento_activo()
-        queryset = Persona.objects.filter(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO'])
+        queryset = Persona.objects.filter(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO', 'ORGANIZADOR'])
         items = []
         if grupo == 'todos':
             for p in queryset.order_by('tipo_persona', 'apellidos'):
@@ -1126,6 +1135,10 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
         elif grupo == 'invitados':
             for i in Invitado.objects.select_related('persona').order_by('persona__apellidos').all():
                 items.append((i.persona, None))
+        elif grupo == 'organizadores':
+            from apps.organizadores.models import Organizador
+            for o in Organizador.objects.select_related('persona').order_by('persona__apellidos').all():
+                items.append((o.persona, None))
         elif grupo == 'asistentes':
             asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
             seen = set()
@@ -1259,7 +1272,7 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
                     pass
                 lista.append((a.persona, proy))
         elif grupo == 'todos':
-            for p in Persona.objects.filter(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']).order_by('tipo_persona', 'apellidos'):
+            for p in Persona.objects.filter(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO', 'ORGANIZADOR']).order_by('tipo_persona', 'apellidos'):
                 proy = None
                 try:
                     if hasattr(p, 'perfil_aprendiz') and p.perfil_aprendiz:
@@ -1276,6 +1289,10 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         elif grupo == 'invitados':
             for i in Invitado.objects.select_related('persona').order_by('persona__apellidos').all():
                 lista.append((i.persona, None))
+        elif grupo == 'organizadores':
+            from apps.organizadores.models import Organizador
+            for o in Organizador.objects.select_related('persona').order_by('persona__apellidos').all():
+                lista.append((o.persona, None))
 
         if not lista:
             messages.warning(request, 'No hay certificados para generar.')
