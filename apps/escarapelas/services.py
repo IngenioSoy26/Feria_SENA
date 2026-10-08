@@ -122,29 +122,37 @@ POS_CAJA_DOC = {
 
 POS_CAJA_INFERIOR = {
     "x": 15.5 * mm,
-    "y": 4.0 * mm,
+    "y": 8.5 * mm,
     "w": 76 * mm,
-    "h": 33.5 * mm,
+    "h": 38.0 * mm,
     "r": 6 * mm,
     "borde_grosor": 0,
-    "fill_alpha": 0.40,
 
-    # NOMBRE-PROYECTO 1 LÍNEA — ZONA ALTA, ENCIMA DEL QR (Y > QR top)
-    "y_valor_solo": 36.0 * mm,
-    "size_valor_solo": 9.6,
+    # ✅ COLOR PERMITIDO SENA: BLANCO PURO (#FFFFFF) 100% OPACO.
+    # Elimina transparencia 0.40 que mataba el contraste con el fondo
+    # artístico de montañas/naranja del PNG. Proyecto NEGRO ahora
+    # perfectamente legible.
+    "fill_alpha": 1.0,
 
-    # PROYECTO 2 LÍNEAS — 100% ENCIMA DEL QR.
-    # QR top = y_inf 6.0 + qr_size 28 = 34.0 mm.
-    # L2 en 36.0 - 1.3 = 34.7 mm > QR top → GAP 0.7 mm ✅
-    "y_proyecto_1": 36.0 * mm,
-    "size_label": 9.0,
-    "y_proyecto_2": 36.0 * mm,
-    "size_valor": 8.8,
+    # NOMBRE PROYECTO 1 LÍNEA — ZONA BAJA, DESPUÉS DEL QR.
+    "y_valor_solo": 13.5 * mm,
+    "size_valor_solo": 9.2,
 
-    # QR 28mm (+21.7% vs 23mm).
-    "qr_size": 28 * mm,
+    # PROYECTO 2 LÍNEAS — TAMBIÉN DESPUÉS DEL QR (por debajo).
+    # Gap QR_inf(14.5) vs L1(13.2) = 1.3mm ✅
+    # Gap L1(13.2) vs L2(11.9) = 1.3mm ✅
+    # L2 descentre 1.3 → 10.6mm > borde_inf(8.5) ✅
+    "y_proyecto_1": 13.2 * mm,
+    "size_label": 8.8,
+    "y_proyecto_2": 11.9 * mm,
+    "size_valor": 8.6,
+
+    # ✅ QR MÁS GRANDE: 28mm → 32mm.
+    # QR OCUOPA LA ZONA ALTA (PRIMERO en el orden visual):
+    #   y_inf = 14.5,  top = y_inf + 32 = 46.5  ≡ borde sup.
+    "qr_size": 32 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 6.0 * mm,
+    "qr_y_inf": 14.5 * mm,
 }
 
 
