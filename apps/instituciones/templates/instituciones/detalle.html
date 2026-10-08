@@ -77,7 +77,22 @@
                     <dd class="col-sm-8"><code class="text-sena-verde">{{ institucion.codigo }}</code></dd>
 
                     <dt class="col-sm-4 text-muted">Municipio</dt>
-                    <dd class="col-sm-8">{{ institucion.municipio }}</dd>
+                    <dd class="col-sm-8">
+                        {% if institucion.municipio_id %}
+                            {{ institucion.municipio.nombre|default:"—" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted">Departamento</dt>
+                    <dd class="col-sm-8">
+                        {% if institucion.municipio_id %}
+                            {{ institucion.municipio.departamento|default:"—" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
 
                     <dt class="col-sm-4 text-muted">Secretaría de Educación</dt>
                     <dd class="col-sm-8">{{ institucion.secretaria_educacion|default:"—" }}</dd>

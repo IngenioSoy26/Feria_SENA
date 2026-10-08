@@ -310,10 +310,19 @@ class WizardRegistroView(View):
                 'cedula': f.instructor_lider.persona.numero_identificacion if (f.instructor_lider_id and getattr(f.instructor_lider, 'persona', None)) else '',
             })
         ies_list = list(
-            InstitucionEducativa.objects.filter(activo=True).order_by('municipio', 'nombre').values(
-                'codigo', 'nombre', 'municipio', 'secretaria_educacion', 'telefono'
+            InstitucionEducativa.objects.filter(activo=True)
+            .select_related('municipio')
+            .order_by('municipio__departamento', 'municipio__nombre', 'nombre')
+            .values(
+                'codigo', 'nombre',
+                'municipio__nombre', 'municipio__departamento',
+                'secretaria_educacion', 'telefono'
             )
         )
+        # Aplanar para compatibilidad con template (municipio, departamento)
+        for ie in ies_list:
+            ie['municipio'] = ie.pop('municipio__nombre', '') or ''
+            ie['departamento'] = ie.pop('municipio__departamento', '') or ''
         programas_list = list(
             ProgramaTecnico.objects.filter(activo=True).order_by('nombre').values('nombre', 'codigo')
         )
@@ -336,9 +345,11 @@ class WizardRegistroView(View):
         return render(request, 'simple/wizard_registro.html', {
             'evento': evento,
             'municipios': sorted(set(
-                list(InstitucionEducativa.objects.exclude(municipio='').values_list('municipio', flat=True))
+                list(InstitucionEducativa.objects
+                     .exclude(municipio__isnull=True)
+                     .values_list('municipio__nombre', flat=True).distinct())
                 + ['Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Albania', 'Dibulla', 'San Juan del Cesar', 'Fonseca', 'Barrancas', 'Hatonuevo']
-            )),
+            ), key=lambda s: (s or '').lower()),
             'tipos_identificacion': ['CC', 'TI', 'PPT'],
             'max_aprendices': settings.MAX_APRENDICES_POR_PROYECTO,
             'fichas_activas': fichas_activas,
@@ -626,7 +637,7 @@ class WizardRegistroView(View):
 
             messages.success(
                 request,
-                f'✔ Ficha #{codigo_ficha} guardada OK · Proyecto: "{proyecto.nombre}" · {aprendices_guardados} aprendiz(es) · {colegio.nombre} ({colegio.municipio}).'
+                f'✔ Ficha #{codigo_ficha} guardada OK · Proyecto: "{proyecto.nombre}" · {aprendices_guardados} aprendiz(es) · {colegio.nombre} ({colegio.municipio.nombre if colegio.municipio_id else ""}).'
             )
             return redirect('simple:home')
 
@@ -664,9 +675,15 @@ class BuscarAjaxView(View):
         tipo = request.GET.get('tipo', '')
         q = request.GET.get('q', '').strip()
         if tipo == 'institucion':
-            data = list(
-                InstitucionEducativa.objects.filter(nombre__icontains=q).order_by('nombre')[:15].values('id', 'nombre', 'municipio')
-            )
+            qs = InstitucionEducativa.objects.filter(nombre__icontains=q).select_related('municipio').order_by('nombre')[:15]
+            data = []
+            for ie in qs:
+                data.append({
+                    'id': ie.id,
+                    'nombre': ie.nombre,
+                    'municipio': ie.municipio.nombre if ie.municipio_id else ''
+                })
+            data = list(data)
         elif tipo == 'programa':
             data = list(
                 ProgramaTecnico.objects.filter(nombre__icontains=q).order_by('nombre')[:15].values('id', 'nombre')

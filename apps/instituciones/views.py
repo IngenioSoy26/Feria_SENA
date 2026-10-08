@@ -28,15 +28,16 @@ class InstitucionListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(nombre__icontains=q) |
                 Q(codigo__icontains=q) |
-                Q(municipio__icontains=q) |
+                Q(municipio__nombre__icontains=q) |
+                Q(municipio__departamento__icontains=q) |
                 Q(secretaria_educacion__icontains=q)
             )
         if municipio:
-            queryset = queryset.filter(municipio__icontains=municipio)
+            queryset = queryset.filter(municipio__nombre__icontains=municipio)
         if activo in ['1', '0']:
             queryset = queryset.filter(activo=(activo == '1'))
 
-        return queryset.order_by('municipio', 'nombre')
+        return queryset.order_by('municipio__departamento', 'municipio__nombre', 'nombre')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

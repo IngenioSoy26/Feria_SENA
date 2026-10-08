@@ -7,6 +7,27 @@ def _generar_codigo_ie():
     return f'INS-{int(ultimo) + 1:07d}'
 
 
+class Municipio(models.Model):
+    nombre = models.CharField(max_length=100, unique=True, verbose_name='Nombre')
+    departamento = models.CharField(max_length=100, default='LA GUAJIRA', verbose_name='Departamento')
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Municipio'
+        verbose_name_plural = 'Municipios'
+        ordering = ['departamento', 'nombre']
+
+    def __str__(self):
+        if self.departamento:
+            return f'{self.nombre}, {self.departamento}'
+        return self.nombre
+
+    def save(self, *args, **kwargs):
+        self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
+        self.departamento = (self.departamento or '').strip().upper() or self.departamento or ''
+        super().save(*args, **kwargs)
+
+
 class InstitucionEducativa(models.Model):
     codigo = models.CharField(
         max_length=30,
@@ -16,7 +37,12 @@ class InstitucionEducativa(models.Model):
         help_text='Identificador único automático (INS-XXXXXXX). Se genera al crear la institución.'
     )
     nombre = models.CharField(max_length=250, unique=True)
-    municipio = models.CharField(max_length=100)
+    municipio = models.ForeignKey(
+        Municipio,
+        on_delete=models.PROTECT,
+        related_name='instituciones',
+        verbose_name='Municipio'
+    )
     secretaria_educacion = models.CharField(
         max_length=150,
         blank=True,
@@ -60,8 +86,6 @@ class InstitucionEducativa(models.Model):
         self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
         if self.codigo:
             self.codigo = (self.codigo or '').strip().upper()
-        if self.municipio:
-            self.municipio = (self.municipio or '').strip().upper()
         if self.secretaria_educacion:
             self.secretaria_educacion = (self.secretaria_educacion or '').strip().upper()
         if self.nombre_rector:

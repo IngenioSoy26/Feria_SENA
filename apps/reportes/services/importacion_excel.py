@@ -220,7 +220,7 @@ class ImportacionExcelService:
     @staticmethod
     def validar(archivo_excel, tipo_importacion):
         from apps.eventos.models import Evento, TipoIdentificacion
-        from apps.instituciones.models import InstitucionEducativa
+        from apps.instituciones.models import InstitucionEducativa, Municipio
         from apps.programas.models import ProgramaTecnico
         from apps.personas.models import Persona
 
@@ -734,7 +734,7 @@ class ImportacionExcelService:
     def confirmar(request, tipo, resultados_solo_validos):
         from apps.auditoria.models import AuditLog
         from apps.eventos.models import TipoIdentificacion
-        from apps.instituciones.models import InstitucionEducativa
+        from apps.instituciones.models import InstitucionEducativa, Municipio
         from apps.programas.models import ProgramaTecnico
         from apps.personas.models import Persona
         from apps.instructores.models import Instructor
@@ -765,9 +765,33 @@ class ImportacionExcelService:
             if tipo == 'instituciones':
                 if not datos.get('nombre'):
                     continue
+                # Resolver FK Municipio: get_or_create por nombre UPPER; default departamento LA GUAJIRA
+                mun_nombre = ''
+                mun_departamento_default = 'LA GUAJIRA'
+                if datos.get('municipio'):
+                    mun_nombre = str(datos['municipio']).strip().upper()[:100]
+                elif datos.get('municipio_nombre'):
+                    mun_nombre = str(datos['municipio_nombre']).strip().upper()[:100]
+                if datos.get('departamento'):
+                    mun_departamento_default = str(datos['departamento']).strip().upper()[:100] or mun_departamento_default
+                if datos.get('departamento_ie'):
+                    mun_departamento_default = str(datos['departamento_ie']).strip().upper()[:100] or mun_departamento_default
+                municipio_obj = None
+                if mun_nombre:
+                    municipio_obj, _mun_created = Municipio.objects.get_or_create(
+                        nombre=mun_nombre,
+                        defaults={'departamento': mun_departamento_default}
+                    )
+                    if _mun_created:
+                        # si no lo creamos con defaults (existe pero sin departamento), actualizar dept si está vacío
+                        pass
+                    else:
+                        # Actualizar departamento si no tenía
+                        if not municipio_obj.departamento and mun_departamento_default:
+                            municipio_obj.departamento = mun_departamento_default
+                            municipio_obj.save(update_fields=['departamento'])
                 defaults = {
                     'nombre': datos['nombre'][:250],
-                    'municipio': datos.get('municipio', '')[:100],
                     'secretaria_educacion': (datos.get('secretaria_educacion') or datos.get('secretaria') or '')[:150],
                     'telefono': (datos.get('telefono') or datos.get('telefono_ie') or '')[:30] or None,
                     'tipo': (datos.get('tipo') or '')[:50] or None,
@@ -782,6 +806,8 @@ class ImportacionExcelService:
                     'nombre_coordinador': (datos.get('nombre_coordinador') or '')[:180] or None,
                     'celular_coordinador': (datos.get('celular_coordinador') or '')[:30] or None,
                 }
+                if municipio_obj is not None:
+                    defaults['municipio'] = municipio_obj
                 obj = InstitucionEducativa.objects.filter(nombre__iexact=datos['nombre']).first()
                 created = False
                 if obj is None:

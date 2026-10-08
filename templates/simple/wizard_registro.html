@@ -31,10 +31,14 @@
           </select>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Municipio</label>
-          <select name="municipio_ie" id="inp-municipio-ie" class="form-field select">
-            {% for m in municipios %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+          <label class="form-label">Municipio <small class="hint-sena">(auto de la I.E seleccionada)</small></label>
+          <select name="municipio_ie_display" id="inp-municipio-ie" class="form-field select" disabled style="background:#f1f5ec;border-color:#d6e8bc;cursor:not-allowed;">
+            <option value="">⬇️ Primero seleccione una Institución Educativa</option>
           </select>
+          <input type="hidden" name="municipio_ie" id="hidden-municipio-ie" value="">
+          <small id="departamento-ie-label" class="d-block mt-1 text-muted" style="font-size:0.85rem;">
+            <i class="bi bi-geo-alt me-1"></i><span>Departamento: —</span>
+          </small>
         </div>
 
         <div class="col-12 col-md-6">
@@ -187,6 +191,7 @@
       const nom = (x.nombre||'').toUpperCase();
       const cod = String(x.codigo || x.codigo_dane || '').trim().toUpperCase();
       const mun = String(x.municipio || '').toUpperCase();
+      const dpto = String(x.departamento || '').toUpperCase();
       const labelPiezas = [];
       if(cod) labelPiezas.push(cod);
       labelPiezas.push(nom);
@@ -194,7 +199,7 @@
       return {
         value: nom,
         label: labelPiezas.join(' · '),
-        dataset: { municipio: mun || '', codigo: cod || '' }
+        dataset: { municipio: mun || '', codigo: cod || '', departamento: dpto || '' }
       };
     })), x => x.value);
     ieItems.sort((a,b)=> (a.label||'').localeCompare(b.label||'', 'es'));
@@ -287,6 +292,8 @@
         if((o.value||'').toUpperCase() === String(mun).toUpperCase()){ inpMun.value = o.value; found = true; break; }
       }
       if(!found){ const n = document.createElement('option'); n.value = mun; n.textContent = mun; inpMun.appendChild(n); inpMun.value = n.value; }
+      const hiddenM = document.getElementById('hidden-municipio-ie');
+      if(hiddenM) hiddenM.value = mun;
     }
     // Proyecto nombre sugerencia si está vacío
     if(inpNombreProyecto && !inpNombreProyecto.value.trim() && f.programa && f.ie){
@@ -310,19 +317,59 @@
     const ieSel = (ieCombo && ieCombo.value || '').toUpperCase().trim();
     const progSel = (progCombo && progCombo.value || '').toUpperCase().trim();
 
-    if(ieSel && inpMun){
-      const matchIe = (CAT.instituciones || []).find(x => (x.nombre||'').toUpperCase().trim() === ieSel);
-      if(matchIe && matchIe.municipio){
-        let found = false;
-        for(const o of inpMun.options){
-          if((o.value||'').toUpperCase() === (matchIe.municipio||'').toUpperCase()){
-            inpMun.value = o.value; found = true; break;
+    if(inpMun){
+      // Limpiar combo municipio
+      try{ inpMun.innerHTML = ''; }catch(_){ while(inpMun && inpMun.firstChild) inpMun.removeChild(inpMun.firstChild); }
+      const place = document.createElement('option');
+      place.value = '';
+      place.textContent = ieSel? ('Municipio auto: cargando…') : ('⬇️ Primero seleccione una Institución Educativa');
+      inpMun.appendChild(place);
+      const dptoLabel = document.getElementById('departamento-ie-label');
+      const dptoSpan = (dptoLabel && dptoLabel.querySelector('span')) ? dptoLabel.querySelector('span') : null;
+      // Hidden input paralelo para enviar valor (disabled no envía)
+      const hiddenMun = document.getElementById('hidden-municipio-ie');
+
+      let matchIe = null;
+      if(ieSel){
+        // Buscar en CAT por nombre
+        matchIe = (CAT.instituciones || []).find(x => (x.nombre||'').toUpperCase().trim() === ieSel);
+        // Si no, buscar en options del combo IE por data attrs
+        if(!matchIe && ieCombo && ieCombo.selectedIndex >= 0){
+          const opt = ieCombo.options[ieCombo.selectedIndex];
+          if(opt && (opt.getAttribute('data-municipio') || opt.getAttribute('data-departamento'))){
+            matchIe = {
+              municipio: (opt.getAttribute('data-municipio')||'').toUpperCase(),
+              departamento: (opt.getAttribute('data-departamento')||'').toUpperCase()
+            };
           }
         }
-        if(!found){
+      }
+      if(matchIe && (matchIe.municipio || matchIe.departamento)){
+        const munVal = String(matchIe.municipio || '').toUpperCase();
+        if(munVal){
           const n = document.createElement('option');
-          n.value = matchIe.municipio; n.textContent = matchIe.municipio;
-          inpMun.appendChild(n); inpMun.value = n.value;
+          n.value = munVal; n.textContent = munVal;
+          inpMun.appendChild(n); inpMun.value = munVal;
+          if(hiddenMun) hiddenMun.value = munVal;
+        } else {
+          if(hiddenMun) hiddenMun.value = '';
+        }
+        if(dptoSpan){
+          dptoSpan.textContent = (matchIe.departamento? ('Departamento: ' + matchIe.departamento) : 'Departamento: —');
+        }
+        if(dptoLabel && matchIe.departamento){
+          dptoLabel.classList.remove('text-muted');
+          dptoLabel.classList.add('text-sena-dark');
+        } else if(dptoLabel){
+          dptoLabel.classList.add('text-muted');
+          dptoLabel.classList.remove('text-sena-dark');
+        }
+      } else {
+        if(hiddenMun) hiddenMun.value = '';
+        if(dptoSpan){ dptoSpan.textContent = 'Departamento: —'; }
+        if(dptoLabel){
+          dptoLabel.classList.add('text-muted');
+          dptoLabel.classList.remove('text-sena-dark');
         }
       }
     }
@@ -687,11 +734,13 @@
       if(el && v){ el.value = v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
     });
     if(mp){
-      const sel = document.querySelector('[name="municipio_ie"]');
-      if(sel){
+      const selDis = document.getElementById('inp-municipio-ie');
+      const hid = document.getElementById('hidden-municipio-ie');
+      if(hid) hid.value = mp;
+      if(selDis){
         let found = false;
-        for(const o of sel.options){ if(o.value===mp || (o.textContent||'').trim()===mp){ sel.value=o.value; found=true; break; } }
-        if(!found){ const n=document.createElement('option'); n.value=mp; n.textContent=mp; sel.appendChild(n); sel.value=mp; }
+        for(const o of selDis.options){ if(o.value===mp || (o.textContent||'').trim()===mp){ selDis.value=o.value; found=true; break; } }
+        if(!found){ const n=document.createElement('option'); n.value=mp; n.textContent=mp; selDis.appendChild(n); selDis.value=mp; }
       }
     }
     if(!skipMsj){
