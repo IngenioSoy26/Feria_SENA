@@ -38,6 +38,31 @@
     </div>
   {% endif %}
 
+  <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:2px 2px;gap:8px;">
+    <button id="btn-iniciar" class="op-big-qr" style="width:100%;min-height:68px;height:68px;max-height:72px;padding:0 14px;font-size:clamp(1.05rem,3vw,1.25rem);border-radius:20px;display:flex;align-items:center;justify-content:center;gap:10px;line-height:1;flex-shrink:0;">
+      📷 INICIAR LECTOR QR
+    </button>
+    <button id="btn-ingreso-manual" type="button" class="w-100" style="min-height:44px;padding:6px 12px;border-radius:14px;background:rgba(255,255,255,.1);color:white;font-weight:600;font-size:.88rem;border:1.5px solid rgba(255,255,255,.22);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0;">
+      🔎 INGRESO MANUAL POR N° DE DOCUMENTO
+      <span class="badge text-bg-light text-dark rounded-pill opacity-85 fw-bold" style="font-size:.7rem;line-height:1;padding:3px 8px;">sin escarapela</span>
+    </button>
+  </div>
+
+  <div id="lector-qr" style="display:none;margin-top:2px;flex-shrink:0;">
+    <div id="qr-reader" style="border-radius:18px;background:white;overflow:hidden;padding:4px;box-shadow:0 16px 50px rgba(0,0,0,.35);border:4px solid white;"></div>
+    <button id="btn-detener" class="mt-2 w-100" style="min-height:48px;border-radius:14px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:white;font-weight:700;font-size:.9rem;">❌ Cerrar cámara</button>
+  </div>
+
+  <div style="margin-top:0;flex-shrink:0;">
+    <div class="progress" style="height:10px;border-radius:20px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.2);">
+      <div id="barra-avance" class="progress-bar" style="width:{{ stats_iniciales.porcentaje|default:0 }}%;background:linear-gradient(90deg,#39A900,#FFEB3B);height:100%;transition:width 0.8s ease;border-radius:20px;"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-1 small opacity-80" style="font-size:.72rem;">
+      <span>En línea · tiempo real</span>
+      <span id="kpi-ts">actualizando...</span>
+    </div>
+  </div>
+
   <div class="op-counters" style="grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0;">
     <div id="kpi-ingresaron" class="op-counter op-kpi" style="background:linear-gradient(160deg,#e6ffd1,#b5f0a8);color:#0f3c00;border:none;border-radius:18px;padding:10px 12px;box-shadow:0 8px 24px rgba(16,60,0,.22);display:flex;flex-direction:column;gap:2px;min-height:80px;align-items:stretch;">
       <div class="fw-bold opacity-85" style="font-size:.78rem;letter-spacing:0.2px;line-height:1.1;">
@@ -59,27 +84,6 @@
         <span id="num-pct">{{ stats_iniciales.porcentaje|default:0 }}%</span> avance
       </div>
     </div>
-  </div>
-
-  <div style="margin-top:2px;flex-shrink:0;">
-    <div class="progress" style="height:10px;border-radius:20px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.2);">
-      <div id="barra-avance" class="progress-bar" style="width:{{ stats_iniciales.porcentaje|default:0 }}%;background:linear-gradient(90deg,#39A900,#FFEB3B);height:100%;transition:width 0.8s ease;border-radius:20px;"></div>
-    </div>
-    <div class="d-flex justify-content-between mt-1 small opacity-80" style="font-size:.72rem;">
-      <span>En línea · tiempo real</span>
-      <span id="kpi-ts">actualizando...</span>
-    </div>
-  </div>
-
-  <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:4px 2px;">
-    <button id="btn-iniciar" class="op-big-qr" style="width:100%;min-height:68px;height:68px;max-height:72px;margin-top:0;padding:0 14px;font-size:clamp(1.05rem,3vw,1.25rem);border-radius:20px;display:flex;align-items:center;justify-content:center;gap:10px;line-height:1;">
-      📷 INICIAR LECTOR QR
-    </button>
-  </div>
-
-  <div id="lector-qr" style="display:none;margin-top:4px;flex-shrink:0;">
-    <div id="qr-reader" style="border-radius:18px;background:white;overflow:hidden;padding:4px;box-shadow:0 16px 50px rgba(0,0,0,.35);border:4px solid white;"></div>
-    <button id="btn-detener" class="mt-2 w-100" style="min-height:48px;border-radius:14px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:white;font-weight:700;font-size:.9rem;">❌ Cerrar cámara</button>
   </div>
 
 </div>
@@ -117,6 +121,34 @@
         </button>
       </div>
       <button id="panel-cerrar" class="btn btn-sm flex-shrink-0" style="min-height:34px;background:rgba(0,0,0,.1);border-radius:10px;padding:2px 8px;font-size:.9rem;">✖</button>
+    </div>
+  </div>
+</div>
+
+{# ===== PANEL INGRESO MANUAL POR N° DE DOCUMENTO (fallback sin escarapela) ===== #}
+<div id="panel-manual-overlay" class="d-none"
+     style="position:fixed;inset:0;z-index:1070;background:rgba(0,0,0,0.58);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;padding:8px 10px 10px 10px;">
+  <div id="panel-manual" style="width:100%;max-width:460px;border-radius:22px;background:#ffffff;box-shadow:0 24px 80px rgba(0,0,0,0.55);padding:16px 16px 14px;animation:slideUpFade .32s cubic-bezier(.2,.8,.2,1) both;">
+    <div class="d-flex align-items-center mb-3" style="gap:10px;">
+      <div style="font-size:1.9rem;line-height:1;">🔎</div>
+      <div class="flex-grow-1 min-0">
+        <div class="fw-bold" style="font-size:1.05rem;line-height:1.1;color:#202124;">Ingreso Manual · N° de Documento</div>
+        <div class="opacity-65" style="font-size:.76rem;line-height:1.15;color:#5f6368;">Usa esta opción cuando el asistente NO lleve su escarapela física.</div>
+      </div>
+      <button id="panel-manual-cerrar" type="button" class="btn btn-sm flex-shrink-0" style="min-height:34px;background:rgba(0,0,0,.06);border-radius:10px;padding:2px 9px;font-size:.95rem;color:#4a4a4a;">✖</button>
+    </div>
+    <div style="padding:12px;border-radius:16px;background:linear-gradient(160deg,#f8fff2,#eefce3);border:1.5px solid #b7eba0;">
+      <label for="manual-num-doc" class="form-label fw-semibold mb-1" style="font-size:.9rem;color:#0f3c00;">N° de Documento de Identidad</label>
+      <input id="manual-num-doc" inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" autocomplete="off" spellcheck="false" type="tel"
+             placeholder="Escribe cédula (sólo números) — ej: 123456789"
+             style="width:100%;min-height:58px;padding:0 14px;border-radius:14px;border:2px solid #b7eba0;font-size:1.15rem;font-family:ui-monospace,Consolas,monospace;letter-spacing:0.5px;background:white;color:#1b1b1b;outline:none;">
+      <div id="manual-error" class="mt-2 p-2 rounded-3 text-center fw-semibold d-none" style="font-size:.86rem;background:rgba(198,40,40,.12);color:#a32424;"></div>
+      <button id="manual-validar-btn" type="button" class="mt-3 w-100 text-white fw-bold" style="min-height:60px;border:none;border-radius:16px;font-size:1.05rem;background:linear-gradient(160deg,#39A900,#2e7a00);box-shadow:0 10px 30px rgba(57,169,0,.35);letter-spacing:0.25px;line-height:1.05;display:flex;align-items:center;justify-content:center;gap:10px;">
+        ✅ BUSCAR · VALIDAR Y REGISTRAR
+      </button>
+    </div>
+    <div class="mt-3 text-center opacity-65" style="font-size:.7rem;color:#5f6368;line-height:1.2;">
+      El registro tendrá la marca <b>medio = MANUAL</b> para auditoría.
     </div>
   </div>
 </div>
@@ -245,6 +277,121 @@
   if(overlay){ overlay.addEventListener('click', function(ev){ if(ev.target === overlay) cerrarPanel(); }); }
   const bVal=document.getElementById('panel-validar');
   if(bVal){bVal.addEventListener('click',cerrarPanel);}
+
+  // =========================================================================
+  // PANEL INGRESO MANUAL POR N° DE DOCUMENTO (fallback SIN escarapela)
+  // =========================================================================
+  const mOverlay = document.getElementById('panel-manual-overlay');
+  const mPanel   = document.getElementById('panel-manual');
+  const mInput   = document.getElementById('manual-num-doc');
+  const mBtn     = document.getElementById('btn-ingreso-manual');
+  const mCerrar  = document.getElementById('panel-manual-cerrar');
+  const mSubmit  = document.getElementById('manual-validar-btn');
+  const mError   = document.getElementById('manual-error');
+  let _mSubmitBloqueado = false;
+
+  function abrirManual(){
+    if(!mOverlay) return;
+    _mSubmitBloqueado = false;
+    if(mError){ mError.textContent=''; mError.classList.add('d-none'); }
+    if(mInput){ mInput.value=''; setTimeout(()=>{ try{ mInput.focus(); }catch(_){} }, 220); }
+    mOverlay.classList.remove('d-none');
+    try{ mOverlay.style.display = 'flex'; }catch(_){}
+  }
+  function cerrarManual(){
+    if(!mOverlay) return;
+    _mSubmitBloqueado = false;
+    mOverlay.classList.add('d-none');
+    try{ mOverlay.style.display = 'none'; }catch(_){}
+    if(mError){ mError.textContent=''; mError.classList.add('d-none'); }
+  }
+  if(mBtn){ mBtn.addEventListener('click', abrirManual); }
+  if(mCerrar){ mCerrar.addEventListener('click', cerrarManual); }
+  if(mOverlay){ mOverlay.addEventListener('click', function(ev){ if(ev.target === mOverlay) cerrarManual(); }); }
+  if(mInput){
+    mInput.addEventListener('keydown', function(ev){
+      if(ev && (ev.key==='Enter' || ev.keyCode===13)){ ev.preventDefault(); if(mSubmit) mSubmit.click(); return false; }
+    });
+    mInput.addEventListener('input', function(){
+      // live filter: borrar caracteres no numéricos al escribir
+      try{
+        const raw = mInput.value || '';
+        const limpio = raw.replace(/[^0-9]/g, '').slice(0,15);
+        if(limpio !== raw) mInput.value = limpio;
+        if(mError && !mError.classList.contains('d-none')){
+          mError.textContent=''; mError.classList.add('d-none');
+        }
+      }catch(_){}
+    });
+  }
+  if(mSubmit){
+    mSubmit.addEventListener('click', async function(){
+      if(_mSubmitBloqueado) return;
+      const raw = String((mInput && mInput.value) || '').trim();
+      const numdoc = raw.replace(/\D/g,'');
+      if(!numdoc || numdoc.length < 5 || numdoc.length > 15){
+        if(mError){
+          mError.textContent = (
+            'N° inválido: "' + (numdoc || '(vacío)') + '". ' +
+            'Deben ser entre 5 y 15 dígitos numéricos (solo números).'
+          );
+          mError.classList.remove('d-none');
+        }
+        if(mInput){ try{ mInput.focus(); mInput.select(); }catch(_){} }
+        return;
+      }
+      _mSubmitBloqueado = true;
+      const txtAnt = mSubmit.textContent || '';
+      try{
+        mSubmit.disabled = true;
+        mSubmit.style.opacity = '0.7';
+        mSubmit.textContent = '🔍 Buscando y validando...';
+        if(mError){ mError.textContent=''; mError.classList.add('d-none'); }
+
+        const resp = await fetch(ENDPOINT, _fetchOptions('POST', {
+          numero_documento: numdoc,
+          tipo: TIPO_OP,
+          medio: 'MANUAL',
+        }));
+        let data = {ok:false,status:'ROJO',mensaje:'Respuesta inválida del servidor (ingreso manual).'};
+        try{
+          const ct = resp.headers.get('Content-Type') || '';
+          if(!ct || ct.indexOf('application/json')<0){
+            const txt = await resp.text();
+            if(txt.indexOf('Autenticación')>=0 || resp.status===401 || resp.status===403 || resp.status===302){
+              data = {ok:false,status:'ROJO',mensaje:'❌ Autenticación requerida. Solicita al Admin el enlace Token público.'};
+            }else{
+              data = {ok:false,status:'ROJO',mensaje:'Respuesta inválida del servidor ('+resp.status+'). Vuelva a intentarlo.'};
+            }
+          }else{
+            data = await resp.json();
+            if(resp.status===401 || resp.status===403 || (data && data.mensaje && String(data.mensaje).indexOf('Autenticación')>=0)){
+              data = {ok:false,status:'ROJO',mensaje:'❌ Autenticación requerida. Solicita al Admin el enlace Token público.'};
+            }else if(!resp.ok && !(data && (data.status || data.es_duplicado || data.es_nuevo))){
+              data = {ok:false,status:'ROJO',mensaje: (data && data.mensaje) ? data.mensaje : textoCasoNoExiste()};
+            }
+          }
+        }catch(e){
+          data = {ok:false,status:'ROJO',mensaje:'Respuesta inválida del servidor. Vuelva a intentarlo.'};
+        }
+        // Cerrar el panel manual, luego mostrar el panel resultado COMPARTIDO.
+        cerrarManual();
+        mostrarPanel(data);
+      }catch(err){
+        if(mError){
+          mError.textContent = 'Error de conexión: ' + String(err||'desconocido');
+          mError.classList.remove('d-none');
+        }
+      }finally{
+        _mSubmitBloqueado = false;
+        try{
+          mSubmit.disabled = false;
+          mSubmit.style.opacity = '1';
+          mSubmit.textContent = txtAnt || '✅ BUSCAR · VALIDAR Y REGISTRAR';
+        }catch(_){}
+      }
+    });
+  }
 
   function textoCasoYaRegistrado(){
     if(TIPO_OP==='refrigerios'){return '⚠️ El refrigerio ya fue entregado anteriormente a esta persona.';}

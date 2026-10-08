@@ -885,18 +885,40 @@ class RegistrarOperadorAjax(View):
         except Exception:
             body = request.POST.dict()
         token = (body.get('token') or body.get('qr_token') or '').strip()
-        medio = body.get('medio') or 'QR'
+        numero_documento_req = (body.get('numero_documento') or '').strip()
+        medio = (body.get('medio') or 'QR').strip()[:20] or 'QR'
         tipo = body.get('tipo') or 'asistencia'
         evento = _evento_activo()
 
         if not evento:
             return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'No hay evento activo.'})
-        if not token:
-            return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Código QR inválido.'})
 
-        persona = Persona.objects.filter(qr_token=token).first()
-        if not persona:
-            return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Código QR no registrado en el sistema.'})
+        # === CASO A) QR TOKEN (método normal) ===
+        if token:
+            persona = Persona.objects.filter(qr_token=token).first()
+            if not persona:
+                return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Código QR no registrado en el sistema.'})
+        # === CASO B) INGRESO MANUAL POR NÚMERO DE DOCUMENTO (fallback sin escarapela) ===
+        elif numero_documento_req:
+            import re
+            _numdoc = re.sub(r'\D', '', numero_documento_req or '')
+            if not _numdoc or len(_numdoc) < 5 or len(_numdoc) > 15:
+                return JsonResponse({
+                    'ok': False, 'status': 'ROJO',
+                    'mensaje': f'Número de documento inválido ("{_numdoc}"). Debe contener entre 5 y 15 dígitos numéricos.'
+                })
+            persona = Persona.objects.filter(numero_identificacion=_numdoc).first()
+            if not persona:
+                return JsonResponse({
+                    'ok': False, 'status': 'ROJO',
+                    'mensaje': f'No existe ninguna persona registrada con el N° de documento "{_numdoc}". Verifique el número.'
+                })
+            medio = 'MANUAL'
+        else:
+            return JsonResponse({
+                'ok': False, 'status': 'ROJO',
+                'mensaje': 'Proporcione un código QR o un N° de documento.'
+            })
 
         label = persona.get_full_name()
         extra = ''
