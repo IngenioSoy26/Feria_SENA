@@ -233,15 +233,15 @@ class EscarapelaPDFService:
     def _caja_inferior(c, info, dx=0, dy=0):
         lineas = []
         if info['codigo_proyecto']:
-            lineas.append(('HELVETICA-BOLD', POS_CAJA_INFERIOR['size_1'], info['codigo_proyecto'], COLOR_SENA_VERDE_OSCURO))
+            lineas.append(('Helvetica-Bold', POS_CAJA_INFERIOR['size_1'], info['codigo_proyecto'], COLOR_SENA_VERDE_OSCURO))
         if info['codigo_ficha']:
-            lineas.append(('HELVETICA', POS_CAJA_INFERIOR['size'], f'FICHA {info["codigo_ficha"]}', GRIS_OSCURO))
+            lineas.append(('Helvetica', POS_CAJA_INFERIOR['size'], f'FICHA {info["codigo_ficha"]}', GRIS_OSCURO))
         if info['programa']:
-            lineas.append(('HELVETICA', POS_CAJA_INFERIOR['size'], info['programa'], GRIS_OSCURO))
+            lineas.append(('Helvetica', POS_CAJA_INFERIOR['size'], info['programa'], GRIS_OSCURO))
         if info['institucion']:
-            lineas.append(('HELVETICA', POS_CAJA_INFERIOR['size'] - 0.5, info['institucion'], GRIS_OSCURO))
+            lineas.append(('Helvetica', POS_CAJA_INFERIOR['size'] - 0.5, info['institucion'], GRIS_OSCURO))
         if info['extra'] and not lineas:
-            lineas.append(('HELVETICA-BOLD', POS_CAJA_INFERIOR['size_1'], info['extra'], COLOR_SENA_VERDE_OSCURO))
+            lineas.append(('Helvetica-Bold', POS_CAJA_INFERIOR['size_1'], info['extra'], COLOR_SENA_VERDE_OSCURO))
         if not lineas:
             return
         n = min(len(lineas), 4)
