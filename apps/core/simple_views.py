@@ -449,50 +449,13 @@ class WizardRegistroView(View):
                 )
                 return redirect('simple:wizard')
 
-            # ---- INSTRUCTOR LÍDER (obligatorio; cedula única por Tipo CC y Persona. Crear Persona/Instructor si no existe con este # doc) ----
+            # ---- INSTRUCTOR LÍDER = OPCIÓN A (ESTRICTAMENTE CATÁLOGO) ----
+            # Regla Opción A aprobada por usuario: Instructor LÍDER viene ÚNICAMENTE del
+            # maestro Ficha.instructor_lider. NO se usa NADA de lo que el formulario
+            # envíe (inputs readonly, el usuario NO puede escribir/editar). Si la Ficha
+            # no tiene instructor_lider asignado en el catálogo Admin → ERROR DURO (no
+            # se crea Persona, no se crea Instructor, no se guarda Proyecto).
             instructor_obj = None
-            p_ins = None
-            cedula_ins = cedula_instructor
-            nombres_ins, apellidos_ins = self._separar_nombres_apellidos(nombre_instructor)
-            try:
-                p_ins = Persona.objects.select_related('perfil_instructor').filter(
-                    tipo_identificacion=_tipo_cc(),
-                    numero_identificacion=cedula_ins,
-                ).first()
-            except Exception:
-                p_ins = None
-            if not p_ins:
-                p_ins = Persona.objects.create(
-                    tipo_identificacion=_tipo_cc(),
-                    numero_identificacion=cedula_ins,
-                    nombres=(nombres_ins or '').upper(),
-                    apellidos=(apellidos_ins or '').upper(),
-                    correo=f"instructor_{cedula_ins}@sena.edu.co",
-                    tipo_persona='INSTRUCTOR',
-                )
-            else:
-                # Actualizar nombres/apellidos/correo si llegasen a cambiar
-                save_ins = []
-                if p_ins.nombres != (nombres_ins or '').upper():
-                    p_ins.nombres = (nombres_ins or '').upper()
-                    save_ins.append('nombres')
-                if p_ins.apellidos != (apellidos_ins or '').upper():
-                    p_ins.apellidos = (apellidos_ins or '').upper()
-                    save_ins.append('apellidos')
-                if save_ins:
-                    p_ins.save(update_fields=save_ins)
-            try:
-                instructor_obj = p_ins.perfil_instructor
-            except Exception:
-                instructor_obj = None
-            if not instructor_obj:
-                from apps.instructores.models import Instructor as _InstructorModel
-                instructor_obj, _ = _InstructorModel.objects.get_or_create(persona=p_ins)
-            if programa.pk and not instructor_obj.programas.filter(pk=programa.pk).exists():
-                try:
-                    instructor_obj.programas.add(programa)
-                except Exception:
-                    pass
 
             # ---- FICHA MAESTRA (SOLO CATÁLOGO ADMIN — DEBE EXISTIR; no se crea aquí) ----
             ficha_obj = Ficha.objects.filter(numero=codigo_ficha, activo=True).first()
@@ -512,12 +475,34 @@ class WizardRegistroView(View):
                 )
                 colegio = ficha_obj.institucion
                 programa = ficha_obj.programa
-            if ficha_obj.instructor_lider_id:
-                p_lider = getattr(ficha_obj.instructor_lider, 'persona', None)
-                if p_lider:
-                    nombre_instructor = p_lider.nombre_completo
-                    cedula_instructor = p_lider.numero_identificacion
-                    instructor_obj = ficha_obj.instructor_lider
+            # ================ OPCIÓN A INICIO: SOLO instructor_lider de FICHA ==============
+            if not ficha_obj.instructor_lider_id:
+                messages.error(
+                    request,
+                    f'❌ La Ficha #{codigo_ficha} NO tiene Instructor Líder asignado en el catálogo maestro.\n'
+                    'El formulario NO permite registrar manualmente el instructor (dato catálogo maestro SENA). '
+                    'Por favor contacte al Administrador para que cargue el Instructor líder de la Ficha '
+                    f'#{codigo_ficha} mediante la importación Excel o el panel administrativo.'
+                )
+                return redirect('simple:wizard')
+            p_lider = getattr(ficha_obj.instructor_lider, 'persona', None)
+            if not p_lider:
+                messages.error(
+                    request,
+                    f'❌ La Ficha #{codigo_ficha} tiene Instructor Líder sin registro de Persona. '
+                    'Contacte al Administrador para corregir la integridad de datos del instructor.'
+                )
+                return redirect('simple:wizard')
+            instructor_obj = ficha_obj.instructor_lider
+            nombre_instructor = p_lider.nombre_completo
+            cedula_instructor = p_lider.numero_identificacion
+            # Relación Instructor <-> Programa (compatibilidad)
+            if programa.pk and not instructor_obj.programas.filter(pk=programa.pk).exists():
+                try:
+                    instructor_obj.programas.add(programa)
+                except Exception:
+                    pass
+            # ================ OPCIÓN A FIN: ya NO se usa el instructor que venga del form POST ==============
             if ficha_obj.municipio:
                 municipio_ie = ficha_obj.municipio
 

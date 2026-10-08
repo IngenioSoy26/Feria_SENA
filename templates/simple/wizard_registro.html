@@ -68,13 +68,15 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Instructor líder <span class="req">*</span></label>
-          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name" list="instructor_dl" required>
+          <label class="form-label">Instructor líder <span class="hint-sena">(dato catálogo Ficha, solo lectura)</span></label>
+          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case readonly-campo-bloqueado" placeholder="Se autocompleta al seleccionar la Ficha" autocomplete="name" list="instructor_dl" readonly style="background-color:#f0f2f5;cursor:not-allowed;color:#3b3b3b;opacity:0.92;">
           <datalist id="instructor_dl"></datalist>
+          <div class="small text-muted mt-1">ℹ Este valor NO se puede editar aquí. Proviene del catálogo maestro de Fichas administrado por el SENA.</div>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Documento de identidad del instructor líder <span class="req">*</span> <span class="hint-sena">(solo dígitos, mínimo 5)</span></label>
-          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono ins-doc-limpio" inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" placeholder="Ej: 1012345678" required>
+          <label class="form-label">Documento de identidad del instructor líder <span class="hint-sena">(dato catálogo Ficha)</span></label>
+          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono ins-doc-limpio readonly-campo-bloqueado" inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" placeholder="Se autocompleta al seleccionar Ficha" readonly style="background-color:#f0f2f5;cursor:not-allowed;color:#3b3b3b;opacity:0.92;">
+          <div class="small text-muted mt-1">ℹ Este valor NO se puede editar aquí. Si requiere corrección contacte al Administrador del sistema.</div>
         </div>
       </div>
     </div>
@@ -478,16 +480,32 @@
       const idx = opts.indexOf(progNom);
       if(idx !== -1){ progCombo.value = progCombo.options[idx].value; }
     }
-    // 4) Campos Instructor + Cédula (inputs simples)
+    // 4) Campos Instructor + Cédula (inputs simples) — SON SOLO LECTURA (catálogo Ficha)
+    const nomIns = document.getElementById('inp-ins-nombre');
+    const docIns = document.getElementById('inp-ins-doc');
     const fields = [
-      ['instructor_nombre', (f.instructor||'').toUpperCase()],
-      ['instructor_cedula', f.cedula || ''],
+      ['instructor_nombre', (f.instructor||'').toUpperCase(), nomIns],
+      ['instructor_cedula', f.cedula || '', docIns],
     ];
-    for(const [nm, v] of fields){
-      const el = document.querySelector(`[name="${nm}"]`);
-      if(!el || !v) continue;
-      el.value = v;
+    for(const [nm, v, el] of fields){
+      if(!el) continue;
+      if(v){ el.value = v; }
+      el.readOnly = true;
+      el.setAttribute('readonly','readonly');
+      try{ el.classList.add('readonly-campo-bloqueado'); }catch(_){}
+      try{ el.style.backgroundColor = '#f0f2f5'; el.style.cursor = 'not-allowed'; el.style.color = '#3b3b3b'; el.style.opacity = '0.92'; }catch(_){}
       try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true})); }catch(_){}
+    }
+    // Mensaje extra alerta: si Ficha no tenía instructor en catalogo, informar (no editar desde aquí)
+    const hayLleno = (f.instructor && f.instructor.trim() && f.cedula && String(f.cedula).trim());
+    if(!hayLleno && skipMsj===false && nomIns){
+      try{
+        const al = document.createElement('div');
+        al.className = 'alert alert-warning py-2 px-3 small mt-1 mb-0';
+        al.style.cssText='border:0;border-radius:12px;border-left:5px solid #ff8c00;background:#fff4e5;';
+        al.innerHTML = 'ℹ La Ficha #<b>'+String(fichaNum)+'</b> NO tiene Instructor Líder registrado en el catálogo maestro (Administrador). Por favor contacte al Administrador SENA para cargar el Instructor líder de esta ficha (este formulario no permite editarlo).';
+        nomIns.parentElement.after(al);
+      }catch(_){}
     }
     // Proyecto nombre sugerencia si está vacío
     if(inpNombreProyecto && !inpNombreProyecto.value.trim() && f.programa && f.ie){
@@ -564,10 +582,11 @@
       if(!progVal) msjs.push('Programa Técnico');
       if(!fichaVal || !/^\d{7}$/.test(fichaVal)) msjs.push('Código de Ficha (7 dígitos EXACTOS)');
 
-      // --- Instructor líder documento (solo dígitos · 5-15) ---
-      const docIns = (inpDoc? inpDoc.value : '').trim();
-      if(!docIns) msjs.push('Documento de identidad del instructor líder');
-      else if(!/^\d{5,15}$/.test(docIns)) msjs.push('Documento instructor líder inválido (solo dígitos · 5 a 15 caracteres)');
+      // --- Instructor líder: YA NO se valida en formulario (dato maestro Ficha, viene del catalogo) ---
+      // Si el usuario SI HIZO la selección de Ficha (7 dígitos), el backend sobrescribe lo que venga en instructor
+      // con ficha_obj.instructor_lider (ver simple_views.py 515-520). Si por algun bug el formulario llega sin
+      // instructor, el backend lo valida. NO exigirlo aquí para no bloquear flujo ya que inputs son readonly.
+      // (Se elimina el push a msjs de instructor_nombre / instructor_cedula).
 
       // --- Validación aprendices dinámicos ---
       const RE_EMAIL = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
