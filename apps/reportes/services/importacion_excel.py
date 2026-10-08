@@ -1006,15 +1006,6 @@ class ImportacionExcelService:
                     continue
                 nombre = datos['nombre']
                 codigo = datos.get('codigo') or ''
-                duracion_meses = datos.get('duracion_meses') or None
-                if duracion_meses:
-                    try:
-                        duracion_meses = int(re.sub(r'\D', '', str(duracion_meses)))
-                    except Exception:
-                        duracion_meses = None
-                        pass
-                sector = datos.get('sector') or None
-                descripcion = datos.get('descripcion') or None
                 if not codigo:
                     usados = set(ProgramaTecnico.objects.values_list('codigo', flat=True))
                     codigo = _generar_codigo_programa(nombre, usados_set=usados, existe_bd_fn=lambda c: False)
@@ -1025,25 +1016,16 @@ class ImportacionExcelService:
                     if obj is None:
                         obj = ProgramaTecnico.objects.create(
                             codigo=codigo, nombre=nombre[:200],
-                            duracion_meses=duracion_meses,
-                            sector=(sector[:120] if sector else None),
-                            descripcion=(descripcion[:2000] if descripcion else None),
                             activo=True,
                         )
                         created = True
                     else:
                         obj.nombre = nombre[:200]
-                        if duracion_meses: obj.duracion_meses = duracion_meses
-                        if sector: obj.sector = sector[:120]
-                        if descripcion: obj.descripcion = descripcion[:2000]
                         obj.activo = True
                         obj.save()
                 else:
                     obj.nombre = nombre[:200]
                     if not obj.codigo: obj.codigo = codigo
-                    if duracion_meses: obj.duracion_meses = duracion_meses
-                    if sector: obj.sector = sector[:120]
-                    if descripcion: obj.descripcion = descripcion[:2000]
                     obj.activo = True
                     obj.save()
                 info_fila['accion'] = 'CREATE' if created else 'UPDATE'
@@ -1104,11 +1086,6 @@ class ImportacionExcelService:
                     defaults['telefono_instructor'] = (str(datos.get('telefono_instructor') or '')[:30] or None)
                 if datos.get('correo_instructor'):
                     defaults['correo_instructor'] = (datos.get('correo_instructor') or None)
-                if datos.get('jornada'):
-                    defaults['jornada'] = str(datos.get('jornada'))[:50]
-                if datos.get('modalidad'):
-                    defaults['modalidad'] = str(datos.get('modalidad'))[:50]
-                # fechas inicio/fin: parsear si llega date/datetime/string
                 for campof, campod in [('fecha_inicio', 'fecha_inicio'), ('fecha_fin', 'fecha_fin')]:
                     v = datos.get(campof)
                     if v:
