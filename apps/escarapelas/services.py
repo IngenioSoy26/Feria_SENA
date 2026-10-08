@@ -91,13 +91,15 @@ POS_CAJA_NOMBRE = {
     "w": 93 * mm,
     "h": 18 * mm,
     "r": 6 * mm,
-    "borde_grosor": 1.0,
+    "borde_grosor": 0,
     "padding_lados": 5 * mm,
     "fill_alpha": 0.40,
 
-    # Baselines (dentro de la caja, de ARRIBA hacia ABAJO)
-    "y_nombre": 64.3 * mm,
-    "y_institucion": 56.0 * mm,
+    # Baselines CENTRADAS verticalmente dentro de la caja [51→69], centro=60mm
+    # Nombre: 63.2 ; IE: 58.2 → gap 5.0mm (antes 8.3mm, MUCHO MÁS JUNTAS)
+    # Centro baselines: (63.2+58.2)/2 = 60.7mm  ← CASI EXACTO al centro geométrico
+    "y_nombre": 63.2 * mm,
+    "y_institucion": 58.2 * mm,
 
     "size_nombre": 14,
     "size_institucion": 8.2,
