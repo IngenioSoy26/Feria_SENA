@@ -66,6 +66,14 @@ def _datos_persona_serializados(persona):
         if invitado:
             institucion = invitado.entidad
             programa = invitado.cargo or ''
+    elif persona.tipo_persona == 'ORGANIZADOR':
+        org = getattr(persona, 'perfil_organizador', None)
+        if org:
+            institucion = org.area_responsabilidad or 'ORGANIZACIÓN'
+            programa = org.cargo or 'ORGANIZADOR FERIA'
+        else:
+            institucion = 'SENA'
+            programa = 'ORGANIZADOR'
 
     return {
         'nombre': persona.nombre_completo,

@@ -23,6 +23,7 @@ urlpatterns = [
     path('proyectos/', include('apps.proyectos.urls', namespace='proyectos')),
     path('instructores/', include('apps.instructores.urls', namespace='instructores')),
     path('invitados/', include('apps.invitados.urls', namespace='invitados')),
+    path('organizadores/', include('apps.organizadores.urls', namespace='organizadores')),
     path('escarapelas/', include('apps.escarapelas.urls', namespace='escarapelas')),
     path('asistencia/', include('apps.asistencia.urls', namespace='asistencia')),
     path('refrigerios/', include('apps.refrigerios.urls', namespace='refrigerios')),

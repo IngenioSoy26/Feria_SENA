@@ -8,7 +8,7 @@ class PersonaForm(forms.ModelForm):
         required=False,
         initial=True,
         label='Crear perfil asociado',
-        help_text='Marque para crear el perfil de Aprendiz, Instructor o Invitado según el tipo seleccionado.',
+        help_text='Marque para crear el perfil de Aprendiz, Instructor, Invitado u Organizador según el tipo seleccionado.',
     )
     entidad = forms.CharField(
         required=False,
@@ -41,6 +41,24 @@ class PersonaForm(forms.ModelForm):
         initial='11',
         label='Grado (Aprendiz)',
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 11, 10, Postgrado'}),
+    )
+    cargo_organizador = forms.CharField(
+        required=False,
+        max_length=150,
+        label='Cargo (Organizador)',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: Coordinador General, Logística, Registro'
+        }),
+    )
+    area_organizador = forms.CharField(
+        required=False,
+        max_length=200,
+        label='Área / Punto de atención (Organizador)',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: Ingreso Principal, Palcos, Mesa Central'
+        }),
     )
 
     class Meta:

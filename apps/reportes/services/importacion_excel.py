@@ -784,11 +784,40 @@ class ImportacionExcelService:
                 apellidos = datos.get('apellidos', '')
                 correo = datos.get('correo', '')
                 telefono = datos.get('telefono', '')
-                tipo_persona = datos.get('tipo_persona', '').upper()
+                tipo_persona_raw = datos.get('tipo_persona', '') or ''
+                tipo_persona = str(tipo_persona_raw).strip().upper()
                 proyecto_codigo = datos.get('proyecto_codigo', '')
                 grado = datos.get('grado', '11')
                 entidad = datos.get('entidad', '')
                 cargo = datos.get('cargo', '')
+
+                # =================================================================
+                # ✅ Mapeo MUY FÁCIL TIPO_PERSONA: acepta abreviaturas /
+                # variaciones para que el usuario no tenga que escribir
+                # exactamente "APRENDIZ / INSTRUCTOR / INVITADO / ORGANIZADOR".
+                #
+                # O | ORG | ORGANIZ | ORGANIZADO  ->  ORGANIZADOR
+                # I | INS | INSTRUCTOR            ->  INSTRUCTOR
+                # A | APR | APRENDIZ              ->  APRENDIZ
+                # V | INV | INVI | INVITADO       ->  INVITADO
+                # =================================================================
+                _TIPO_ALIAS = {
+                    'O': 'ORGANIZADOR', 'ORG': 'ORGANIZADOR',
+                    'ORGANIZ': 'ORGANIZADOR', 'ORGANIZADO': 'ORGANIZADOR',
+                    'ORGANIZADORES': 'ORGANIZADOR', 'ORGANIZADOR': 'ORGANIZADOR',
+                    'I': 'INSTRUCTOR', 'INS': 'INSTRUCTOR',
+                    'INST': 'INSTRUCTOR', 'INSTRUCTOR': 'INSTRUCTOR',
+                    'INSTRUCTORES': 'INSTRUCTOR',
+                    'A': 'APRENDIZ', 'APR': 'APRENDIZ',
+                    'APREND': 'APRENDIZ', 'APRENDIZ': 'APRENDIZ',
+                    'APRENDICES': 'APRENDIZ',
+                    'V': 'INVITADO', 'IV': 'INVITADO',
+                    'INV': 'INVITADO', 'INVI': 'INVITADO',
+                    'INVIT': 'INVITADO', 'INVITADO': 'INVITADO',
+                    'INVITADOS': 'INVITADO',
+                }
+                if tipo_persona and tipo_persona in _TIPO_ALIAS:
+                    tipo_persona = _TIPO_ALIAS[tipo_persona]
 
                 if tipo_persona and tipo_persona not in dict(Persona.TIPOS):
                     clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ERROR)
@@ -1185,6 +1214,12 @@ class ImportacionExcelService:
                     )
                 elif datos['tipo_persona'] == 'INSTRUCTOR':
                     Instructor.objects.get_or_create(persona=persona)
+                elif datos['tipo_persona'] == 'ORGANIZADOR':
+                    from apps.organizadores.models import Organizador
+                    Organizador.objects.get_or_create(persona=persona, defaults={
+                        'cargo': (datos.get('cargo') or '')[:150] or None,
+                        'area_responsabilidad': (datos.get('entidad') or '')[:200] or None,
+                    })
 
                 info_fila['accion'] = 'CREATE' if p_created else 'UPDATE'
                 if p_created:

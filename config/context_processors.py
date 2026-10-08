@@ -93,6 +93,13 @@ def menu_dinamico_por_rol(request):
     })
 
     menu.append({
+        'nombre': 'Organizadores',
+        'url': 'organizadores:list',
+        'icono': 'user-shield',
+        'mostrar': es_admin or es_coordinador or es_operativo,
+    })
+
+    menu.append({
         'nombre': 'Escarapelas',
         'url': 'escarapelas:listar',
         'icono': 'id-card',

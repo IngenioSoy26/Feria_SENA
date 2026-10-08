@@ -140,7 +140,8 @@ def _reemplazar_plantilla(plantilla, persona, evento=None, proyecto=None, overri
     except Exception:
         tipo_id_nice = 'Cédula'
     rol_nice = {'APRENDIZ': 'Aprendiz', 'INSTRUCTOR': 'Instructor',
-                'INVITADO': 'Invitado', 'ACUDIENTE': 'Acudiente'}.get(persona.tipo_persona or '', 'Participante')
+                'INVITADO': 'Invitado', 'ORGANIZADOR': 'Organizador',
+                'ACUDIENTE': 'Acudiente'}.get(persona.tipo_persona or '', 'Participante')
     nombre_institucion = ''
     nombre_proyecto = ''
     codigo_proyecto = ''
