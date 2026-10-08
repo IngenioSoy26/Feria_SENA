@@ -367,6 +367,8 @@ class WizardRegistroView(View):
             'fichas_activas': fichas_activas,
             'catalogo_json': json.dumps(catalogo, ensure_ascii=False, default=str),
             'catalogo_b64': catalogo_b64,
+            'ies_list': ies_list,
+            'programas_list': programas_list,
         })
 
     @transaction.atomic

@@ -28,6 +28,16 @@
           <label class="form-label">Institución Educativa <span class="req">*</span></label>
           <select name="nombre_ie" id="inp-nombre-ie" class="form-field select combo-filtro" data-combo="ie" required>
             <option value="">⬇️ Seleccione o busque una Institución Educativa</option>
+            {% for ie in ies_list %}
+              {% if ie.nombre %}
+                <option value="{{ ie.nombre }}"
+                        data-codigo="{{ ie.codigo|default:'' }}"
+                        data-municipio="{{ ie.municipio|default:'' }}"
+                        data-departamento="{{ ie.departamento|default:'' }}">
+                  {% if ie.codigo %}{{ ie.codigo }} · {% endif %}{{ ie.nombre }}{% if ie.municipio %} · {{ ie.municipio }}{% endif %}
+                </option>
+              {% endif %}
+            {% endfor %}
           </select>
         </div>
         <div class="col-12 col-md-6">
@@ -45,6 +55,13 @@
           <label class="form-label">Programa Técnico <span class="req">*</span></label>
           <select name="nombre_programa" id="inp-nombre-programa" class="form-field select combo-filtro" data-combo="programa" required>
             <option value="">⬇️ Seleccione o busque un Programa Técnico</option>
+            {% for p in programas_list %}
+              {% if p.nombre %}
+                <option value="{{ p.nombre }}" data-codigo="{{ p.codigo|default:'' }}">
+                  {{ p.nombre }}{% if p.codigo %} · {{ p.codigo }}{% endif %}
+                </option>
+              {% endif %}
+            {% endfor %}
           </select>
         </div>
         <div class="col-12 col-md-6">
