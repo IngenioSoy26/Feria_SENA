@@ -98,10 +98,10 @@
     <div class="row g-3 mb-4">
       {% for clave in clases_estado.keys %}
       <div class="col-6 col-md-3">
-        <div class="kpi-mini bg-{{ clases_estado.clave|default:'light' }}"
+      <div class="kpi-mini"
              style="background:{% if clave == 'VALIDO' %}#dcfce7;border:1px solid #86efac;{% elif clave == 'ADVERTENCIA' %}#fef3c7;border:1px solid #fcd34d;{% elif clave == 'DUPLICADO' %}#dbeafe;border:1px solid #93c5fd;{% elif clave == 'ERROR' %}#fee2e2;border:1px solid #fca5a5;{% else %}#f3f4f6;border:1px solid #d1d5db;{% endif %}">
           <div class="num" style="color:{% if clave == 'VALIDO' %}#166534;{% elif clave == 'ADVERTENCIA' %}#92400e;{% elif clave == 'DUPLICADO' %}#1e40af;{% elif clave == 'ERROR' %}#991b1b;{% else %}#1f2937;{% endif %}">
-            {{ estadisticas|default:0 }}
+            0
           </div>
           <div class="lbl">
             {% if clave == 'VALIDO' %}✅ Correctos{% elif clave == 'ADVERTENCIA' %}⚠ Advertencias{% elif clave == 'DUPLICADO' %}🔁 Duplicados (se actualizan){% elif clave == 'ERROR' %}❌ Errores{% else %}Total{% endif %}
@@ -111,7 +111,7 @@
       {% endfor %}
       <div class="col-6 col-md-3">
         <div class="kpi-mini" style="background:#eff6ff;border:1px solid #bfdbfe;">
-          <div class="num" style="color:#1e3a8a;">{{ estadisticas.TOTAL|default:0 }}</div>
+          <div class="num" style="color:#1e3a8a;" id="kpi-total-num">0</div>
           <div class="lbl">📊 Total filas</div>
         </div>
       </div>
@@ -156,7 +156,6 @@
                 </div>
               </td>
               <td>
-                {% with detalle=r.datos|default:{} %}
                 <div class="detalle-errores">
                   {% if r.clasificacion == 'VALIDO' %}
                   <div class="ok">✅ Campos requeridos completos. No se detectaron problemas.</div>
@@ -165,7 +164,6 @@
                   <div class="adv">ℹ️ Ya existe una institución igual en la base de datos. <b>Se actualizarán sus datos</b> (no se creará un duplicado).</div>
                   {% endif %}
                 </div>
-                {% endwith %}
               </td>
             </tr>
             {% endif %}
@@ -202,9 +200,9 @@
         </div>
         <div class="d-flex gap-2">
           <a class="btn-ghost" style="padding:12px 22px; min-height:48px;" href="{% url 'simple:importador_excel' %}?tipo={{ tipo_seleccionado }}">↻ Volver · Elegir otro archivo</a>
-          {% if estadisticas.TOTAL > 0 and estadisticas.ERROR < estadisticas.TOTAL %}
-          <button class="btn-primary" style="padding:12px 28px; min-height:48px; font-weight:700;" type="submit">
-            ✅ Confirmar Importación ({{ estadisticas|default:0 }} filas)
+          {% if estadisticas and estadisticas.TOTAL and estadisticas.TOTAL > 0 and estadisticas.ERROR < estadisticas.TOTAL %}
+          <button class="btn-primary" style="padding:12px 28px; min-height:48px; font-weight:700;" type="submit" id="btn-confirmar">
+            ✅ Confirmar Importación (X filas)
           </button>
           {% else %}
           <button class="btn-primary" type="button" disabled style="opacity:.6; padding:12px 28px; min-height:48px;">
@@ -216,20 +214,27 @@
     </form>
 
     <script>
-    // Reemplazar variable template para estadísticas en las tarjetas (no tenemos {{ estadisticas.VALIDO }} directo)
-    document.querySelectorAll('.kpi-mini .num').forEach(function(el, idx){
-      // Se renderiza arriba con default 0, pero reemplazamos con el valor real del diccionario via inline
-      const keys = ['VALIDO', 'ADVERTENCIA', 'DUPLICADO', 'ERROR'];
-      const reales = {
-        'VALIDO': {% if estadisticas %}{{ estadisticas.VALIDO|default:0 }}{% else %}0{% endif %},
-        'ADVERTENCIA': {% if estadisticas %}{{ estadisticas.ADVERTENCIA|default:0 }}{% else %}0{% endif %},
-        'DUPLICADO': {% if estadisticas %}{{ estadisticas.DUPLICADO|default:0 }}{% else %}0{% endif %},
-        'ERROR': {% if estadisticas %}{{ estadisticas.ERROR|default:0 }}{% else %}0{% endif %}
-      };
-      if(idx < keys.length && reales[keys[idx]] !== undefined) {
-        el.textContent = reales[keys[idx]];
+    (function(){
+      var estadisticas = {{ estadisticas_json|safe }};
+
+      // Render tarjetas KPIs
+      const keys_orden = ['VALIDO', 'ADVERTENCIA', 'DUPLICADO', 'ERROR'];
+      const all_nums = document.querySelectorAll('.kpi-mini .num');
+      all_nums.forEach(function(el, idx){
+        if(idx < keys_orden.length) {
+          el.textContent = String(estadisticas[keys_orden[idx]] || 0);
+        }
+      });
+      var kpiTotal = document.getElementById('kpi-total-num');
+      if(kpiTotal){ kpiTotal.textContent = String(estadisticas.TOTAL || 0); }
+
+      var btn = document.getElementById('btn-confirmar');
+      if(btn){
+        var total = estadisticas.TOTAL || 0;
+        btn.textContent = '✅ Confirmar Importación (' + total + ' filas)';
       }
-    });
+    })();
+
     // Botón confirmar: validar y prevenir doble clic
     document.querySelectorAll('button[type="submit"]').forEach(function(btn){
       btn.addEventListener('click', function(e){

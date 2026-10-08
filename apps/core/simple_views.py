@@ -1291,6 +1291,7 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
             'vista': None,
             'resultados': None,
             'estadisticas': None,
+            'estadisticas_json': {'VALIDO':0,'ADVERTENCIA':0,'DUPLICADO':0,'ERROR':0,'TOTAL':0},
             'archivo_nombre': '',
         }
         return render(request, self.template_name, ctx)
@@ -1322,6 +1323,13 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
                 'vista': 'preview',
                 'resultados': preview['resultados'],
                 'estadisticas': preview['estadisticas'],
+                'estadisticas_json': {
+                    'VALIDO': preview['estadisticas'].get(CLASIFICACION_VALIDO, 0),
+                    'ADVERTENCIA': preview['estadisticas'].get(CLASIFICACION_ADVERTENCIA, 0),
+                    'DUPLICADO': preview['estadisticas'].get(CLASIFICACION_DUPLICADO, 0),
+                    'ERROR': preview['estadisticas'].get(CLASIFICACION_ERROR, 0),
+                    'TOTAL': preview['estadisticas'].get('TOTAL', 0),
+                },
                 'archivo_nombre': (archivo.name or 'archivo.xlsx')[:80],
                 '_resultados_serializados': ImportacionExcelService._serializar_para_confirmar(resultados),
                 'clases_estado': {
