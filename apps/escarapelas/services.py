@@ -49,7 +49,7 @@ BADGE_ROL_TEXTO = {
 
 POS_BADGE = {
     'x':   13.4 * mm,
-    'y':   88.0 * mm,   # Y inferior (esquina inf-izq badge)
+    'y':   82.0 * mm,
     'w':   80.2 * mm,
     'h':   15.0 * mm,
     'r':    7.0 * mm,
@@ -57,34 +57,71 @@ POS_BADGE = {
     'size':   19,
 }
 
-POS_TEXTO_NOMBRE = {
-    'w':      88 * mm,
-    'y1': 76.5 * mm,   # 1) Nombre (arriba de la caja blanca)
-    'y2': 67.5 * mm,   # 2) I.E. (medio)
-    'y3': 59.0 * mm,   # 3) Municipio (abajo)
+# ---------------------------------------------------------------------------
+# CAJA NOMBRE BLANCA con BORDE color rol → FONDO BLANCO SÓLIDO + TEXTO dentro.
+#   - Oculta exactamente el contenido donde irán Nombre/IE/Municipio.
+#   - NUNCA sobrepasa: Y_top = badge.y - 3mm espacio visual
+#   - NUNCA llega al desierto inferior.
+# ---------------------------------------------------------------------------
+POS_CAJA_NOMBRE = {
+    'x':      8 * mm,
+    'y':     42 * mm,
+    'w':     91 * mm,
+    'h':     37 * mm,
+    'r':    8.5 * mm,
+    'borde_grosor': 2.2,
+    'padding_lados':  5 * mm,
+    'y1_texto': 72.5 * mm,   # Nombre (arriba)
+    'y2_texto': 64.5 * mm,   # I.E.
+    'y3_texto': 56.5 * mm,   # Municipio
     'size_1': 20,
     'size_2': 11,
     'size_3': 10.5,
 }
 
-POS_TEXTO_DOC = {
-    'w':    55 * mm,
-    'y':    40 * mm,
-    'size': 14,
+# ---------------------------------------------------------------------------
+# CAJA DOCUMENTO BLANCA borde color rol → FONDO BLANCO SÓLIDO
+#   - No toca el mar ni el verde del badge, solo zona central limpia.
+# ---------------------------------------------------------------------------
+POS_CAJA_DOC = {
+    'x':  23 * mm,
+    'y':  30 * mm,
+    'w':  61 * mm,
+    'h':  10 * mm,
+    'r':   6 * mm,
+    'borde_grosor': 2.0,
+    'y_texto': 33.0 * mm,
+    'size':   14,
 }
 
-POS_TEXTO_PROYECTO = {
-    'w': 62 * mm,
-    'y': 35.0 * mm,
-    'size_label': 11.5,
-    'size_valor': 12.5,
+# ---------------------------------------------------------------------------
+# CAJA INFERIOR GRANDE (Proyecto + QR) borde color rol.
+#   - DENTRO del hueco "foto" de la plantilla → NUNCA sobre el desierto/mar.
+#   - Borde GROSOR color rol → igual que el ejemplo Jorge.
+# ---------------------------------------------------------------------------
+POS_CAJA_INFERIOR = {
+    'x':  19 * mm,
+    'y':   5 * mm,
+    'w':  69 * mm,
+    'h':  23 * mm,      # temporalmente se sobreescribe abajo
+    'r':  9.5 * mm,
+    'borde_grosor_exterior': 3.2,
+    'borde_grosor_interior': 1.2,
+    'padding':      4 * mm,
+    'y_proyecto':  24.5 * mm,
+    'size_label':  11.5,
+    'size_valor':  12.5,
+    'qr_size':     0,       # se calcula después
+    'qr_centro_x': 53.5 * mm,
+    'qr_y_inf':    8.5 * mm,
 }
 
-POS_QR = {
-    'size':     24 * mm,
-    'centro_x': 53.5 * mm,
-    'y_inf':    10.5 * mm,
-}
+# Ampliar la caja inferior a 44mm de alto (para QR 36mm + texto proyecto arriba)
+POS_CAJA_INFERIOR['h'] = 44 * mm
+POS_CAJA_INFERIOR['qr_size'] = 36 * mm
+POS_CAJA_INFERIOR['y_proyecto'] = POS_CAJA_INFERIOR['y'] + POS_CAJA_INFERIOR['h'] - 10 * mm  # 10mm debajo del techo
+POS_CAJA_INFERIOR['qr_centro_x'] = (POS_CAJA_INFERIOR['x'] + POS_CAJA_INFERIOR['x'] + POS_CAJA_INFERIOR['w']) / 2
+POS_CAJA_INFERIOR['qr_y_inf']  = POS_CAJA_INFERIOR['y'] + 4 * mm
 
 
 class EscarapelaPDFService:
@@ -180,19 +217,16 @@ class EscarapelaPDFService:
 
     @staticmethod
     def _badge_rol(c, rol, dx=0, dy=0):
-        """SÓLO redibuja la zona del badge (capa blanca opaca + nuevo badge color rol)."""
         color_f, color_t = BADGE_ROL.get(rol, BADGE_ROL['APRENDIZ'])
         texto = BADGE_ROL_TEXTO.get(rol, rol or '')
         x = dx + POS_BADGE['x']
         y = dy + POS_BADGE['y']
         w = POS_BADGE['w']
         h = POS_BADGE['h']
-        # Capa BLANCA opaca: TAPA el badge verde "APRENDIZ" de la plantilla.
         c.setFillColor(white)
         c.roundRect(x - 0.4 * mm, y - 0.4 * mm,
                     w + 0.8 * mm, h + 0.8 * mm,
                     POS_BADGE['r'], fill=1, stroke=0)
-        # Badge color nuevo
         c.setFillColor(color_f)
         c.roundRect(x, y, w, h, POS_BADGE['r'], fill=1, stroke=0)
         EscarapelaPDFService._centrar(
@@ -202,16 +236,30 @@ class EscarapelaPDFService:
         )
 
     @staticmethod
-    def _escribir_nombre_3lineas(c, persona, info, dx=0, dy=0):
-        """SOLO TEXTO (sin caja): Escribe sobre la CAJA NOMBRE ya dibujada en Credencial.png."""
-        p = POS_TEXTO_NOMBRE
-        # Línea 1: Nombre
+    def _color_borde_rol(rol):
+        if rol == 'APRENDIZ':    return COLOR_APRENDIZ
+        if rol == 'INSTRUCTOR':  return COLOR_INSTRUCTOR
+        if rol == 'INVITADO':    return COLOR_INVITADO
+        if rol == 'ORGANIZADOR': return COLOR_ORGANIZADOR
+        return COLOR_APRENDIZ
+
+    @staticmethod
+    def _caja_nombre_contenido(c, persona, info, rol, dx=0, dy=0):
+        p = POS_CAJA_NOMBRE
+        x, y, w, h = dx + p['x'], dy + p['y'], p['w'], p['h']
+        borde = EscarapelaPDFService._color_borde_rol(rol)
+        c.setFillColor(white)
+        c.roundRect(x, y, w, h, p['r'], fill=1, stroke=0)
+        c.setStrokeColor(borde)
+        c.setLineWidth(p['borde_grosor'])
+        c.roundRect(x, y, w, h, p['r'], fill=0, stroke=1)
+        # Texto interno
         nombre_txt = (persona.nombre_completo or '').upper()
+        max_w = w - 2 * p['padding_lados']
         EscarapelaPDFService._centrar(
-            c, nombre_txt, dy + p['y1'],
-            'Helvetica-Bold', p['size_1'], black, p['w'], dx,
+            c, nombre_txt, dy + p['y1_texto'],
+            'Helvetica-Bold', p['size_1'], black, max_w, dx,
         )
-        # Línea 2: I.E. NOMBRE
         line2 = ''
         if info['institucion']:
             line2 = 'I.E. ' + (info['institucion'] or '')
@@ -221,10 +269,9 @@ class EscarapelaPDFService:
             line2 = info['extra']
         if line2:
             EscarapelaPDFService._centrar(
-                c, line2, dy + p['y2'],
-                'Helvetica', p['size_2'], GRIS_OSCURO, p['w'] - 4 * mm, dx
+                c, line2, dy + p['y2_texto'],
+                'Helvetica', p['size_2'], GRIS_OSCURO, max_w, dx,
             )
-        # Línea 3: MUNICIPIO - LA GUAJIRA
         line3 = ''
         if info['municipio_ie']:
             line3 = info['municipio_ie'].upper() + ' - LA GUAJIRA'
@@ -232,46 +279,69 @@ class EscarapelaPDFService:
             line3 = 'FICHA ' + str(info['codigo_ficha'])
         if line3:
             EscarapelaPDFService._centrar(
-                c, line3, dy + p['y3'],
-                'Helvetica', p['size_3'], GRIS_MEDIO, p['w'] - 4 * mm, dx
+                c, line3, dy + p['y3_texto'],
+                'Helvetica', p['size_3'], GRIS_MEDIO, max_w, dx,
             )
 
     @staticmethod
-    def _escribir_documento(c, info, dx=0, dy=0):
-        """SOLO TEXTO: sobre la CAJA DOCUMENTO verde de Credencial.png."""
-        p = POS_TEXTO_DOC
+    def _caja_documento_contenido(c, info, rol, dx=0, dy=0):
+        p = POS_CAJA_DOC
+        x, y, w, h = dx + p['x'], dy + p['y'], p['w'], p['h']
+        borde = EscarapelaPDFService._color_borde_rol(rol)
+        c.setFillColor(white)
+        c.roundRect(x, y, w, h, p['r'], fill=1, stroke=0)
+        c.setStrokeColor(borde)
+        c.setLineWidth(p['borde_grosor'])
+        c.roundRect(x, y, w, h, p['r'], fill=0, stroke=1)
         tipo = (info['tipo_identificacion'] or 'CC')
         num = info['numero_identificacion'] or ''
         label = f'{tipo}:'
         val = f' {num}'
         tam = p['size']
         ancho_l = c.stringWidth(label, 'Helvetica-Bold', tam)
-        max_w_v = p['w'] - ancho_l - 6 * mm
+        max_w_v = w - ancho_l - 8 * mm
         ancho_v = c.stringWidth(val, 'Helvetica-Bold', tam)
         while ancho_v > max_w_v and tam > 6:
             tam -= 0.5
             ancho_l = c.stringWidth(label, 'Helvetica-Bold', tam)
-            max_w_v = p['w'] - ancho_l - 6 * mm
+            max_w_v = w - ancho_l - 8 * mm
             ancho_v = c.stringWidth(val, 'Helvetica-Bold', tam)
         ancho_total = ancho_l + ancho_v
         x1 = dx + (EscarapelaPDFService.W - ancho_total) / 2
         x2 = x1 + ancho_l
-        yt = dy + p['y']
         c.setFillColor(COLOR_SENA_VERDE_OSCURO)
         c.setFont('Helvetica-Bold', tam)
-        c.drawString(x1, yt, label)
+        c.drawString(x1, dy + p['y_texto'], label)
         c.setFillColor(black)
-        c.drawString(x2, yt, val)
+        c.drawString(x2, dy + p['y_texto'], val)
 
     @staticmethod
-    def _escribir_proyecto_y_qr(c, persona, info, rol, dx=0, dy=0):
-        """DENTRO de la CAJA GRANDE INFERIOR de la plantilla:
-             → Arriba: "Proyecto: COD - Nombre"
-             → Abajo: QR centrado (sin borde nuevo)
-           NO DIBUJA CAJAS NUEVAS (la plantilla tiene la caja).
+    def _caja_inferior_proyecto_y_qr(c, persona, info, rol, dx=0, dy=0):
+        """CAJA BLANCA con BORDE color rol GROSOR (doble borde exterior+interior):
+               ______________    ← exterior color rol
+              |  _________  |    ← interior blanco con línea color rol 1mm
+              | |Proyecto: |  |    10mm desde el techo
+              | |          |  |
+              | |   QR 36mm|  |    4mm desde el suelo
+              | |          |  |
+              | |__________|  |
+              |______________|
         """
-        # --- TEXTO PROYECTO ---
-        p = POS_TEXTO_PROYECTO
+        p = POS_CAJA_INFERIOR
+        x, y, w, h = dx + p['x'], dy + p['y'], p['w'], p['h']
+        borde = EscarapelaPDFService._color_borde_rol(rol)
+        # --- exterior (color rol, GROSOR) ---
+        c.setFillColor(borde)
+        c.roundRect(x, y, w, h, p['r'], fill=1, stroke=0)
+        # --- interior blanco + línea borde color rol delgada ---
+        pad = p['padding']
+        xi, yi, wi, hi = x + pad, y + pad, w - 2 * pad, h - 2 * pad
+        c.setFillColor(white)
+        c.roundRect(xi, yi, wi, hi, max(p['r'] - 4 * mm, 1 * mm), fill=1, stroke=0)
+        c.setStrokeColor(borde)
+        c.setLineWidth(p['borde_grosor_interior'])
+        c.roundRect(xi, yi, wi, hi, max(p['r'] - 4 * mm, 1 * mm), fill=0, stroke=1)
+        # --- TEXTO PROYECTO (10mm debajo techo interior) ---
         if info['codigo_proyecto'] and info['proyecto']:
             valor = info['codigo_proyecto'] + ' - ' + info['proyecto']
         elif info['proyecto']:
@@ -290,40 +360,41 @@ class EscarapelaPDFService:
             label = 'Proyecto: '
             tam_l = p['size_label']
             tam_v = p['size_valor']
-            max_w = p['w']
+            max_w_total = wi - 4 * mm
             ancho_l = c.stringWidth(label, 'Helvetica-Bold', tam_l)
             ancho_v = c.stringWidth(valor, 'Helvetica-Bold', tam_v)
-            while ancho_v > max_w - ancho_l and tam_v > 7:
+            while ancho_v > max_w_total - ancho_l and tam_v > 7:
                 tam_v -= 0.5
                 ancho_v = c.stringWidth(valor, 'Helvetica-Bold', tam_v)
             ancho_total = ancho_l + ancho_v
-            x1 = dx + (EscarapelaPDFService.W - ancho_total) / 2
+            x1 = xi + (wi - ancho_total) / 2
             x2 = x1 + ancho_l
-            yt = dy + p['y']
+            yt = dy + p['y_proyecto']
             c.setFillColor(black)
             c.setFont('Helvetica-Bold', tam_l)
             c.drawString(x1, yt, label)
             c.setFont('Helvetica-Bold', tam_v)
             c.drawString(x2, yt, valor)
-        # --- QR ---
-        q = POS_QR
+        # --- QR (4mm desde el suelo interior) ---
+        qr_s = p['qr_size']
+        qr_x = dx + p['qr_centro_x'] - qr_s / 2
+        qr_y = dy + p['qr_y_inf']
         ruta_qr = QrService.asegurarse_qr_existe(persona)
         try:
-            qr_x = dx + q['centro_x'] - q['size'] / 2
-            qr_y = dy + q['y_inf']
-            c.drawImage(ruta_qr, qr_x, qr_y, width=q['size'], height=q['size'], mask='auto')
+            c.drawImage(ruta_qr, qr_x, qr_y, width=qr_s, height=qr_s, mask='auto')
         except Exception:
             pass
 
     @staticmethod
     def _dibujar_frente(c, persona, evento, dx=0, dy=0):
         info = EscarapelaPDFService._info_persona(persona)
-        # Orden de capas:
-        EscarapelaPDFService._dibujar_imagen_fondo(c, dx, dy)                # 1) Fondo = TU plantilla
-        EscarapelaPDFService._badge_rol(c, persona.tipo_persona, dx, dy)     # 2) Tapa + badge color rol
-        EscarapelaPDFService._escribir_nombre_3lineas(c, persona, info, dx, dy)  # 3) Nombre 3 líneas
-        EscarapelaPDFService._escribir_documento(c, info, dx, dy)            # 4) CC: xxxx
-        EscarapelaPDFService._escribir_proyecto_y_qr(c, persona, info, persona.tipo_persona, dx, dy)  # 5) Proyecto + QR dentro de la caja grande
+        rol = persona.tipo_persona
+        # Orden de capas (inferior → superior):
+        EscarapelaPDFService._dibujar_imagen_fondo(c, dx, dy)
+        EscarapelaPDFService._badge_rol(c, rol, dx, dy)
+        EscarapelaPDFService._caja_nombre_contenido(c, persona, info, rol, dx, dy)
+        EscarapelaPDFService._caja_documento_contenido(c, info, rol, dx, dy)
+        EscarapelaPDFService._caja_inferior_proyecto_y_qr(c, persona, info, rol, dx, dy)
 
     @staticmethod
     def _renderizar_persona(c, persona, evento, dx=0, dy=0):
