@@ -182,13 +182,22 @@
       const num = String(f.numero || '').trim();
       if(/^\d{7}$/.test(num)) window.__FICHA_DATA_BY_NUM__.set(num, f);
     }
-    // (1) Instituciones combo (todas, ordenadas)
-    const ieItems = uniq((CAT.instituciones||[]).map(x => ({
-      value: (x.nombre||'').toUpperCase(),
-      label: x.municipio? (x.nombre + ' · ' + x.municipio) : x.nombre,
-      dataset: { municipio: x.municipio||'' }
+    // (1) Instituciones combo (todas, ordenadas): CÓDIGO ÚNICO · NOMBRE · MUNICIPIO
+    const ieItems = uniq((CAT.instituciones||[]).map(x => {
+      const nom = (x.nombre||'').toUpperCase();
+      const cod = String(x.codigo || x.codigo_dane || '').trim().toUpperCase();
+      const mun = String(x.municipio || '').toUpperCase();
+      const labelPiezas = [];
+      if(cod) labelPiezas.push(cod);
+      labelPiezas.push(nom);
+      if(mun) labelPiezas.push(mun);
+      return {
+        value: nom,
+        label: labelPiezas.join(' · '),
+        dataset: { municipio: mun || '', codigo: cod || '' }
+      };
     })), x => x.value);
-    ieItems.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
+    ieItems.sort((a,b)=> (a.label||'').localeCompare(b.label||'', 'es'));
     llenarCombo(ieCombo, '⬇️ Seleccione o busque una Institución Educativa', ieItems);
     actualizarCascada();
   }

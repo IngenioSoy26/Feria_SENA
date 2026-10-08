@@ -763,11 +763,13 @@ class ImportacionExcelService:
             info_fila = {'fila': r['fila'], 'accion': None, 'id': None}
 
             if tipo == 'instituciones':
-                if not datos.get('codigo') or not datos.get('nombre'):
+                if not datos.get('nombre'):
                     continue
                 defaults = {
                     'nombre': datos['nombre'][:250],
                     'municipio': datos.get('municipio', '')[:100],
+                    'secretaria_educacion': (datos.get('secretaria_educacion') or datos.get('secretaria') or '')[:150],
+                    'telefono': (datos.get('telefono') or datos.get('telefono_ie') or '')[:30] or None,
                     'tipo': (datos.get('tipo') or '')[:50] or None,
                     'zona': (datos.get('zona') or '')[:30] or None,
                     'sector': (datos.get('sector') or '')[:30] or None,
@@ -783,21 +785,25 @@ class ImportacionExcelService:
                 obj = InstitucionEducativa.objects.filter(nombre__iexact=datos['nombre']).first()
                 created = False
                 if obj is None:
-                    obj = InstitucionEducativa.objects.filter(codigo=datos['codigo']).first()
+                    if datos.get('codigo') or datos.get('codigo_dane'):
+                        cod = (datos.get('codigo') or datos.get('codigo_dane')).strip().upper()
+                        obj = InstitucionEducativa.objects.filter(codigo=cod).first()
                     if obj is None:
-                        defaults['codigo'] = datos['codigo']
+                        if datos.get('codigo') or datos.get('codigo_dane'):
+                            defaults['codigo'] = (datos.get('codigo') or datos.get('codigo_dane')).strip().upper()
                         obj = InstitucionEducativa.objects.create(**defaults)
                         created = True
                     else:
                         for k, v in defaults.items():
                             setattr(obj, k, v)
-                        obj.codigo = datos['codigo']
+                        if datos.get('codigo') or datos.get('codigo_dane'):
+                            obj.codigo = (datos.get('codigo') or datos.get('codigo_dane')).strip().upper()
                         obj.save()
                 else:
                     for k, v in defaults.items():
                         setattr(obj, k, v)
-                    if not obj.codigo and datos['codigo']:
-                        obj.codigo = datos['codigo']
+                    if not obj.codigo and (datos.get('codigo') or datos.get('codigo_dane')):
+                        obj.codigo = (datos.get('codigo') or datos.get('codigo_dane')).strip().upper()
                     obj.save()
                 info_fila['accion'] = 'CREATE' if created else 'UPDATE'
                 info_fila['id'] = obj.id

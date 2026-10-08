@@ -310,7 +310,9 @@ class WizardRegistroView(View):
                 'cedula': f.instructor_lider.persona.numero_identificacion if (f.instructor_lider_id and getattr(f.instructor_lider, 'persona', None)) else '',
             })
         ies_list = list(
-            InstitucionEducativa.objects.filter(activo=True).order_by('nombre').values('nombre', 'municipio')
+            InstitucionEducativa.objects.filter(activo=True).order_by('municipio', 'nombre').values(
+                'codigo', 'nombre', 'municipio', 'secretaria_educacion', 'telefono'
+            )
         )
         programas_list = list(
             ProgramaTecnico.objects.filter(activo=True).order_by('nombre').values('nombre', 'codigo')

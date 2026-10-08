@@ -5,12 +5,27 @@ from .models import InstitucionEducativa
 class InstitucionForm(forms.ModelForm):
     class Meta:
         model = InstitucionEducativa
-        fields = ['nombre', 'municipio', 'secretaria_educacion', 'codigo', 'activo']
+        fields = [
+            'nombre', 'municipio', 'secretaria_educacion',
+            'telefono', 'activo'
+        ]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la institución'}),
-            'municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Municipio'}),
-            'secretaria_educacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Secretaría de educación'}),
-            'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código único de institución'}),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la institución (MAYÚSCULA automática)'
+            }),
+            'municipio': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Municipio'
+            }),
+            'secretaria_educacion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Secretaría de Educación'
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Teléfono (opcional)'
+            }),
         }
 
     def __init__(self, *args, **kwargs):

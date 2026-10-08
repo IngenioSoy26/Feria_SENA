@@ -37,7 +37,7 @@
     <div>
         <h1 class="h3 mb-1">{{ institucion.nombre }}</h1>
         <p class="text-muted mb-0">
-            Código: <code class="text-sena-verde fw-semibold">{{ institucion.codigo }}</code>
+            Código Único IE: <code class="text-sena-verde fw-semibold">{{ institucion.codigo }}</code>
             {% if institucion.activo %}
                 <span class="badge bg-success ms-2">Activo</span>
             {% else %}
@@ -73,7 +73,7 @@
                     <dt class="col-sm-4 text-muted">Nombre</dt>
                     <dd class="col-sm-8 fw-medium">{{ institucion.nombre }}</dd>
 
-                    <dt class="col-sm-4 text-muted">Código</dt>
+                    <dt class="col-sm-4 text-muted">Código Único IE</dt>
                     <dd class="col-sm-8"><code class="text-sena-verde">{{ institucion.codigo }}</code></dd>
 
                     <dt class="col-sm-4 text-muted">Municipio</dt>
@@ -81,6 +81,9 @@
 
                     <dt class="col-sm-4 text-muted">Secretaría de Educación</dt>
                     <dd class="col-sm-8">{{ institucion.secretaria_educacion|default:"—" }}</dd>
+
+                    <dt class="col-sm-4 text-muted">Teléfono</dt>
+                    <dd class="col-sm-8">{{ institucion.telefono|default:"—" }}</dd>
 
                     <dt class="col-sm-4 text-muted">Estado</dt>
                     <dd class="col-sm-8">
