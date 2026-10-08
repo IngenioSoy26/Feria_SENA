@@ -368,6 +368,13 @@ class WizardRegistroView(View):
                 messages.error(request, '⚠ Faltan datos obligatorios: Institución, Programa y Nombre del proyecto.')
                 return redirect('simple:wizard')
 
+            if not nombre_instructor or not cedula_instructor:
+                messages.error(request, '⚠ El Instructor líder y su Documento de identidad son OBLIGATORIOS.')
+                return redirect('simple:wizard')
+            if re.sub(r'\D', '', cedula_instructor) != cedula_instructor or len(cedula_instructor) < 5:
+                messages.error(request, '⚠ Documento de identidad del instructor líder inválido (sólo dígitos y mínimo 5 caracteres).')
+                return redirect('simple:wizard')
+
             if not codigo_ficha:
                 messages.error(request, '⚠ El Código de Ficha es obligatorio. Debe tener 7 dígitos numéricos.')
                 return redirect('simple:wizard')
@@ -375,67 +382,96 @@ class WizardRegistroView(View):
                 messages.error(request, f'⚠ El Código de Ficha debe tener EXACTAMENTE 7 dígitos numéricos. Tienes {len(codigo_ficha)} ("{codigo_ficha}").')
                 return redirect('simple:wizard')
 
-            # ---- INSTITUCIÓN + PROGRAMA (deduplicados iexact) ----
-            codigo_ie = 'INS-' + codigo_ficha
-            colegio = InstitucionEducativa.objects.filter(nombre__iexact=nombre_ie).order_by('id').first()
+            # ---- INSTITUCIÓN + PROGRAMA (SOLO CATÁLOGO ADMIN — NO se crean nuevos desde registro) ----
+            colegio = InstitucionEducativa.objects.filter(nombre__iexact=nombre_ie, activo=True).order_by('id').first()
             if not colegio:
-                colegio, _ = InstitucionEducativa.objects.get_or_create(
-                    nombre=nombre_ie,
-                    defaults={'codigo': codigo_ie, 'municipio': municipio_ie},
+                messages.error(
+                    request,
+                    f'❌ La Institución Educativa "{nombre_ie}" NO EXISTE en el catálogo del administrador.\n'
+                    'No se puede crear desde el registro de proyectos: el Administrador debe crearla manualmente o por Excel.'
                 )
-            if municipio_ie and colegio.municipio != municipio_ie:
-                colegio.municipio = municipio_ie
-                colegio.save(update_fields=['municipio'])
-            if not colegio.codigo:
-                colegio.codigo = codigo_ie
-                colegio.save(update_fields=['codigo'])
+                return redirect('simple:wizard')
 
-            codigo_prog = 'PROG-' + codigo_ficha
-            programa = ProgramaTecnico.objects.filter(nombre__iexact=nombre_programa).order_by('id').first()
+            programa = ProgramaTecnico.objects.filter(nombre__iexact=nombre_programa, activo=True).order_by('id').first()
             if not programa:
-                programa, _ = ProgramaTecnico.objects.get_or_create(
-                    nombre=nombre_programa,
-                    defaults={'codigo': codigo_prog},
+                messages.error(
+                    request,
+                    f'❌ El Programa Técnico "{nombre_programa}" NO EXISTE en el catálogo del administrador.\n'
+                    'No se puede crear desde el registro de proyectos: el Administrador debe crearlo manualmente o por Excel.'
                 )
-            if not programa.codigo:
-                programa.codigo = codigo_prog
-                programa.save(update_fields=['codigo'])
+                return redirect('simple:wizard')
 
-            # ---- INSTRUCTOR LÍDER (opcional) ----
+            # ---- INSTRUCTOR LÍDER (obligatorio; cedula única por Tipo CC y Persona. Crear Persona/Instructor si no existe con este # doc) ----
             instructor_obj = None
-            if nombre_instructor:
-                cedula_ins = cedula_instructor or str(90000000 + Instructor.objects.count() + 1)
-                nombres_ins, apellidos_ins = self._separar_nombres_apellidos(nombre_instructor)
-                p_ins, _ = Persona.objects.get_or_create(
+            p_ins = None
+            cedula_ins = cedula_instructor
+            nombres_ins, apellidos_ins = self._separar_nombres_apellidos(nombre_instructor)
+            try:
+                p_ins = Persona.objects.select_related('perfil_instructor').filter(
                     tipo_identificacion=_tipo_cc(),
                     numero_identificacion=cedula_ins,
-                    defaults={
-                        'nombres': nombres_ins, 'apellidos': apellidos_ins,
-                        'correo': f"instructor_{cedula_ins}@sena.edu.co",
-                        'tipo_persona': 'INSTRUCTOR',
-                    },
+                ).first()
+            except Exception:
+                p_ins = None
+            if not p_ins:
+                p_ins = Persona.objects.create(
+                    tipo_identificacion=_tipo_cc(),
+                    numero_identificacion=cedula_ins,
+                    nombres=(nombres_ins or '').upper(),
+                    apellidos=(apellidos_ins or '').upper(),
+                    correo=f"instructor_{cedula_ins}@sena.edu.co",
+                    tipo_persona='INSTRUCTOR',
                 )
-                instructor_obj, _ = Instructor.objects.get_or_create(persona=p_ins)
-                if not instructor_obj.programas.filter(pk=programa.pk).exists():
+            else:
+                # Actualizar nombres/apellidos/correo si llegasen a cambiar
+                save_ins = []
+                if p_ins.nombres != (nombres_ins or '').upper():
+                    p_ins.nombres = (nombres_ins or '').upper()
+                    save_ins.append('nombres')
+                if p_ins.apellidos != (apellidos_ins or '').upper():
+                    p_ins.apellidos = (apellidos_ins or '').upper()
+                    save_ins.append('apellidos')
+                if save_ins:
+                    p_ins.save(update_fields=save_ins)
+            try:
+                instructor_obj = p_ins.perfil_instructor
+            except Exception:
+                instructor_obj = None
+            if not instructor_obj:
+                from apps.instructores.models import Instructor as _InstructorModel
+                instructor_obj, _ = _InstructorModel.objects.get_or_create(persona=p_ins)
+            if programa.pk and not instructor_obj.programas.filter(pk=programa.pk).exists():
+                try:
                     instructor_obj.programas.add(programa)
+                except Exception:
+                    pass
 
-            # ---- FICHA MAESTRA (si existe, autocompletar desde el catálogo) ----
+            # ---- FICHA MAESTRA (SOLO CATÁLOGO ADMIN — DEBE EXISTIR; no se crea aquí) ----
             ficha_obj = Ficha.objects.filter(numero=codigo_ficha, activo=True).first()
-            if ficha_obj:
-                if ficha_obj.institucion_id and not nombre_ie:
-                    nombre_ie = ficha_obj.institucion.nombre
-                    colegio = ficha_obj.institucion
-                if ficha_obj.municipio and not municipio_ie:
-                    municipio_ie = ficha_obj.municipio
-                if ficha_obj.programa_id and not nombre_programa:
-                    nombre_programa = ficha_obj.programa.nombre
-                    programa = ficha_obj.programa
-                if ficha_obj.instructor_lider_id and not nombre_instructor:
-                    p_lider = getattr(ficha_obj.instructor_lider, 'persona', None)
-                    if p_lider:
-                        nombre_instructor = p_lider.nombre_completo
-                        cedula_instructor = p_lider.numero_identificacion
-                        instructor_obj = ficha_obj.instructor_lider
+            if not ficha_obj:
+                messages.error(
+                    request,
+                    f'❌ La Ficha #{codigo_ficha} NO EXISTE en el catálogo del administrador.\n'
+                    'No se puede crear desde aquí: el Administrador debe dar de alta la ficha (Institución + Programa + Instructor líder).'
+                )
+                return redirect('simple:wizard')
+            # Coherencia entre la ficha existente y la selección actual
+            if ficha_obj.institucion_id != colegio.pk or ficha_obj.programa_id != programa.pk:
+                messages.warning(
+                    request,
+                    f'ℹ Se usó la información MAESTRA de la Ficha #{codigo_ficha} (Institución/Programa).\n'
+                    f'Selección usuario: IE="{nombre_ie}" · Programa="{nombre_programa}" → Ficha: IE="{ficha_obj.institucion.nombre}" · Programa="{ficha_obj.programa.nombre}".'
+                )
+                colegio = ficha_obj.institucion
+                programa = ficha_obj.programa
+            if ficha_obj.instructor_lider_id:
+                p_lider = getattr(ficha_obj.instructor_lider, 'persona', None)
+                if p_lider:
+                    nombre_instructor = p_lider.nombre_completo
+                    cedula_instructor = p_lider.numero_identificacion
+                    instructor_obj = ficha_obj.instructor_lider
+            if ficha_obj.municipio:
+                municipio_ie = ficha_obj.municipio
 
             # ---- PROYECTO (Ficha) ----
             proyecto_defaults = {
@@ -483,14 +519,20 @@ class WizardRegistroView(View):
                 nm = (noms[i] if i < len(noms) else '').strip().upper() or ''
                 co = (correos[i] if i < len(correos) else '').strip().lower() or ''
                 tl = re.sub(r'\D', '', (tels[i] if i < len(tels) else '') or '')
-                # Validación: Todos los campos obligatorios excepto teléfono
-                if not nd or not nm or not co:
-                    # Skip sólo filas COMPLETAMENTE vacías (sin doc ni nombre); si falta alguno obligatorio mostrar error
+                # Validación: TODOS los campos obligatorios INCLUYENDO teléfono
+                if not nd or not nm or not co or not tl:
+                    # Skip solo filas completamente vacías (sin doc ni nombre)
                     if not nd and not nm:
                         continue
+                    faltan = []
+                    if not nd: faltan.append('N° Documento')
+                    if not nm: faltan.append('Nombre completo')
+                    if not co: faltan.append('Correo electrónico')
+                    if not tl: faltan.append('Teléfono')
                     messages.error(
                         request,
-                        f'⚠ El aprendiz #{i+1} requiere TODOS los campos obligatorios (Documento, Nombre completo, Correo electrónico). Revisa e intenta de nuevo.'
+                        f'⚠ El aprendiz #{i+1} tiene campos obligatorios vacíos: {", ".join(faltan)}.\n'
+                        'Todos los campos son obligatorios (incluye Teléfono).'
                     )
                     return redirect('simple:wizard')
                 tuplas.append((t, nd, nm, co, tl))

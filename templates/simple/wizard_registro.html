@@ -25,9 +25,10 @@
       <h5 class="mb-3 text-sena-dark">🏫 Datos del proyecto</h5>
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label">Institución Educativa <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA)</span></label>
-          <input name="nombre_ie" id="inp-nombre-ie" class="form-field up-case" placeholder="Ej: INSTITUCIÓN EDUCATIVA SAN JOSÉ DE RIOHACHA" autocomplete="organization" list="ie_dl" required>
-          <datalist id="ie_dl"></datalist>
+          <label class="form-label">Institución Educativa <span class="req">*</span> <span class="hint-sena">(solo catálogo administrador)</span></label>
+          <select name="nombre_ie" id="inp-nombre-ie" class="form-field select combo-filtro" data-combo="ie" required>
+            <option value="">⬇️ Seleccione o busque una Institución Educativa</option>
+          </select>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Municipio</label>
@@ -37,34 +38,20 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Programa Técnico <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA)</span></label>
-          <input name="nombre_programa" id="inp-nombre-programa" class="form-field up-case" placeholder="Ej: TÉCNICO EN SISTEMAS · TÉCNICO EN COCINA" autocomplete="off" list="programa_dl" required>
-          <datalist id="programa_dl"></datalist>
+          <label class="form-label">Programa Técnico <span class="req">*</span> <span class="hint-sena">(solo catálogo administrador)</span></label>
+          <select name="nombre_programa" id="inp-nombre-programa" class="form-field select combo-filtro" data-combo="programa" required>
+            <option value="">⬇️ Seleccione o busque un Programa Técnico</option>
+          </select>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">
             Código de Ficha <span class="req">*</span>
-            <span class="hint-sena">(7 dígitos numéricos)</span>
+            <span class="hint-sena">(solo catálogo administrador)</span>
             <span class="hint-sena" id="fichas-count-hint"></span>
           </label>
-          <div class="d-flex gap-2">
-            <input
-              name="codigo_ficha"
-              id="inp-codigo-ficha"
-              class="form-field mono flex-grow-1"
-              inputmode="numeric"
-              pattern="\d{7}"
-              maxlength="7"
-              minlength="7"
-              placeholder="1 2 3 4 5 6 7"
-              autocomplete="off"
-              list="fichas_dl"
-              required>
-            <button type="button" id="btn-cargar-ficha" class="btn-sena" style="min-height:52px;padding:12px 18px;white-space:nowrap;" title="Carga IE, Programa e Instructor desde el catálogo de Fichas">
-              🔍 Cargar
-            </button>
-          </div>
-          <datalist id="fichas_dl"></datalist>
+          <select name="codigo_ficha" id="inp-codigo-ficha" class="form-field select combo-filtro" data-combo="ficha" required>
+            <option value="">⬇️ Seleccione o busque un código de Ficha (7 dígitos)</option>
+          </select>
         </div>
 
         <div class="col-12">
@@ -73,13 +60,13 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Instructor líder <span class="hint-sena">(al escribir nombre o cargar ficha se completa el documento)</span></label>
-          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name" list="instructor_dl">
+          <label class="form-label">Instructor líder <span class="req">*</span> <span class="hint-sena">(catálogo + documento auto)</span></label>
+          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name" list="instructor_dl" required>
           <datalist id="instructor_dl"></datalist>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Documento de identidad del instructor líder</label>
-          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono" inputmode="numeric" placeholder="Ej: 1012345678">
+          <label class="form-label">Documento de identidad del instructor líder <span class="req">*</span></label>
+          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono" inputmode="numeric" placeholder="Ej: 1012345678" required>
         </div>
       </div>
     </div>
@@ -135,41 +122,47 @@
   CAT.programas = Array.isArray(CAT.programas)? CAT.programas : [];
   CAT.instructores = Array.isArray(CAT.instructores)? CAT.instructores : [];
 
-  const ieDL = document.getElementById('ie_dl');
-  const progDL = document.getElementById('programa_dl');
-  const fichasDL = document.getElementById('fichas_dl');
+  const ieCombo = document.getElementById('inp-nombre-ie');
+  const progCombo = document.getElementById('inp-nombre-programa');
+  const fichaCombo = document.getElementById('inp-codigo-ficha');
   const insDL = document.getElementById('instructor_dl');
   const hintFichas = document.getElementById('fichas-count-hint');
 
-  const inpIE = document.getElementById('inp-nombre-ie');
   const inpMun = document.getElementById('inp-municipio-ie');
-  const inpProg = document.getElementById('inp-nombre-programa');
   const inpIns = document.getElementById('inp-ins-nombre');
   const inpDoc = document.getElementById('inp-ins-doc');
+  const inpNombreProyecto = document.querySelector('[name="nombre_proyecto"]');
 
-  function llenarOptions(ul, items, extraAttrs){
-    try{ ul.innerHTML = ''; }catch(_){ while(ul && ul.firstChild) ul.removeChild(ul.firstChild); }
-    if(!ul) return 0;
-    let count = 0;
-    for(const it of items){
+  function llenarCombo(sel, placeholder, items, extraFilter){
+    if(!sel) return 0;
+    // Preserva el placeholder inicial
+    const itemsFiltered = (extraFilter && typeof extraFilter === 'function') ? items.filter(extraFilter) : items;
+    // Mantener selected value si sigue disponible
+    const prevValue = sel.value || '';
+    try{ sel.innerHTML = ''; }catch(_){ while(sel.firstChild) sel.removeChild(sel.firstChild); }
+    if(placeholder){
+      const ph = document.createElement('option');
+      ph.value = ''; ph.textContent = String(placeholder);
+      sel.appendChild(ph);
+    }
+    for(const it of itemsFiltered){
       if(!it || !it.value) continue;
       const opt = document.createElement('option');
       opt.value = String(it.value);
-      if(it.label){ opt.textContent = String(it.label); }
-      if(extraAttrs && typeof extraAttrs === 'object'){
-        for(const k of Object.keys(extraAttrs)){
-          try{ opt.setAttribute(k, extraAttrs[k]); }catch(_){}
-        }
-      }
+      if(it.label){ opt.textContent = String(it.label); } else { opt.textContent = String(it.value); }
       if(it.dataset && typeof it.dataset === 'object'){
         for(const k of Object.keys(it.dataset)){
           try{ opt.setAttribute('data-'+k, (it.dataset[k]==null?'':String(it.dataset[k]))); }catch(_){}
         }
       }
-      ul.appendChild(opt);
-      count++;
+      sel.appendChild(opt);
     }
-    return count;
+    // Restaurar selected si aun existe
+    if(prevValue){
+      const vals = Array.from(sel.options).map(o => o.value);
+      if(vals.indexOf(prevValue) !== -1){ sel.value = prevValue; }
+    }
+    return sel.options.length - (placeholder? 1 : 0);
   }
 
   function uniq(arr, keyFn){
@@ -182,17 +175,27 @@
     return out;
   }
 
+  window.__FICHA_DATA_BY_NUM__ = new Map();
   function poblarTodo(){
-    // (1) Instituciones (todas)
-    const ieItems = uniq((CAT.instituciones||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.municipio? (x.nombre+' · '+x.municipio) : x.nombre, dataset: { municipio: x.municipio||'' } })), x => x.value);
+    // Inicializar Mapa índice por # ficha (7 dígitos)
+    window.__FICHA_DATA_BY_NUM__.clear();
+    for(const f of (CAT.fichas || [])){
+      const num = String(f.numero || '').trim();
+      if(/^\d{7}$/.test(num)) window.__FICHA_DATA_BY_NUM__.set(num, f);
+    }
+    // (1) Instituciones combo (todas, ordenadas)
+    const ieItems = uniq((CAT.instituciones||[]).map(x => ({
+      value: (x.nombre||'').toUpperCase(),
+      label: x.municipio? (x.nombre + ' · ' + x.municipio) : x.nombre,
+      dataset: { municipio: x.municipio||'' }
+    })), x => x.value);
     ieItems.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
-    llenarOptions(ieDL, ieItems);
+    llenarCombo(ieCombo, '⬇️ Seleccione o busque una Institución Educativa', ieItems);
     actualizarCascada();
   }
 
   function filtrarInstructores(ieSel, progSel){
-    // 2 fuentes: (a) instructores de FICHAS que cumplen IE+Programa; (b) M2M programa exacto (siempre unir)
-    const setNombres = new Map(); // nombre_completo => {numero_identificacion}
+    const setNombres = new Map();
     const ficheros = CAT.fichas || [];
     for(const f of ficheros){
       if(ieSel && ((f.ie||'').toUpperCase() !== ieSel.toUpperCase())) continue;
@@ -200,41 +203,105 @@
       if(f.instructor){
         const nom = String(f.instructor||'').toUpperCase().trim();
         if(!setNombres.has(nom) && f.cedula){ setNombres.set(nom, String(f.cedula)); }
+        else if(f.cedula){ setNombres.set(nom, String(f.cedula)); }
       }
     }
-    // Añadir instructores M2M programa
     for(const ins of (CAT.instructores||[])){
       const n = (ins.nombre_completo||'').toUpperCase().trim();
       if(!n) continue;
       const programas = Array.isArray(ins.programas)? ins.programas : [];
-      let pasa = !progSel && !ieSel; // sin filtro → todos
+      let pasa = !progSel && !ieSel;
       if(progSel){
         pasa = programas.some(p => (p||'').toUpperCase() === progSel.toUpperCase());
         if(!pasa && setNombres.has(n)) pasa = true;
       } else if(ieSel){
-        // IE+sin programa: pasar si está en setNombres (fichas con esa IE)
         pasa = setNombres.has(n);
       }
       if(pasa){
-        if(!setNombres.has(n) && ins.numero_identificacion){
-          setNombres.set(n, String(ins.numero_identificacion));
-        } else if(ins.numero_identificacion){
-          setNombres.set(n, String(ins.numero_identificacion));
-        }
+        if(ins.numero_identificacion){ setNombres.set(n, String(ins.numero_identificacion)); }
       }
     }
     const items = [];
     for(const [nom, doc] of setNombres.entries()){
-      items.push({ value: nom, label: doc? (nom+' · '+doc) : nom, dataset: { cedula: doc||'' }});
+      items.push({ value: nom, label: doc? (nom + ' · ' + doc) : nom, dataset: { cedula: doc||'' }});
     }
     items.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
     return items;
   }
 
+  function llenarDL(ul, items){
+    try{ ul.innerHTML = ''; }catch(_){ while(ul && ul.firstChild) ul.removeChild(ul.firstChild); }
+    if(!ul) return 0;
+    let count = 0;
+    for(const it of items){
+      if(!it || !it.value) continue;
+      const opt = document.createElement('option');
+      opt.value = String(it.value);
+      if(it.label){ opt.textContent = String(it.label); }
+      if(it.dataset && typeof it.dataset === 'object'){
+        for(const k of Object.keys(it.dataset)){
+          try{ opt.setAttribute('data-'+k, (it.dataset[k]==null?'':String(it.dataset[k]))); }catch(_){}
+        }
+      }
+      ul.appendChild(opt);
+      count++;
+    }
+    return count;
+  }
+
+  function completarDesdeFicha(fichaNum, skipMsj){
+    const f = window.__FICHA_DATA_BY_NUM__ && window.__FICHA_DATA_BY_NUM__.get(String(fichaNum || '').trim());
+    if(!f) return false;
+    // Escribir campos en el formulario
+    const fields = [
+      ['nombre_ie', (f.ie||'').toUpperCase()],
+      ['nombre_programa', (f.programa||'').toUpperCase()],
+      ['instructor_nombre', (f.instructor||'').toUpperCase()],
+      ['instructor_cedula', f.cedula || ''],
+    ];
+    for(const [nm, v] of fields){
+      const el = document.querySelector(`[name="${nm}"]`);
+      if(!el || !v) continue;
+      if(el.tagName && el.tagName.toLowerCase() === 'select'){
+        const opts = Array.from(el.options).map(o => o.value.toUpperCase());
+        const idx = opts.indexOf(String(v).toUpperCase());
+        if(idx !== -1){ el.value = el.options[idx].value; try{ el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
+      } else {
+        el.value = v;
+        try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true})); }catch(_){}
+      }
+    }
+    // Municipio
+    const mun = f.municipio || '';
+    if(mun && inpMun){
+      let found = false;
+      for(const o of inpMun.options){
+        if((o.value||'').toUpperCase() === String(mun).toUpperCase()){ inpMun.value = o.value; found = true; break; }
+      }
+      if(!found){ const n = document.createElement('option'); n.value = mun; n.textContent = mun; inpMun.appendChild(n); inpMun.value = n.value; }
+    }
+    // Proyecto nombre sugerencia si está vacío
+    if(inpNombreProyecto && !inpNombreProyecto.value.trim() && f.programa && f.ie){
+      inpNombreProyecto.placeholder = ('PROYECTO '+f.programa + ' · ' + f.ie).toUpperCase();
+    }
+    if(!skipMsj && fichaNum){
+      try{
+        const t = document.createElement('div');
+        t.className = 'alert alert-success py-2 px-3 small mt-2 mb-0 show fade';
+        t.style.cssText='border:0;border-radius:12px;border-left:5px solid #39A900;background:#eefbe0;';
+        t.innerHTML = '✔ Ficha #<b>' + String(fichaNum) + '</b> cargada desde el catálogo: Institución, Programa, Municipio e Instructor <b>pre-llenados</b> automáticamente.';
+        const target = fichaCombo;
+        if(target && target.parentElement) target.parentElement.after(t);
+        setTimeout(()=>{ try{ t.remove(); }catch(_){} }, 6000);
+      }catch(_){}
+    }
+    return true;
+  }
+
   function actualizarCascada(){
-    const ieSel = (inpIE && inpIE.value || '').toUpperCase().trim();
-    const progSel = (inpProg && inpProg.value || '').toUpperCase().trim();
-    // -- MUNICIPIO desde Institución si hay match único
+    const ieSel = (ieCombo && ieCombo.value || '').toUpperCase().trim();
+    const progSel = (progCombo && progCombo.value || '').toUpperCase().trim();
+
     if(ieSel && inpMun){
       const matchIe = (CAT.instituciones || []).find(x => (x.nombre||'').toUpperCase().trim() === ieSel);
       if(matchIe && matchIe.municipio){
@@ -251,7 +318,7 @@
         }
       }
     }
-    // -- PROGRAMAS: uniq de los programas presentes en las fichas de la IE seleccionada; si no IE, todos.
+
     let itemsProg;
     if(ieSel){
       const progSet = new Map();
@@ -261,9 +328,8 @@
         if(!pnom) continue;
         if(!progSet.has(pnom)) progSet.set(pnom, f.programa_codigo||'');
       }
-      // Además combinar con cat.programas si no hay coincidencias (mostrar catálogo completo como fallback)
       if(progSet.size === 0){
-        itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre+' · '+x.codigo) : x.nombre })), x => x.value);
+        itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre + ' · ' + x.codigo) : x.nombre })), x => x.value);
       } else {
         itemsProg = [];
         for(const [pnom, cod] of progSet.entries()){
@@ -271,12 +337,11 @@
         }
       }
     } else {
-      itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre+' · '+x.codigo) : x.nombre })), x => x.value);
+      itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre + ' · ' + x.codigo) : x.nombre })), x => x.value);
     }
     itemsProg.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
-    llenarOptions(progDL, itemsProg);
+    llenarCombo(progCombo, '⬇️ Seleccione o busque un Programa Técnico', itemsProg);
 
-    // -- FICHAS: filtrar por IE + programa y poner data-attrs para buscarYCompletar
     let fichasFiltradas = (CAT.fichas || []).slice();
     if(ieSel) fichasFiltradas = fichasFiltradas.filter(f => (f.ie||'').toUpperCase().trim() === ieSel);
     if(progSel) fichasFiltradas = fichasFiltradas.filter(f => (f.programa||'').toUpperCase().trim() === progSel);
@@ -292,16 +357,13 @@
         cedula: f.cedula||''
       }
     })).filter(x => x.value && /^\d{7}$/.test(x.value));
-    llenarOptions(fichasDL, fItems);
+    llenarCombo(fichaCombo, '⬇️ Seleccione o busque un código de Ficha (7 dígitos)', fItems);
     if(hintFichas){
-      hintFichas.textContent = fItems.length? (' · ' + fItems.length + ' fichas encontradas') : '';
+      hintFichas.textContent = fItems.length? (' · ' + fItems.length + ' fichas disponibles') : '';
     }
 
-    // -- INSTRUCTORES (combinado M2M + fichas filtradas)
     const insItems = filtrarInstructores(ieSel, progSel);
-    llenarOptions(insDL, insItems);
-
-    // -- Si solo hay 1 instructor en filtro, autocompletar doc si usuario ya escribió nombre exacto
+    llenarDL(insDL, insItems);
     if(inpIns && inpIns.value && inpDoc && !inpDoc.value){
       const n = (inpIns.value||'').toUpperCase().trim();
       const hit = insItems.find(x => x.value === n);
@@ -310,21 +372,61 @@
   }
 
   document.addEventListener('DOMContentLoaded', poblarTodo);
-  // Si ya se cargó DOM (por si acaso):
   if(document.readyState === 'interactive' || document.readyState === 'complete'){
     try{ poblarTodo(); }catch(_){}
   }
   // Eventos cascada
-  if(inpIE){
-    inpIE.addEventListener('change', actualizarCascada);
-    inpIE.addEventListener('blur', actualizarCascada);
+  if(ieCombo){
+    ieCombo.addEventListener('change', function(){
+      actualizarCascada();
+      // Si la IE tiene un único programa → autoseleccionar
+      if(progCombo && progCombo.options.length === 2){
+        progCombo.value = progCombo.options[1].value;
+        try{ progCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+      }
+    });
   }
-  if(inpProg){
-    inpProg.addEventListener('change', actualizarCascada);
-    inpProg.addEventListener('blur', actualizarCascada);
+  if(progCombo){
+    progCombo.addEventListener('change', function(){
+      actualizarCascada();
+      // Si con IE+Programa hay única ficha → autoseleccionar y completar
+      if(fichaCombo && fichaCombo.options.length === 2){
+        fichaCombo.value = fichaCombo.options[1].value;
+        try{ fichaCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+      }
+    });
   }
-  // Exponer helper para reuso desde otros bloques
+  if(fichaCombo){
+    fichaCombo.addEventListener('change', function(){
+      const val = (fichaCombo.value || '').trim();
+      if(/^\d{7}$/.test(val)) completarDesdeFicha(val, false);
+      else completarDesdeFicha('', true);
+    });
+  }
+  // Submit: validar que valor seleccionado exista exactamente en el catálogo
+  const form = document.getElementById('form-registro-ficha');
+  if(form){
+    form.addEventListener('submit', function(e){
+      const ieVal = (ieCombo? ieCombo.value : '').trim();
+      const progVal = (progCombo? progCombo.value : '').trim();
+      const fichaVal = (fichaCombo? fichaCombo.value : '').trim();
+      const msjs = [];
+      if(!ieVal) msjs.push('Institución Educativa');
+      if(!progVal) msjs.push('Programa Técnico');
+      if(!fichaVal || !/^\d{7}$/.test(fichaVal)) msjs.push('Código de Ficha (7 dígitos)');
+      if(msjs.length){
+        alert('❌ Selecciona desde el catálogo (no escribas valores nuevos) los campos:\n\n• ' + msjs.join('\n• ') + '\n\nEstos solo los crea el Administrador del sistema.');
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      // Asegurar que el nombre del proyecto quede en mayúsculas antes de enviar
+      if(inpNombreProyecto){ inpNombreProyecto.value = (inpNombreProyecto.value || '').toUpperCase().trim(); }
+      return true;
+    });
+  }
   window.__REGISTRO_CASCADA_REFRESH__ = actualizarCascada;
+  window.__REGISTRO_COMPLETAR_FICHA__ = completarDesdeFicha;
 })();
 </script>
 <script>
@@ -367,7 +469,7 @@
         <div class="d-flex align-items-center gap-2">
           <span class="ap-num" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:linear-gradient(180deg,#4ec400 0%, #1c7a00 100%);color:white;font-weight:800;font-size:.9rem;">1</span>
           <b style="color:var(--sena-deep);">Aprendiz</b>
-          <span class="muted-small">(Todos los campos son obligatorios excepto teléfono)</span>
+          <span class="muted-small">(Todos los campos son obligatorios)</span>
         </div>
         <button type="button" class="aprendiz-quitar" aria-label="Quitar aprendiz"
                 style="min-height:38px;padding:6px 12px;border-radius:10px;border:1.5px solid #eecaca;background:#fff5f5;color:#a71a24;font-weight:700;font-size:.84rem;cursor:pointer;">
@@ -397,9 +499,9 @@
                  placeholder="juan.perez@correo.com" style="min-height:48px;" required>
         </div>
         <div class="col-12 col-md-2">
-          <label class="form-label mb-1" style="font-size:.82rem;">📱 Teléfono</label>
+          <label class="form-label mb-1" style="font-size:.82rem;">📱 Teléfono *</label>
           <input type="text" name="apr_telefono[]" class="form-field mono apr-tel" inputmode="tel"
-                 placeholder="Ej: 3001234567" style="min-height:48px;">
+                 placeholder="Ej: 3001234567" style="min-height:48px;" required>
         </div>
       </div>
     `;
