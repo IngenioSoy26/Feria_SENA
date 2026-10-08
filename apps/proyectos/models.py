@@ -108,7 +108,19 @@ class Proyecto(models.Model):
     def save(self, *args, **kwargs):
         self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
         if self.ficha_id and not self.codigo:
-            self.codigo = str(self.ficha.numero)
+            # 1 proyecto por ficha -> 3160423, 2do+ -> 3160423-P2, 3160423-P3, etc.
+            from django.db.models import Max
+            ficha_num = str(self.ficha.numero)
+            count_same_ficha = (
+                Proyecto.objects
+                .filter(ficha_id=self.ficha_id, evento_id=self.evento_id)
+                .exclude(pk=self.pk)
+                .count()
+            )
+            if count_same_ficha == 0:
+                self.codigo = ficha_num
+            else:
+                self.codigo = f'{ficha_num}-P{count_same_ficha + 1}'
         if self.ficha_id:
             if not self.institucion_id:
                 self.institucion = self.ficha.institucion

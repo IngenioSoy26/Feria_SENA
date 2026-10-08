@@ -521,36 +521,22 @@ class WizardRegistroView(View):
             if ficha_obj.municipio:
                 municipio_ie = ficha_obj.municipio
 
-            # ---- PROYECTO (Ficha) ----
-            proyecto_defaults = {
-                'nombre': nombre_proyecto,
-                'descripcion': f'{nombre_proyecto} - {colegio.nombre}',
-                'institucion': colegio,
-                'programa': programa,
-                'instructor_responsable': instructor_obj,
-                'estado': 'APROBADO',
-            }
-            if ficha_obj:
-                proyecto_defaults['ficha'] = ficha_obj
-            proyecto, creado = Proyecto.objects.get_or_create(
+            # ---- PROYECTO (Ficha) ---
+            # UNA MISMA FICHA PUEDE TENER MÚLTIPLES PROYECTOS (cada uno con sus aprendices)
+            # NO USAMOS get_or_create por (evento, codigo_ficha): eso hacía update del 1er proyecto y perdía datos
+            # Código de proyecto lo genera Proyecto.save() automático: 3160423 (1er), 3160423-P2 (2do), 3160423-P3 (3er)...
+            proyecto = Proyecto(
                 evento=evento,
-                codigo=codigo_ficha,
-                defaults=proyecto_defaults,
+                nombre=nombre_proyecto,
+                descripcion=f'{nombre_proyecto} - {colegio.nombre}',
+                institucion=colegio,
+                programa=programa,
+                instructor_responsable=instructor_obj,
+                estado='APROBADO',
             )
-            if not creado:
-                proyecto.nombre = nombre_proyecto
-                proyecto.institucion = colegio
-                proyecto.programa = programa
-                if instructor_obj:
-                    proyecto.instructor_responsable = instructor_obj
-                if ficha_obj:
-                    proyecto.ficha = ficha_obj
-                proyecto.descripcion = f'{nombre_proyecto} - {colegio.nombre}'
-                save_fields = ['nombre', 'descripcion', 'institucion', 'programa', 'instructor_responsable']
-                if ficha_obj:
-                    save_fields.append('ficha')
-                proyecto.save(update_fields=save_fields)
-                messages.warning(request, f'ℹ Ficha #{codigo_ficha} ya existía. Se actualizaron sus datos.')
+            if ficha_obj:
+                proyecto.ficha = ficha_obj
+            proyecto.save()  # save() genera el código secuencial único por evento+ficha
 
             # ---- APRENDICES (SUB-FORMULARIO DINÁMICO, arreglos) ----
             tipos = request.POST.getlist('apr_tipo_doc[]') or request.POST.getlist('apr_tipo_doc') or []
@@ -660,10 +646,22 @@ class WizardRegistroView(View):
                 Aprendiz.objects.get_or_create(persona=persona_a, defaults={'proyecto': proyecto, 'grado': '11'})
                 aprendices_guardados += 1
 
-            messages.success(
-                request,
-                f'✔ Ficha #{codigo_ficha} guardada OK · Proyecto: "{proyecto.nombre}" · {aprendices_guardados} aprendiz(es) · {colegio.nombre} ({colegio.municipio.nombre if colegio.municipio_id else ""}).'
+            total_proyectos_ficha = 0
+            if ficha_obj:
+                total_proyectos_ficha = Proyecto.objects.filter(
+                    evento=evento,
+                    ficha=ficha_obj,
+                ).count()
+            msg = (
+                f'✔ Ficha #{codigo_ficha} · Código Proyecto: "{proyecto.codigo}" · '
+                f'Proyecto #{total_proyectos_ficha if total_proyectos_ficha else 1} en esta ficha · '
+                f'Nombre: "{proyecto.nombre}" · {aprendices_guardados} aprendiz(es) · '
+                f'{colegio.nombre}'
             )
+            if colegio.municipio_id:
+                msg += f' ({colegio.municipio.nombre})'
+            msg += '.'
+            messages.success(request, msg)
             return redirect('simple:home')
 
         except Exception as e:
