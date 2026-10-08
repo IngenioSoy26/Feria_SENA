@@ -849,6 +849,7 @@ class ImportacionExcelService:
                     'telefono_rector': (datos.get('telefono_rector') or '')[:30] or None,
                     'nombre_coordinador': (datos.get('nombre_coordinador') or '')[:180] or None,
                     'celular_coordinador': (datos.get('celular_coordinador') or '')[:30] or None,
+                    'activo': True,
                 }
                 if municipio_obj is not None:
                     defaults['municipio'] = municipio_obj
