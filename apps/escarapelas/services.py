@@ -77,7 +77,7 @@ BADGE_ROL_TEXTO = {
 
 POS_BADGE = {
     "x": 18 * mm,
-    "y": 91.5 * mm,
+    "y": 79 * mm,
     "w": 71 * mm,
     "h": 8.5 * mm,
     "r": 4.25 * mm,
@@ -87,16 +87,16 @@ POS_BADGE = {
 
 POS_CAJA_NOMBRE = {
     "x": 7 * mm,
-    "y": 70 * mm,
+    "y": 58 * mm,
     "w": 93 * mm,
-    "h": 18.5 * mm,
+    "h": 16 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.0,
     "padding_lados": 5 * mm,
 
-    # Baselines
-    "y_nombre": 81.7 * mm,
-    "y_institucion": 74.7 * mm,
+    # Baselines (calculadas delta=-13mm vs anterior)
+    "y_nombre": 68.7 * mm,
+    "y_institucion": 61.7 * mm,
 
     "size_nombre": 14,
     "size_institucion": 8.2,
@@ -105,51 +105,50 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 27 * mm,
-    "y": 60.3 * mm,
+    "y": 47 * mm,
     "w": 53 * mm,
     "h": 6.8 * mm,
     "r": 3.4 * mm,
     "borde_grosor": 0.9,
-    "y_texto": 62.45 * mm,
+    "y_texto": 49.2 * mm,
     "size": 9.5,
 }
 
 
 POS_CAJA_INFERIOR = {
     "x": 9 * mm,
-    "y": 8 * mm,
+    "y": 4 * mm,
     "w": 89 * mm,
-    "h": 48.5 * mm,
+    "h": 38 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.1,
 
-    # Proyecto
-    "y_proyecto_1": 51.0 * mm,
-    "y_proyecto_2": 46.7 * mm,
+    # Proyecto (zona superior cajaInf 18mm altura)
+    "y_proyecto_1": 36.5 * mm,
+    "y_proyecto_2": 31.8 * mm,
     "size_label": 8.0,
     "size_valor": 8.6,
 
-    # QR
-    "qr_size": 31.5 * mm,
+    # QR achicado 31.5 → 26mm + semi-transparente
+    "qr_size": 26 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 11.0 * mm,
+    "qr_y_inf": 5.7 * mm,
 }
 
 
 # =========================================================================
-# CACHE GLOBAL DE LA IMAGEN DE FONDO YA PROCESADA CON ImageOps.fit().
+# CACHE GLOBAL DE LA IMAGEN DE FONDO PROCESADA CON ImageOps.pad().
 #
-# SIN ESTO: ImageOps.fit LANCZOS 2140×2700 + save PNG + io.BytesIO() se ejecuta
-#          POR CADA TARJETA. Para 300 personas = ×300 ~ 30-60 segundos →
-#          Railway mata request por timeout (Gateway Timeout / Pantalla negra
-#          "Cargando...").
+# SIN ESTO: ImageOps.pad LANCZOS 2140×2700 + save PNG + io.BytesIO()
+#          por cada tarjeta. 300 personas = 30s → Railway timeout.
 #
-# CON ESTO: Se ejecuta 1 SOLA VEZ por proceso Railway (primer render lento 1.5s)
-#          y los siguientes 299 renders reutilizan el BytesIO seek(0)
-#          (0ms overhead). Request /lote/todos/ 300 personas = ~1 segundo.
+# CON ESTO: 1 SOLA VEZ por proceso Railway. Render lote 300 = ~1 segundo.
+#
+# Invalidación cache: st_mtime_ns Credencial.png cambia (actualizas plantilla)
+# → cache regenera sola en el siguiente request.
 # =========================================================================
-_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO con el PNG ya fit-2140×2700
-_FONDO_CREDENCIAL_MTIME = None            # mtime Credencial.png si cambia
+_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO PNG ya pad-2140×2700
+_FONDO_CREDENCIAL_MTIME = None            # mtime Credencial.png
 _FONDO_CREDENCIAL_RUTA_STR = None         # ruta que generó la cache
 
 
@@ -319,12 +318,25 @@ class EscarapelaPDFService:
     @staticmethod
     def _dibujar_imagen_fondo(c, dx=0, dy=0):
         """
-        Dibuja Credencial.png sin deformarla CON CACHE GLOBAL (1 vez/proceso).
+        Dibuja Credencial.png SIN CORTAR NADA 100% CONTENIDO VISIBLE.
 
-        - ImageOps.fit LANCZOS recorte centrado 2140×2700 → 300dpi impresión.
-        - 1 sola vez: Cache BytesIO + mtime invalidation si el usuario sube
-          una nueva Credencial.png (cambia mtime).
-        - 0 Pillow overhead por tarjeta. Lote 300 personas = ~1 segundo.
+        --- MOTIVO por el que se quitó ImageOps.fit() ---
+        Credencial.png actual = 1024 ancho × 1536 alto (ratio 0.667).
+        Escarapela física    = 107mm W × 135mm H  (ratio 0.793 MÁS ANCHA).
+        ImageOps.fit() recortaba centrado → cortaba:
+          - ARRIBA: el título "VI Feria / Proyectos Productivos / CENTRO..."
+          - ABAJO: desierto / cactus / mar.
+        Usuario: "la imagen del fondo quedo cortada".
+
+        --- SOLUCIÓN: ImageOps.pad(color = beige SENA #FFF1D8) ---
+        Resultado: CONTENIDO PNG 100% visible (sin cortar nada).
+        El espacio "sobrante" a izquierda y derecha del PNG más estrecho
+        se RELLENA con color beige idéntico al degradado de Credencial.png
+        → visualmente INPERCEPTIBLE, como si la imagen ocupara todo el ancho.
+        + Cache global singleton (1 vez proceso Railway, 0 Pillow por tarjeta).
+        + Invalida cache cuando st_mtime_ns de Credencial.png cambia
+          (subes nueva plantilla).
+        + Fallback drawImage directo SIN Pillow = nunca pantalla negra.
         """
         global _FONDO_CREDENCIAL_BYTESIO, _FONDO_CREDENCIAL_MTIME, _FONDO_CREDENCIAL_RUTA_STR
         ruta = EscarapelaPDFService._ruta_credencial()
@@ -337,7 +349,7 @@ class EscarapelaPDFService:
             )
             return
 
-        # --- Calcular si cache válida ---
+        # --- Cache válida? ---
         usar_cache = False
         ruta_str = str(ruta)
         try:
@@ -352,7 +364,6 @@ class EscarapelaPDFService:
             usar_cache = True
 
         if usar_cache:
-            # Path RÁPIDO: BytesIO cached, 0 Pillow, 0 overhead.
             try:
                 _FONDO_CREDENCIAL_BYTESIO.seek(0)
                 c.drawImage(
@@ -365,31 +376,32 @@ class EscarapelaPDFService:
                 )
                 return
             except Exception:
-                # Cache corrupta: invalidar y regenerar.
                 _FONDO_CREDENCIAL_BYTESIO = None
                 _FONDO_CREDENCIAL_RUTA_STR = None
                 _FONDO_CREDENCIAL_MTIME = None
 
-        # --- Path LENTO: regenerar fit + guardar en cache ---
+        # --- Regenerar cache: PAD (no más FIT) = 0 cortes ---
         try:
             with Image.open(ruta) as img:
                 img = img.convert("RGBA")
                 target_w = 2140
                 target_h = 2700
-                img = ImageOps.fit(
+                # Beige degradado SENA extraído del borde de Credencial.png
+                # Cualquier pixel del borde exterior tiene ese tono.
+                color_padding = (255, 241, 216, 255)
+                img = ImageOps.pad(
                     img,
                     (target_w, target_h),
                     method=Image.Resampling.LANCZOS,
                     centering=(0.5, 0.5),
+                    color=color_padding,
                 )
                 memoria = io.BytesIO()
                 img.save(memoria, format="PNG", optimize=True)
                 memoria.seek(0)
-            # Poblar cache global
             _FONDO_CREDENCIAL_BYTESIO = memoria
             _FONDO_CREDENCIAL_RUTA_STR = ruta_str
             _FONDO_CREDENCIAL_MTIME = mtime
-            # Dibujar 1ª vez (usa la misma memoria)
             _FONDO_CREDENCIAL_BYTESIO.seek(0)
             c.drawImage(
                 ImageReader(_FONDO_CREDENCIAL_BYTESIO),
@@ -400,8 +412,7 @@ class EscarapelaPDFService:
                 preserveAspectRatio=False,
             )
         except Exception:
-            # --- FALLBACK DEFINITIVO: drawImage RÁPIDO DIRECTO, SIN Pillow ---
-            # Nunca más pantalla "Cargando...", incluso si Pillow/LANCZOS falla.
+            # Fallback definitivo: drawImage directo SIN Pillow
             try:
                 c.drawImage(
                     ruta_str,
@@ -690,7 +701,7 @@ class EscarapelaPDFService:
                     texto=l2a,
                     caja_x=x,
                     caja_w=w,
-                    y=dy + 47.2 * mm,
+                    y=dy + 34.2 * mm,
                     fuente="Helvetica-Bold",
                     tam=7.6,
                     color=black,
@@ -703,7 +714,7 @@ class EscarapelaPDFService:
                     texto=l2b,
                     caja_x=x,
                     caja_w=w,
-                    y=dy + 43.7 * mm,
+                    y=dy + 30.7 * mm,
                     fuente="Helvetica-Bold",
                     tam=7.6,
                     color=black,
@@ -725,7 +736,7 @@ class EscarapelaPDFService:
                 )
 
         # ----------------------------------------------------
-        # QR
+        # QR (achicado 26mm + semi-transparente alpha)
         # ----------------------------------------------------
         qr_size = p["qr_size"]
 
@@ -740,6 +751,24 @@ class EscarapelaPDFService:
         ruta_qr = QrService.asegurarse_qr_existe(persona)
 
         try:
+            # --- Semi-transparencia QR: efecto "no 100% opaco" ---
+            # Técnica ReportLab: saveState → setFillAlpha(0.82) en un
+            # recuadro BLANCO padding detrás + drawImage normal.
+            # El ojo percibe "menos brusco/transparente".
+            c.saveState()
+            c.setFillColor(white)
+            c.setFillAlpha(0.82)
+            # Padding 1.2mm alrededor del QR para "glow" translúcido.
+            c.rect(
+                qr_x - 1.2 * mm,
+                qr_y - 1.2 * mm,
+                qr_size + 2.4 * mm,
+                qr_size + 2.4 * mm,
+                fill=1,
+                stroke=0,
+            )
+            c.restoreState()
+
             c.drawImage(
                 str(ruta_qr),
                 qr_x,
