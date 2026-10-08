@@ -108,13 +108,13 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 26 * mm,
-    "y": 40.7 * mm,
+    "y": 41.7 * mm,
     "w": 55 * mm,
     "h": 7.5 * mm,
     "r": 3.75 * mm,
-    "borde_grosor": 0.9,
+    "borde_grosor": 0,
     "fill_alpha": 0.40,
-    "y_texto": 43.4 * mm,
+    "y_texto": 44.4 * mm,
     "size": 9.5,
 }
 
@@ -613,7 +613,7 @@ class EscarapelaPDFService:
             y=dy + p["y_texto"],
             fuente="Helvetica-Bold",
             tam=p["size"],
-            color=COLOR_SENA_VERDE_OSCURO,
+            color=black,
             max_w=w - 7 * mm,
             tam_min=7,
         )
