@@ -429,18 +429,19 @@ class ImportacionExcelService:
 
             elif tipo_importacion == 'programas':
                 nombre = datos.get('nombre', '')
-
-                codigo = ''
+                codigo = datos.get('codigo', '').strip()
                 if nombre:
                     if len(nombre) > 200:
                         clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
                         _agregar_error(fila_num, 'nombre', nombre[:50]+'...', 'Nombre excede 200 caracteres.', '', CLASIFICACION_ADVERTENCIA, fila_resultados)
-                    codigo = _generar_codigo_programa(
-                        nombre,
-                        usados_set=programas_codigos_archivo,
-                        existe_bd_fn=lambda c: ProgramaTecnico.objects.filter(codigo=c).exists(),
-                    )
-                    programas_codigos_archivo.add(codigo)
+                    if codigo:
+                        if len(codigo) > 30:
+                            clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
+                            _agregar_error(fila_num, 'codigo', codigo, 'Código excede 30 caracteres.', '', CLASIFICACION_ADVERTENCIA, fila_resultados)
+                        if codigo in programas_codigos_archivo:
+                            clasificacion_fila = max(clasificacion_fila, CLASIFICACION_DUPLICADO)
+                            _agregar_error(fila_num, 'codigo', codigo, 'Código repetido en el archivo.', '', CLASIFICACION_DUPLICADO, fila_resultados)
+                        programas_codigos_archivo.add(codigo)
                     if ProgramaTecnico.objects.filter(nombre__iexact=nombre).exists():
                         clasificacion_fila = max(clasificacion_fila, CLASIFICACION_DUPLICADO)
                         _agregar_error(fila_num, 'nombre', nombre, 'Programa ya existe en BD. Se actualizará.', '', CLASIFICACION_DUPLICADO, fila_resultados)
@@ -1005,28 +1006,25 @@ class ImportacionExcelService:
                 if not datos.get('nombre'):
                     continue
                 nombre = datos['nombre']
-                codigo = datos.get('codigo') or ''
-                if not codigo:
-                    usados = set(ProgramaTecnico.objects.values_list('codigo', flat=True))
-                    codigo = _generar_codigo_programa(nombre, usados_set=usados, existe_bd_fn=lambda c: False)
+                codigo = (datos.get('codigo') or '').strip().upper() or None
                 obj = ProgramaTecnico.objects.filter(nombre__iexact=nombre).first()
                 created = False
-                if obj is None:
+                if obj is None and codigo:
                     obj = ProgramaTecnico.objects.filter(codigo=codigo).first()
-                    if obj is None:
-                        obj = ProgramaTecnico.objects.create(
-                            codigo=codigo, nombre=nombre[:200],
-                            activo=True,
-                        )
-                        created = True
-                    else:
-                        obj.nombre = nombre[:200]
-                        obj.activo = True
-                        obj.save()
+                if obj is None:
+                    create_kwargs = {
+                        'nombre': nombre[:200],
+                        'activo': True,
+                    }
+                    if codigo:
+                        create_kwargs['codigo'] = codigo
+                    obj = ProgramaTecnico.objects.create(**create_kwargs)
+                    created = True
                 else:
                     obj.nombre = nombre[:200]
-                    if not obj.codigo: obj.codigo = codigo
                     obj.activo = True
+                    if codigo and not obj.codigo:
+                        obj.codigo = codigo
                     obj.save()
                 info_fila['accion'] = 'CREATE' if created else 'UPDATE'
                 info_fila['id'] = obj.id

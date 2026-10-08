@@ -4,10 +4,24 @@ from django.db import models
 def _generar_codigo_ie():
     from django.db.models import Max
     ultimo = InstitucionEducativa.objects.aggregate(m=Max('id'))['m'] or 0
-    return f'INS-{int(ultimo) + 1:07d}'
+    return f'IE-{int(ultimo) + 1:04d}'
+
+
+def _generar_codigo_municipio():
+    from django.db.models import Max
+    ultimo = Municipio.objects.aggregate(m=Max('id'))['m'] or 0
+    return f'M-{int(ultimo) + 1:04d}'
 
 
 class Municipio(models.Model):
+    codigo = models.CharField(
+        max_length=10,
+        unique=True,
+        null=True,
+        blank=True,
+        default=_generar_codigo_municipio,
+        verbose_name='Código Municipio',
+    )
     nombre = models.CharField(max_length=100, unique=True, verbose_name='Nombre')
     departamento = models.CharField(max_length=100, default='LA GUAJIRA', verbose_name='Departamento')
     activo = models.BooleanField(default=True)
@@ -18,11 +32,12 @@ class Municipio(models.Model):
         ordering = ['departamento', 'nombre']
 
     def __str__(self):
-        if self.departamento:
-            return f'{self.nombre}, {self.departamento}'
         return self.nombre
 
     def save(self, *args, **kwargs):
+        if not self.codigo:
+            self.codigo = _generar_codigo_municipio()
+        self.codigo = (self.codigo or '').strip().upper()
         self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
         self.departamento = (self.departamento or '').strip().upper() or self.departamento or ''
         super().save(*args, **kwargs)
@@ -34,7 +49,7 @@ class InstitucionEducativa(models.Model):
         unique=True,
         default=_generar_codigo_ie,
         verbose_name='Código Único IE',
-        help_text='Identificador único automático (INS-XXXXXXX). Se genera al crear la institución.'
+        help_text='Identificador único automático (IE-XXXX). Se genera al crear la institución.'
     )
     nombre = models.CharField(max_length=250, unique=True)
     municipio = models.ForeignKey(
@@ -74,15 +89,11 @@ class InstitucionEducativa(models.Model):
         ordering = ['municipio', 'nombre']
 
     def __str__(self):
-        if self.codigo:
-            return f'{self.codigo} · {self.nombre}'
         return self.nombre
 
     def save(self, *args, **kwargs):
-        # Generar código único automático si no tiene uno (por bulk_create o default fallido)
         if not self.codigo:
             self.codigo = _generar_codigo_ie()
-        # Normalización MAYÚSCULAS SOSTENIDAS campos texto
         self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
         if self.codigo:
             self.codigo = (self.codigo or '').strip().upper()
@@ -92,7 +103,6 @@ class InstitucionEducativa(models.Model):
             self.nombre_rector = (self.nombre_rector or '').strip().upper()
         if self.nombre_coordinador:
             self.nombre_coordinador = (self.nombre_coordinador or '').strip().upper()
-        # Limpieza numérica teléfonos (solo dígitos y +)
         if self.telefono:
             self.telefono = ''.join(ch for ch in str(self.telefono or '') if ch.isdigit() or ch == '+') or None
         if self.telefono_rector:
