@@ -79,16 +79,21 @@ def _construir_logo_centrado(styles, ancho_mm=28, alto_mm=28):
 
 
 # =======================================================================
-# ESCARAPELAS A6 DÚPLEX (2 páginas por persona)
+# ESCARAPELAS 107mm × 135mm RETRATO DÚPLEX (2 páginas por persona)
 #  — Wrappers al servicio nuevo EscarapelaPDFService —
-#  Todas las rutas (incluido /escarapelas/lote/todos/) usan el mismo diseño.
+#  Generación:
+#   - INDIVIDUAL: 107×135mm, 2 páginas dúplex por persona
+#   - LOTE 4x CARTA (Letter): 4 escarapelas por hoja CARTA (grid 2×2)
+#     Estructura de lote = Bloque I (TODOS los frentes 4x hoja)
+#                        + Bloque II (TODOS los reversos 4x hoja)
+#     Así al imprimir dúplex por hojas, al cortar 2x2 salen 4 dúplex.
 # =======================================================================
 def generar_escarapela_individual(persona, evento=None, proyecto=None, buffer=None):
     from apps.escarapelas.services import EscarapelaPDFService
     return EscarapelaPDFService.generar_individual(persona, evento)
 
 
-def generar_escarapelas_lote(lista_items, evento=None, nombre_archivo='escarapelas.pdf'):
+def generar_escarapelas_lote(lista_items, evento=None, nombre_archivo='escarapelas.pdf', formato='CARTA_4X'):
     from apps.escarapelas.services import EscarapelaPDFService
     personas = []
     for item in lista_items:
@@ -96,7 +101,7 @@ def generar_escarapelas_lote(lista_items, evento=None, nombre_archivo='escarapel
             personas.append(item[0])
         else:
             personas.append(item)
-    return EscarapelaPDFService.generar_lote(personas, evento, nombre_archivo)
+    return EscarapelaPDFService.generar_lote(personas, evento, nombre_archivo, formato=formato)
 
 
 # =======================================================================
