@@ -353,6 +353,10 @@ class WizardRegistroView(View):
         try:
             import re
             max_ap = settings.MAX_APRENDICES_POR_PROYECTO
+            RE_EMAIL = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
+            RE_NUM7 = re.compile(r'^\d{7}$')
+            RE_NUM5_15 = re.compile(r'^\d{5,15}$')
+            RE_NUM7_15 = re.compile(r'^\d{7,15}$')
 
             # ---- DATOS DEL PROYECTO / FICHA ----
             nombre_ie = (request.POST.get('nombre_ie', '') or '').strip().upper() or ''
@@ -362,7 +366,8 @@ class WizardRegistroView(View):
             codigo_ficha_raw = request.POST.get('codigo_ficha', request.POST.get('codigo_proyecto', '') or '').strip()
             codigo_ficha = re.sub(r'\D', '', codigo_ficha_raw)
             nombre_instructor = (request.POST.get('instructor_nombre', '') or '').strip().upper() or ''
-            cedula_instructor = (request.POST.get('instructor_cedula', '') or '').strip()
+            cedula_instructor_raw = (request.POST.get('instructor_cedula', '') or '').strip()
+            cedula_instructor = re.sub(r'\D', '', cedula_instructor_raw)
 
             if not nombre_ie or not nombre_programa or not nombre_proyecto:
                 messages.error(request, '⚠ Faltan datos obligatorios: Institución, Programa y Nombre del proyecto.')
@@ -371,15 +376,20 @@ class WizardRegistroView(View):
             if not nombre_instructor or not cedula_instructor:
                 messages.error(request, '⚠ El Instructor líder y su Documento de identidad son OBLIGATORIOS.')
                 return redirect('simple:wizard')
-            if re.sub(r'\D', '', cedula_instructor) != cedula_instructor or len(cedula_instructor) < 5:
-                messages.error(request, '⚠ Documento de identidad del instructor líder inválido (sólo dígitos y mínimo 5 caracteres).')
+            if not RE_NUM5_15.match(cedula_instructor):
+                messages.error(
+                    request,
+                    f'⚠ Documento del instructor líder inválido: "{cedula_instructor_raw}".\n'
+                    f'Sólo se admiten DÍGITOS, entre 5 y 15 caracteres.'
+                )
                 return redirect('simple:wizard')
 
-            if not codigo_ficha:
-                messages.error(request, '⚠ El Código de Ficha es obligatorio. Debe tener 7 dígitos numéricos.')
-                return redirect('simple:wizard')
-            if len(codigo_ficha) != 7 or not re.fullmatch(r'\d{7}', codigo_ficha):
-                messages.error(request, f'⚠ El Código de Ficha debe tener EXACTAMENTE 7 dígitos numéricos. Tienes {len(codigo_ficha)} ("{codigo_ficha}").')
+            if not codigo_ficha or not RE_NUM7.match(codigo_ficha):
+                messages.error(
+                    request,
+                    f'⚠ El Código de Ficha es obligatorio y debe tener EXACTAMENTE 7 dígitos numéricos.\n'
+                    f'Valor recibido: "{codigo_ficha_raw}" → "{codigo_ficha}" ({len(codigo_ficha)} dígitos).'
+                )
                 return redirect('simple:wizard')
 
             # ---- INSTITUCIÓN + PROGRAMA (SOLO CATÁLOGO ADMIN — NO se crean nuevos desde registro) ----
@@ -515,26 +525,53 @@ class WizardRegistroView(View):
             tuplas = []
             for i in range(n):
                 t = (tipos[i] if i < len(tipos) else '').strip() or 'CC'
-                nd = re.sub(r'\D', '', (nums[i] if i < len(nums) else '') or '')
+                nd_raw = (nums[i] if i < len(nums) else '') or ''
+                nd = re.sub(r'\D', '', nd_raw)
                 nm = (noms[i] if i < len(noms) else '').strip().upper() or ''
                 co = (correos[i] if i < len(correos) else '').strip().lower() or ''
-                tl = re.sub(r'\D', '', (tels[i] if i < len(tels) else '') or '')
+                tl_raw = (tels[i] if i < len(tels) else '') or ''
+                tl = re.sub(r'\D', '', tl_raw)
+
+                # Skip filas completamente vacías (sin doc ni nombre)
+                if not nd and not nm:
+                    continue
+
                 # Validación: TODOS los campos obligatorios INCLUYENDO teléfono
-                if not nd or not nm or not co or not tl:
-                    # Skip solo filas completamente vacías (sin doc ni nombre)
-                    if not nd and not nm:
-                        continue
-                    faltan = []
-                    if not nd: faltan.append('N° Documento')
-                    if not nm: faltan.append('Nombre completo')
-                    if not co: faltan.append('Correo electrónico')
-                    if not tl: faltan.append('Teléfono')
+                faltan = []
+                if not nd: faltan.append('N° Documento')
+                if not nm: faltan.append('Nombre completo')
+                if not co: faltan.append('Correo electrónico')
+                if not tl: faltan.append('Teléfono')
+                if faltan:
                     messages.error(
                         request,
                         f'⚠ El aprendiz #{i+1} tiene campos obligatorios vacíos: {", ".join(faltan)}.\n'
                         'Todos los campos son obligatorios (incluye Teléfono).'
                     )
                     return redirect('simple:wizard')
+
+                # Validación FORMATO estricto por campo
+                errores_fmt = []
+                if not RE_NUM5_15.match(nd):
+                    errores_fmt.append(
+                        f'N° Documento "{nd_raw}" → debe tener SOLO dígitos, entre 5 y 15 caracteres (tienes {len(nd)}).'
+                    )
+                if not RE_EMAIL.match(co):
+                    errores_fmt.append(
+                        f'Correo electrónico "{co}" → estructura inválida (debe ser como usuario@dominio.ext).'
+                    )
+                if not RE_NUM7_15.match(tl):
+                    errores_fmt.append(
+                        f'Teléfono "{tl_raw}" → debe tener SOLO dígitos, entre 7 y 15 caracteres (tienes {len(tl)}).'
+                    )
+                if errores_fmt:
+                    messages.error(
+                        request,
+                        f'❌ El aprendiz #{i+1} tiene campos con formato incorrecto:\n  • '
+                        + '\n  • '.join(errores_fmt)
+                    )
+                    return redirect('simple:wizard')
+
                 tuplas.append((t, nd, nm, co, tl))
 
             # Capo MAX por configuración

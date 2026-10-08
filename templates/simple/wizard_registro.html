@@ -65,8 +65,8 @@
           <datalist id="instructor_dl"></datalist>
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Documento de identidad del instructor líder <span class="req">*</span></label>
-          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono" inputmode="numeric" placeholder="Ej: 1012345678" required>
+          <label class="form-label">Documento de identidad del instructor líder <span class="req">*</span> <span class="hint-sena">(solo dígitos, mínimo 5)</span></label>
+          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono ins-doc-limpio" inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" placeholder="Ej: 1012345678" required>
         </div>
       </div>
     </div>
@@ -413,15 +413,40 @@
       const msjs = [];
       if(!ieVal) msjs.push('Institución Educativa');
       if(!progVal) msjs.push('Programa Técnico');
-      if(!fichaVal || !/^\d{7}$/.test(fichaVal)) msjs.push('Código de Ficha (7 dígitos)');
+      if(!fichaVal || !/^\d{7}$/.test(fichaVal)) msjs.push('Código de Ficha (7 dígitos EXACTOS)');
+
+      // --- Instructor líder documento (solo dígitos · 5-15) ---
+      const docIns = (inpDoc? inpDoc.value : '').trim();
+      if(!docIns) msjs.push('Documento de identidad del instructor líder');
+      else if(!/^\d{5,15}$/.test(docIns)) msjs.push('Documento instructor líder inválido (solo dígitos · 5 a 15 caracteres)');
+
+      // --- Validación aprendices dinámicos ---
+      const RE_EMAIL = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+      const filasApr = document.querySelectorAll('#aprendices-container .aprendiz-row');
+      filasApr.forEach((row, i) => {
+        const nd = (row.querySelector('.apr-numdoc')?.value || '').trim();
+        const co = (row.querySelector('.apr-correo')?.value || '').trim().toLowerCase();
+        const tl = (row.querySelector('.apr-tel')?.value || '').trim();
+        const nm = (row.querySelector('.apr-nombre')?.value || '').trim();
+        // Si la fila está completamente vacía, no validar (se saltará en backend)
+        if(!nd && !nm) return;
+        if(!/^\d{5,15}$/.test(nd)) msjs.push('Aprendiz #' + (i+1) + ' · N° Documento inválido (solo dígitos · 5 a 15)');
+        if(!RE_EMAIL.test(co)) msjs.push('Aprendiz #' + (i+1) + ' · Correo electrónico inválido ("' + co + '")');
+        if(!/^\d{7,15}$/.test(tl)) msjs.push('Aprendiz #' + (i+1) + ' · Teléfono inválido (solo dígitos · 7 a 15)');
+      });
+
       if(msjs.length){
-        alert('❌ Selecciona desde el catálogo (no escribas valores nuevos) los campos:\n\n• ' + msjs.join('\n• ') + '\n\nEstos solo los crea el Administrador del sistema.');
+        alert('❌ Hay campos con formato incorrecto o sin seleccionar:\n\n• ' + msjs.join('\n• ') + '\n\nPor favor corrige antes de guardar.');
         e.preventDefault();
         e.stopPropagation();
         return false;
       }
       // Asegurar que el nombre del proyecto quede en mayúsculas antes de enviar
       if(inpNombreProyecto){ inpNombreProyecto.value = (inpNombreProyecto.value || '').toUpperCase().trim(); }
+      // Normalizar correos aprendices a minúsculas antes de enviar
+      document.querySelectorAll('#aprendices-container .apr-correo').forEach(inp => {
+        if(inp && inp.value){ inp.value = inp.value.trim().toLowerCase(); }
+      });
       return true;
     });
   }
@@ -484,8 +509,9 @@
           </select>
         </div>
         <div class="col-12 col-md-2">
-          <label class="form-label mb-1" style="font-size:.82rem;">N° Documento *</label>
+          <label class="form-label mb-1" style="font-size:.82rem;">N° Documento * <span class="hint-sena">(solo dígitos · 5-15)</span></label>
           <input type="text" name="apr_num_doc[]" class="form-field mono apr-numdoc" inputmode="numeric"
+                 pattern="\d{5,15}" minlength="5" maxlength="15"
                  placeholder="Ej: 1012345678" style="min-height:48px;" required>
         </div>
         <div class="col-12 col-md-3">
@@ -496,11 +522,13 @@
         <div class="col-12 col-md-3">
           <label class="form-label mb-1" style="font-size:.82rem;">📧 Correo electrónico *</label>
           <input type="email" name="apr_correo[]" class="form-field apr-correo" autocomplete="email"
+                 pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
                  placeholder="juan.perez@correo.com" style="min-height:48px;" required>
         </div>
         <div class="col-12 col-md-2">
-          <label class="form-label mb-1" style="font-size:.82rem;">📱 Teléfono *</label>
+          <label class="form-label mb-1" style="font-size:.82rem;">📱 Teléfono * <span class="hint-sena">(solo dígitos · 7-15)</span></label>
           <input type="text" name="apr_telefono[]" class="form-field mono apr-tel" inputmode="tel"
+                 pattern="\d{7,15}" minlength="7" maxlength="15"
                  placeholder="Ej: 3001234567" style="min-height:48px;" required>
         </div>
       </div>
@@ -527,6 +555,21 @@
     const tel = div.querySelector('.apr-tel');
     if (numdoc) numdoc.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,15); });
     if (tel) tel.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,15); });
+    // Validación correo en blur (mensaje inline si es inválido)
+    const corr = div.querySelector('.apr-correo');
+    if (corr) corr.addEventListener('blur', e => {
+      const v = (e.target.value || '').trim().toLowerCase();
+      if (!v) return;
+      const re = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+      if (!re.test(v)) {
+        e.target.style.outline = '2.5px solid #dc3545';
+        e.target.style.boxShadow = '0 0 0 3px rgba(220,53,69,.12)';
+      } else {
+        e.target.style.outline = '';
+        e.target.style.boxShadow = '';
+        e.target.value = v;
+      }
+    });
     actualizarVacio();
     // Foco en el primer campo
     setTimeout(() => { const f = div.querySelector('.apr-numdoc'); if (f) f.focus(); }, 30);
@@ -561,6 +604,17 @@
   const docIns = document.getElementById('inp-ins-doc');
   const dl = document.getElementById('fichas_dl');
   if(!nomIns || !docIns) return;
+  // Limpiador numérico para cédula instructor (solo dígitos, max 15)
+  docIns.addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g,'').slice(0,15);
+    if(e.target.value && !/^\d{5,15}$/.test(e.target.value)){
+      e.target.style.outline = '2.5px solid #dc3545';
+      e.target.style.boxShadow = '0 0 0 3px rgba(220,53,69,.12)';
+    } else {
+      e.target.style.outline = '';
+      e.target.style.boxShadow = '';
+    }
+  });
   function autoDoc(){
     const n = (nomIns.value || '').toUpperCase().trim();
     if(!n) return;
