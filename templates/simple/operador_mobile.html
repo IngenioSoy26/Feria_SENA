@@ -11,113 +11,112 @@
 {% endblock %}
 
 {% block contenido %}
-<div class="op-wrap">
-  <div class="op-header">
-    <div class="d-flex gap-3 align-items-center min-0">
-      <div class="logo-sena-pill" style="width:42px;height:42px;border-radius:14px;background:#fff;">
-        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;display:block;">
+<div class="op-wrap" style="display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:100vh;min-height:100dvh;max-height:100vh;max-height:100dvh;overflow:hidden;padding:10px 12px 12px 12px;gap:8px;">
+  <div class="op-header" style="padding:10px 12px;border-radius:18px;gap:10px;flex-shrink:0;">
+    <div class="d-flex gap-3 align-items-center min-0" style="gap:10px;">
+      <div class="logo-sena-pill" style="width:36px;height:36px;border-radius:12px;background:#fff;flex-shrink:0;">
+        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:28px;height:28px;object-fit:contain;display:block;">
       </div>
-      <div class="min-0">
-        <div class="fw-bold" style="font-size:clamp(1rem,2.2vw,1.1rem);line-height:1.05;">
+      <div class="min-0 flex-grow-1">
+        <div class="fw-bold" style="font-size:clamp(.95rem,2.1vw,1.05rem);line-height:1.02;">
           {% if tipo == 'asistencia' %}✅ CONTROL ASISTENCIA
           {% elif tipo == 'refrigerios' %}🍱 ENTREGA REFRIGERIOS
           {% else %}📜 ENTREGA CERTIFICADOS{% endif %}
         </div>
-        <div class="opacity-75" style="font-size:.8rem;">{{ evento.nombre|default:"Evento SENA" }} · {{ evento.municipio|default:"" }}</div>
+        <div class="opacity-75" style="font-size:.74rem;line-height:1.15;">{{ evento.nombre|default:"Evento SENA" }} · {{ evento.municipio|default:"" }}</div>
       </div>
     </div>
-    <form method="post" action="{% url 'logout' %}" class="m-0 p-0">
+    <form method="post" action="{% url 'logout' %}" class="m-0 p-0 flex-shrink-0">
       {% csrf_token %}
-      <button type="submit" class="btn btn-outline-light btn-sm" style="min-height:42px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);">⬅ Salir</button>
+      <button type="submit" class="btn btn-outline-light btn-sm" style="min-height:38px;padding:4px 10px;border-radius:10px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);font-size:.82rem;">⬅ Salir</button>
     </form>
   </div>
 
   {% if tipo == 'refrigerios' and servicio %}
-    <div class="mt-3 p-3 text-center fw-bold" style="border-radius:16px;background:rgba(255,255,255,.14);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,.2);">
+    <div class="p-2 text-center fw-bold" style="border-radius:14px;background:rgba(255,255,255,.14);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,.2);font-size:.8rem;flex-shrink:0;">
       Servicio ACTIVO · {{ servicio.nombre|upper }}
     </div>
   {% endif %}
 
-  <div class="op-counters" style="grid-template-columns:1fr 1fr;gap:14px;">
-    <div id="kpi-ingresaron" class="op-counter op-kpi" style="background:linear-gradient(160deg,#e6ffd1,#b5f0a8);color:#0f3c00;border:none;border-radius:22px;padding:16px 18px;box-shadow:0 14px 40px rgba(16,60,0,.2);display:flex;flex-direction:column;gap:4px;min-height:104px;">
-      <div class="fw-bold opacity-85" style="font-size:.9rem;letter-spacing:0.3px;">
+  <div class="op-counters" style="grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0;">
+    <div id="kpi-ingresaron" class="op-counter op-kpi" style="background:linear-gradient(160deg,#e6ffd1,#b5f0a8);color:#0f3c00;border:none;border-radius:18px;padding:10px 12px;box-shadow:0 8px 24px rgba(16,60,0,.22);display:flex;flex-direction:column;gap:2px;min-height:80px;align-items:stretch;">
+      <div class="fw-bold opacity-85" style="font-size:.78rem;letter-spacing:0.2px;line-height:1.1;">
         {% if tipo == 'asistencia' %}✅ INGRESARON
         {% elif tipo == 'refrigerios' %}🍱 ENTREGADOS
         {% else %}📜 EMITIDOS{% endif %}
       </div>
-      <b id="num-ingresaron" style="font-size:clamp(2rem,7vw,2.6rem);line-height:1.1;">{{ stats_iniciales.ingresaron|default:0 }}</b>
-      <div class="small opacity-75">Total: <span id="num-total">{{ stats_iniciales.total|default:0 }}</span> personas</div>
+      <b id="num-ingresaron" style="font-size:clamp(1.6rem,6vw,2rem);line-height:1.05;text-align:center;">{{ stats_iniciales.ingresaron|default:0 }}</b>
+      <div class="small opacity-75" style="font-size:.7rem;line-height:1.05;text-align:center;">Total: <span id="num-total">{{ stats_iniciales.total|default:0 }}</span> pers.</div>
     </div>
-    <div id="kpi-faltan" class="op-counter op-kpi" style="background:linear-gradient(160deg,#fff7e0,#ffe6a8);color:#5a3e00;border:none;border-radius:22px;padding:16px 18px;box-shadow:0 14px 40px rgba(90,62,0,.2);display:flex;flex-direction:column;gap:4px;min-height:104px;">
-      <div class="fw-bold opacity-85" style="font-size:.9rem;letter-spacing:0.3px;">
-        {% if tipo == 'asistencia' %}⏳ FALTAN POR INGRESAR
-        {% elif tipo == 'refrigerios' %}⏳ FALTAN POR ENTREGAR
-        {% else %}⏳ FALTAN POR ENTREGAR{% endif %}
+    <div id="kpi-faltan" class="op-counter op-kpi" style="background:linear-gradient(160deg,#fff7e0,#ffe6a8);color:#5a3e00;border:none;border-radius:18px;padding:10px 12px;box-shadow:0 8px 24px rgba(90,62,0,.22);display:flex;flex-direction:column;gap:2px;min-height:80px;align-items:stretch;">
+      <div class="fw-bold opacity-85" style="font-size:.78rem;letter-spacing:0.2px;line-height:1.1;">
+        {% if tipo == 'asistencia' %}⏳ FALTAN
+        {% elif tipo == 'refrigerios' %}⏳ FALTAN
+        {% else %}⏳ FALTAN{% endif %}
       </div>
-      <b id="num-faltan" style="font-size:clamp(2rem,7vw,2.6rem);line-height:1.1;">{{ stats_iniciales.faltan|default:0 }}</b>
-      <div class="small opacity-75">
+      <b id="num-faltan" style="font-size:clamp(1.6rem,6vw,2rem);line-height:1.05;text-align:center;">{{ stats_iniciales.faltan|default:0 }}</b>
+      <div class="small opacity-75" style="font-size:.7rem;line-height:1.05;text-align:center;">
         <span id="num-pct">{{ stats_iniciales.porcentaje|default:0 }}%</span> avance
       </div>
     </div>
   </div>
 
-  <div class="mt-3">
-    <div class="progress" style="height:14px;border-radius:20px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.2);">
+  <div style="margin-top:2px;flex-shrink:0;">
+    <div class="progress" style="height:10px;border-radius:20px;background:rgba(255,255,255,.18);overflow:hidden;border:1px solid rgba(255,255,255,.2);">
       <div id="barra-avance" class="progress-bar" style="width:{{ stats_iniciales.porcentaje|default:0 }}%;background:linear-gradient(90deg,#39A900,#FFEB3B);height:100%;transition:width 0.8s ease;border-radius:20px;"></div>
     </div>
-    <div class="d-flex justify-content-between mt-2 small opacity-80">
-      <span>En línea · en tiempo real</span>
+    <div class="d-flex justify-content-between mt-1 small opacity-80" style="font-size:.72rem;">
+      <span>En línea · tiempo real</span>
       <span id="kpi-ts">actualizando...</span>
     </div>
   </div>
 
-  <button id="btn-iniciar" class="op-big-qr" style="margin-top:22px;">
-    📷 INICIAR LECTOR QR
-  </button>
-
-  <div id="lector-qr" style="display:none;margin-top:16px;">
-    <div id="qr-reader" style="border-radius:22px;background:white;overflow:hidden;padding:6px;box-shadow:0 20px 60px rgba(0,0,0,.35);border:5px solid white;"></div>
-    <button id="btn-detener" class="mt-3 w-100" style="min-height:56px;border-radius:18px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:white;font-weight:700;">❌ Cerrar cámara</button>
+  <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:4px 2px;">
+    <button id="btn-iniciar" class="op-big-qr" style="width:100%;min-height:68px;height:68px;max-height:72px;margin-top:0;padding:0 14px;font-size:clamp(1.05rem,3vw,1.25rem);border-radius:20px;display:flex;align-items:center;justify-content:center;gap:10px;line-height:1;">
+      📷 INICIAR LECTOR QR
+    </button>
   </div>
 
-  <div class="mt-4 opacity-85 small" style="max-width:420px;margin-left:auto;margin-right:auto;">
-    <p class="mb-1"><b>🧭 Pasos rápidos:</b></p>
-    <ol class="mb-0 ps-4" style="line-height:1.65;">
-      <li>Toca el botón blanco grande de arriba</li>
-      <li>Apunta la cámara trasera al código QR de la escarapela</li>
-      <li>Se escanea SOLO UNA VEZ y muestra confirmación VERDE</li>
-    </ol>
+  <div id="lector-qr" style="display:none;margin-top:4px;flex-shrink:0;">
+    <div id="qr-reader" style="border-radius:18px;background:white;overflow:hidden;padding:4px;box-shadow:0 16px 50px rgba(0,0,0,.35);border:4px solid white;"></div>
+    <button id="btn-detener" class="mt-2 w-100" style="min-height:48px;border-radius:14px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:white;font-weight:700;font-size:.9rem;">❌ Cerrar cámara</button>
   </div>
 
-  <div id="panel-resultado" class="op-panel d-none">
-    <div class="d-flex gap-3 align-items-start">
-      <div id="panel-icon" style="font-size:3rem;line-height:1;">✅</div>
+</div>
+
+{# ===== PANEL DE CONFIRMACIÓN (POSITION FIXED = SUPERPUESTO, NO DESPLAZA LAYOUT) ===== #}
+<div id="panel-overlay" class="d-none"
+     style="position:fixed;inset:0;z-index:1060;background:rgba(0,0,0,0.58);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;padding:8px 10px 10px 10px;">
+  <div id="panel-resultado" class="op-panel" style="width:100%;max-width:460px;max-height:92vh;overflow-y:auto;border-radius:22px;box-shadow:0 24px 80px rgba(0,0,0,0.5);animation:slideUpFade .35s cubic-bezier(.2,.8,.2,1) both;">
+    <style>@keyframes slideUpFade{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
+    <div class="d-flex gap-2 align-items-start">
+      <div id="panel-icon" style="font-size:2.4rem;line-height:1;flex-shrink:0;">✅</div>
       <div class="flex-grow-1 min-0">
-        <div id="panel-tipo-asistente" class="fw-bold mb-2" style="font-size:1.15rem;color:var(--sena-azul);letter-spacing:0.2px;"></div>
-        <div id="panel-nombre" class="fw-bold text-uppercase" style="font-size:1.25rem;line-height:1.25;"></div>
-        <div class="mt-2 p-2 rounded-3" style="background:rgba(0,0,0,0.06);font-size:1.05rem;">
+        <div id="panel-tipo-asistente" class="fw-bold mb-1" style="font-size:1rem;color:var(--sena-azul);letter-spacing:0.2px;line-height:1.15;"></div>
+        <div id="panel-nombre" class="fw-bold text-uppercase" style="font-size:1.1rem;line-height:1.2;"></div>
+        <div class="mt-2 p-2 rounded-3" style="background:rgba(0,0,0,0.06);font-size:.98rem;">
           <div class="d-flex gap-2 align-items-baseline">
-            <span class="fw-bold opacity-75" id="panel-tipo-documento"></span>
+            <span class="fw-bold opacity-75" id="panel-tipo-documento" style="font-size:.85rem;"></span>
             <span id="panel-numero-documento" class="fw-bold" style="font-family:ui-monospace,Consolas,monospace;letter-spacing:0.5px;"></span>
           </div>
         </div>
-        <div id="panel-detalles" class="small mt-2 opacity-90 lh-base"></div>
+        <div id="panel-detalles" class="small mt-1 opacity-90 lh-base" style="font-size:.82rem;"></div>
 
-        <div id="panel-datos-completos" class="mt-3 p-3 rounded-4" style="background:rgba(57,169,0,.08);border:1.5px solid rgba(57,169,0,.25);display:none;">
-          <div class="fw-bold text-sena mb-2" style="font-size:1rem;">📋 Datos de Contacto del Asistente</div>
-          <div class="row g-3">
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📧 Correo electrónico</div><div id="pd-correo" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📱 Teléfono de contacto</div><div id="pd-telefono" class="fw-semibold"></div></div>
+        <div id="panel-datos-completos" class="mt-2 p-2 rounded-4" style="background:rgba(57,169,0,.08);border:1.5px solid rgba(57,169,0,.25);display:none;">
+          <div class="fw-bold text-sena mb-1" style="font-size:.9rem;">📋 Datos de Contacto</div>
+          <div class="row g-2">
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.74rem;">📧 Correo</div><div id="pd-correo" class="fw-semibold" style="font-size:.88rem;word-break:break-all;"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.74rem;">📱 Teléfono</div><div id="pd-telefono" class="fw-semibold" style="font-size:.88rem;"></div></div>
           </div>
         </div>
 
-        <div id="panel-mensaje" class="fw-bold mt-3 p-3 rounded-3 text-center" style="font-size:1.05rem;"></div>
+        <div id="panel-mensaje" class="fw-bold mt-2 p-2 rounded-3 text-center" style="font-size:.95rem;line-height:1.3;"></div>
 
-        <button id="panel-validar" class="mt-4 w-100 text-white fw-bold" style="min-height:64px;border:none;border-radius:18px;font-size:1.15rem;background:linear-gradient(160deg,#39A900,#2e7a00);box-shadow:0 10px 30px rgba(57,169,0,.35);letter-spacing:0.3px;">
+        <button id="panel-validar" class="mt-3 w-100 text-white fw-bold" style="min-height:56px;border:none;border-radius:16px;font-size:1rem;background:linear-gradient(160deg,#39A900,#2e7a00);box-shadow:0 10px 30px rgba(57,169,0,.35);letter-spacing:0.2px;">
           ✅ ACEPTAR · VALIDAR Y CONTINUAR
         </button>
       </div>
-      <button id="panel-cerrar" class="btn btn-sm" style="min-height:38px;background:rgba(0,0,0,.1);border-radius:10px;">✖</button>
+      <button id="panel-cerrar" class="btn btn-sm flex-shrink-0" style="min-height:34px;background:rgba(0,0,0,.1);border-radius:10px;padding:2px 8px;font-size:.9rem;">✖</button>
     </div>
   </div>
 </div>
@@ -176,6 +175,7 @@
     return opt;
   }
   const panel=document.getElementById('panel-resultado');
+  const overlay=document.getElementById('panel-overlay');
   const pIcon=document.getElementById('panel-icon');
   const pTipoAsistente=document.getElementById('panel-tipo-asistente');
   const pNombre=document.getElementById('panel-nombre');
@@ -218,13 +218,22 @@
   setInterval(refreshStats, 4000);
   setTimeout(refreshStats, 1000);
 
+  // ======== Helper: PANEL SUPERPUESTO (overlay fixed) ========
+  function mostrarOverlay(){
+    if(overlay){
+      overlay.classList.remove('d-none');
+      try{ overlay.style.display = 'flex'; }catch(_){}
+    }
+    panel.classList.remove('d-none');
+  }
+
   function cerrarPanel(){
+    if(overlay){ overlay.classList.add('d-none'); try{ overlay.style.display='none'; }catch(_){} }
     panel.classList.add('d-none');
     if(pDatosBox){pDatosBox.style.display='none';}
     if(scanner && escaneando){
       try{scanner.resume();}
       catch(e){
-        // Fallback si resume() falla — detener y volver a iniciar cámara para evitar "scanner pauseado"
         try{
           iniciarCamara().catch(()=>{});
         }catch(_){}
@@ -233,6 +242,7 @@
     setTimeout(refreshStats, 350);
   }
   document.getElementById('panel-cerrar').addEventListener('click',cerrarPanel);
+  if(overlay){ overlay.addEventListener('click', function(ev){ if(ev.target === overlay) cerrarPanel(); }); }
   const bVal=document.getElementById('panel-validar');
   if(bVal){bVal.addEventListener('click',cerrarPanel);}
 
@@ -268,7 +278,7 @@
         bVal.style.background='linear-gradient(160deg,#C62828,#9a0007)';
         bVal.style.boxShadow='0 10px 30px rgba(198,40,40,.35)';
       }
-      pIcon.textContent='❌';panel.classList.remove('ok','warn');panel.classList.add('err','d-none');panel.classList.remove('d-none');
+      pIcon.textContent='❌';panel.classList.remove('ok','warn');panel.classList.add('err');mostrarOverlay();
       pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
       // NO PAUSAR LA CÁMARA: el operador pulsa ENTENDIDO y sigue escaneando inmediatamente
       return;
@@ -310,19 +320,19 @@
 
     if(esDuplicado){
       pMensaje.textContent=textoCasoYaRegistrado();
-      pIcon.textContent='⚠';panel.classList.remove('ok','err','d-none');panel.classList.add('warn');
+      pIcon.textContent='⚠';panel.classList.remove('ok','err');panel.classList.add('warn');mostrarOverlay();
       pMensaje.style.background='rgba(245,124,0,.12)';pMensaje.style.color='var(--sena-naranja)';
       // NO PAUSAR LA CÁMARA en duplicado — operador solo lee mensaje y pulsa OK
     }else if(esNuevo){
       pMensaje.textContent=(data.mensaje||'') + ' · Revise los datos y pulse ACEPTAR.';
-      pIcon.textContent='✅';panel.classList.remove('warn','err','d-none');panel.classList.add('ok');
+      pIcon.textContent='✅';panel.classList.remove('warn','err');panel.classList.add('ok');mostrarOverlay();
       pMensaje.style.background='rgba(57,169,0,.12)';pMensaje.style.color='var(--sena-verde)';
       // Caso NUEVO: sí pausar la cámara para que el operador lea datos sin escaneos accidentales
       if(scanner && escaneando){try{scanner.pause();}catch(e){}}
     }else{
       // error
       pMensaje.textContent=data.mensaje||textoCasoNoExiste();
-      pIcon.textContent='❌';panel.classList.remove('ok','warn','d-none');panel.classList.add('err');
+      pIcon.textContent='❌';panel.classList.remove('ok','warn');panel.classList.add('err');mostrarOverlay();
       pMensaje.style.background='rgba(198,40,40,.12)';pMensaje.style.color='#C62828';
       if(bVal){
         bVal.textContent='❌ ENTENDIDO · CERRAR';
