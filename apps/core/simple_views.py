@@ -1332,7 +1332,7 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
                     'TOTAL': preview['estadisticas'].get('TOTAL', 0),
                 },
                 'archivo_nombre': (archivo.name or 'archivo.xlsx')[:80],
-                '_resultados_serializados': serializados,
+                'resultados_serializados_payload': serializados,
                 'clases_estado': {
                     CLASIFICACION_VALIDO: 'success',
                     CLASIFICACION_ADVERTENCIA: 'warning',
