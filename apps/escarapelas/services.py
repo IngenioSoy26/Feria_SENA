@@ -108,13 +108,13 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 26 * mm,
-    "y": 41.7 * mm,
+    "y": 42.7 * mm,
     "w": 55 * mm,
     "h": 7.5 * mm,
     "r": 3.75 * mm,
     "borde_grosor": 0,
     "fill_alpha": 0.40,
-    "y_texto": 44.4 * mm,
+    "y_texto": 45.4 * mm,
     "size": 9.5,
 }
 
@@ -193,9 +193,12 @@ class EscarapelaPDFService:
 
         try:
             if persona.tipo_identificacion:
-                info["tipo_identificacion"] = (
-                    persona.tipo_identificacion.abreviatura or ""
-                ).upper()
+                abrev = (getattr(persona.tipo_identificacion, "abreviatura", None) or "").strip().upper()
+                if abrev:
+                    info["tipo_identificacion"] = abrev
+                else:
+                    codigo = (getattr(persona.tipo_identificacion, "codigo", None) or "").strip().upper()
+                    info["tipo_identificacion"] = codigo or ""
         except Exception:
             pass
 
@@ -600,10 +603,14 @@ class EscarapelaPDFService:
         )
         c.restoreState()
 
-        tipo = (info["tipo_identificacion"] or "CC").upper()
+        tipo = (info["tipo_identificacion"] or "").strip().upper()
         numero = str(info["numero_identificacion"] or "")
 
-        texto = f"{tipo}: {numero}".strip()
+        if tipo and numero:
+            texto = "{}: {}".format(tipo, numero)
+        else:
+            texto = (numero or tipo).strip()
+        texto = texto.strip()
 
         EscarapelaPDFService._centrar_en_caja(
             c=c,

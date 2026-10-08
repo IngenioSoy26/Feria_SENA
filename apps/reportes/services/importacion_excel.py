@@ -778,7 +778,7 @@ class ImportacionExcelService:
                 }
 
             elif tipo_importacion == 'participantes':
-                tipo_id_cod = datos.get('tipo_identificacion', '')
+                tipo_id_cod = (datos.get('tipo_identificacion', '') or '').strip().upper() or ''
                 numero_id = datos.get('numero_identificacion', '')
                 nombres = datos.get('nombres', '')
                 apellidos = datos.get('apellidos', '')
@@ -794,13 +794,25 @@ class ImportacionExcelService:
                     clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ERROR)
                     _agregar_error(fila_num, 'tipo_persona', tipo_persona, 'Tipo de persona no válido.', 'Valores permitidos: APRENDIZ, INSTRUCTOR, INVITADO, ORGANIZADOR.', CLASIFICACION_ERROR, fila_resultados)
 
+                # Traducción común TIPO_ID: nombres completos a códigos (mismo flujo instructores)
+                if tipo_id_cod in ('CÉDULA DE CIUDADANÍA', 'CEDULA DE CIUDADANIA', 'CC.', 'C.C', 'CC', 'CEDULA'):
+                    tipo_id_cod = 'CC'
+                elif tipo_id_cod in ('TARJETA DE IDENTIDAD', 'TI.', 'T.I', 'TI', 'TARJETA IDENTIDAD'):
+                    tipo_id_cod = 'TI'
+                elif tipo_id_cod in ('PERMISO POR PROTECCIÓN TEMPORAL', 'PPT', 'PERMISO TEMPORAL'):
+                    tipo_id_cod = 'PPT'
+                elif tipo_id_cod in ('CÉDULA DE EXTRANJERÍA', 'CEDULA DE EXTRANJERIA', 'CE.', 'C.E', 'CE'):
+                    tipo_id_cod = 'CE'
+                elif tipo_id_cod in ('PASAPORTE', 'PAS', 'PA', 'P'):
+                    tipo_id_cod = 'PASAPORTE'
+
                 tipo_id_obj = None
                 if tipo_id_cod:
                     try:
                         tipo_id_obj = TipoIdentificacion.objects.get(codigo__iexact=tipo_id_cod, activo=True)
                     except TipoIdentificacion.DoesNotExist:
                         clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ERROR)
-                        _agregar_error(fila_num, 'tipo_identificacion', tipo_id_cod, 'Tipo identificación no existe.', '', CLASIFICACION_ERROR, fila_resultados)
+                        _agregar_error(fila_num, 'tipo_identificacion', tipo_id_cod, 'Tipo identificación no existe. Valores permitidos: CC, TI, PPT, CE, PASAPORTE.', '', CLASIFICACION_ERROR, fila_resultados)
 
                 clave_unica = (tipo_id_cod, numero_id)
                 if numero_id:
