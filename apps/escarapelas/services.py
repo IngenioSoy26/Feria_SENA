@@ -76,9 +76,9 @@ BADGE_ROL_TEXTO = {
 # ============================================================
 
 POS_BADGE = {
-    "x": 18 * mm,
-    "y": 69 * mm,
-    "w": 71 * mm,
+    "x": 19 * mm,
+    "y": 78.5 * mm,
+    "w": 69 * mm,
     "h": 8.5 * mm,
     "r": 4.25 * mm,
     "size": 12.5,
@@ -87,17 +87,17 @@ POS_BADGE = {
 
 POS_CAJA_NOMBRE = {
     "x": 7 * mm,
-    "y": 52 * mm,
+    "y": 58 * mm,
     "w": 93 * mm,
-    "h": 15 * mm,
+    "h": 18 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.0,
     "padding_lados": 5 * mm,
     "fill_alpha": 0.64,
 
-    # Baselines
-    "y_nombre": 62.8 * mm,
-    "y_institucion": 56.3 * mm,
+    # Baselines (dentro de la caja, de ARRIBA hacia ABAJO)
+    "y_nombre": 71.3 * mm,
+    "y_institucion": 63.6 * mm,
 
     "size_nombre": 14,
     "size_institucion": 8.2,
@@ -105,40 +105,40 @@ POS_CAJA_NOMBRE = {
 
 
 POS_CAJA_DOC = {
-    "x": 27 * mm,
-    "y": 41 * mm,
-    "w": 53 * mm,
-    "h": 6.8 * mm,
-    "r": 3.4 * mm,
+    "x": 26 * mm,
+    "y": 47.3 * mm,
+    "w": 55 * mm,
+    "h": 7.5 * mm,
+    "r": 3.75 * mm,
     "borde_grosor": 0.9,
-    "y_texto": 43.3 * mm,
+    "y_texto": 49.9 * mm,
     "size": 9.5,
 }
 
 
 POS_CAJA_INFERIOR = {
-    "x": 19.5 * mm,
-    "y": 3 * mm,
-    "w": 68 * mm,
-    "h": 34 * mm,
+    "x": 9 * mm,
+    "y": 4.0 * mm,
+    "w": 89 * mm,
+    "h": 40.8 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.1,
     "fill_alpha": 0.58,
 
     # NOMBRE-PROYECTO solo 1 línea (ELIMINADO prefijo "Proyecto: ...")
-    "y_valor_solo": 32.0 * mm,
+    "y_valor_solo": 40.0 * mm,
     "size_valor_solo": 10.0,
 
-    # PROYECTO 2 líneas (label + valor) — arriba del QR, entre 28-33mm
-    "y_proyecto_1": 33.8 * mm,
-    "size_label": 8.5,
-    "y_proyecto_2": 30.8 * mm,
-    "size_valor": 9.0,
+    # PROYECTO 2 líneas (label + valor) — zona superior de la caja inf.
+    "y_proyecto_1": 40.8 * mm,
+    "size_label": 8.8,
+    "y_proyecto_2": 36.0 * mm,
+    "size_valor": 9.2,
 
-    # QR achicado (caja más estrecha)
-    "qr_size": 24 * mm,
+    # QR grande + padding blanco alrededor para facilitar escaneo
+    "qr_size": 26 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 4.5 * mm,
+    "qr_y_inf": 6.3 * mm,
 }
 
 
@@ -700,16 +700,16 @@ class EscarapelaPDFService:
             )
 
             if l2b:
-                # Si realmente necesita dos líneas, se sube un poco
-                # la primera para no invadir el QR.
+                # Dos líneas: alinear centro-verticalmente alrededor de
+                # p["y_proyecto_2"] con gap 3.1mm entre líneas.
                 EscarapelaPDFService._centrar_en_caja(
                     c=c,
                     texto=l2a,
                     caja_x=x,
                     caja_w=w,
-                    y=dy + 34.2 * mm,
+                    y=dy + p["y_proyecto_2"] + 2.1 * mm,
                     fuente="Helvetica-Bold",
-                    tam=7.6,
+                    tam=7.8,
                     color=black,
                     max_w=max_w,
                     tam_min=6,
@@ -720,9 +720,9 @@ class EscarapelaPDFService:
                     texto=l2b,
                     caja_x=x,
                     caja_w=w,
-                    y=dy + 30.7 * mm,
+                    y=dy + p["y_proyecto_2"] - 1.8 * mm,
                     fuente="Helvetica-Bold",
-                    tam=7.6,
+                    tam=7.8,
                     color=black,
                     max_w=max_w,
                     tam_min=6,
