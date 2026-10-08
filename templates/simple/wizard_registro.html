@@ -1,6 +1,6 @@
 {% extends "simple/base_simple.html" %}
 {% load static %}
-{% block titulo %}Registro Ficha · Feria SENA{% endblock %}
+{% block titulo %}Registro de Proyectos y Aprendices · Feria SENA{% endblock %}
 {% block contenido %}
 
 <div class="glass-card">
@@ -9,7 +9,7 @@
       <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;">
     </div>
     <div class="flex-grow-1">
-      <h3 class="card-title mb-1">Registra la ficha del proyecto y sus aprendices</h3>
+      <h3 class="card-title mb-1">Registro de Proyectos y Aprendices</h3>
       <p class="card-sub">
         Instituciones y programas con el <b>mismo nombre</b> se unen automáticamente · sin repeticiones.
         Cada ficha tiene un <b>máximo de {{ max_aprendices }} aprendices</b>
@@ -25,8 +25,8 @@
       <h5 class="mb-3 text-sena-dark">🏫 Datos del proyecto</h5>
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label">Institución Educativa <span class="req">*</span></label>
-          <input name="nombre_ie" class="form-field" placeholder="Ej: Institución Educativa San José de Riohacha" autocomplete="organization" required>
+          <label class="form-label">Institución Educativa <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA)</span></label>
+          <input name="nombre_ie" class="form-field up-case" placeholder="Ej: INSTITUCIÓN EDUCATIVA SAN JOSÉ DE RIOHACHA" autocomplete="organization" required>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Municipio</label>
@@ -36,8 +36,8 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Programa Técnico <span class="req">*</span></label>
-          <input name="nombre_programa" class="form-field" placeholder="Ej: Técnico en Sistemas · Técnico en Cocina" autocomplete="off" required>
+          <label class="form-label">Programa Técnico <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA)</span></label>
+          <input name="nombre_programa" class="form-field up-case" placeholder="Ej: TÉCNICO EN SISTEMAS · TÉCNICO EN COCINA" autocomplete="off" required>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">
@@ -75,17 +75,17 @@
         </div>
 
         <div class="col-12">
-          <label class="form-label">Nombre del proyecto <span class="req">*</span></label>
-          <input name="nombre_proyecto" class="form-field" placeholder="Ej: Aplicación para control de asistencia en la feria" required>
+          <label class="form-label">Nombre del proyecto <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA SOSTENIDA)</span></label>
+          <input name="nombre_proyecto" class="form-field up-case" placeholder="Ej: APLICACIÓN PARA CONTROL DE ASISTENCIA EN LA FERIA" required>
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Instructor líder</label>
-          <input name="instructor_nombre" class="form-field" placeholder="Nombre y apellidos completos" autocomplete="name">
+          <label class="form-label">Instructor líder <span class="hint-sena">(al escribir nombre o cargar ficha se completa el documento)</span></label>
+          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name">
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Cédula del instructor líder</label>
-          <input name="instructor_cedula" class="form-field mono" inputmode="numeric" placeholder="Ej: 1012345678">
+          <label class="form-label">Documento de identidad del instructor líder</label>
+          <input name="instructor_cedula" id="inp-ins-doc" class="form-field mono" inputmode="numeric" placeholder="Ej: 1012345678">
         </div>
       </div>
     </div>
@@ -175,24 +175,29 @@
         </button>
       </div>
       <div class="row g-2 g-md-3">
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
           <label class="form-label mb-1" style="font-size:.82rem;">Tipo documento</label>
           <select name="apr_tipo_doc[]" class="form-field select apr-tipo" style="min-height:48px;">
             ${tiposOpts}
           </select>
         </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label mb-1" style="font-size:.82rem;">N° Documento</label>
+        <div class="col-12 col-md-2">
+          <label class="form-label mb-1" style="font-size:.82rem;">N° Documento *</label>
           <input type="text" name="apr_num_doc[]" class="form-field mono apr-numdoc" inputmode="numeric"
                  placeholder="Ej: 1012345678" style="min-height:48px;" required>
         </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label mb-1" style="font-size:.82rem;">Nombres y apellidos completos</label>
-          <input type="text" name="apr_nombre[]" class="form-field apr-nombre" autocomplete="name"
-                 placeholder="Ej: Juan Sebastián Pérez Gómez" style="min-height:48px;" required>
+        <div class="col-12 col-md-3">
+          <label class="form-label mb-1" style="font-size:.82rem;">Nombres y apellidos * <span class="hint-sena">(MAYÚSCULA)</span></label>
+          <input type="text" name="apr_nombre[]" class="form-field apr-nombre up-case" autocomplete="name"
+                 placeholder="Ej: JUAN SEBASTIÁN PÉREZ GÓMEZ" style="min-height:48px;" required>
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label mb-1" style="font-size:.82rem;">📧 Correo electrónico *</label>
+          <input type="email" name="apr_correo[]" class="form-field apr-correo" autocomplete="email"
+                 placeholder="juan.perez@correo.com" style="min-height:48px;" required>
         </div>
         <div class="col-12 col-md-2">
-          <label class="form-label mb-1" style="font-size:.82rem;">Teléfono</label>
+          <label class="form-label mb-1" style="font-size:.82rem;">📱 Teléfono</label>
           <input type="text" name="apr_telefono[]" class="form-field mono apr-tel" inputmode="tel"
                  placeholder="Ej: 3001234567" style="min-height:48px;">
         </div>
@@ -204,9 +209,11 @@
       const nd = div.querySelector('.apr-numdoc');
       const nm = div.querySelector('.apr-nombre');
       const tl = div.querySelector('.apr-tel');
+      const co = div.querySelector('.apr-correo');
       if (nd) nd.value = prefill.num_doc || '';
       if (nm) nm.value = prefill.nombre || '';
       if (tl) tl.value = prefill.telefono || '';
+      if (co) co.value = prefill.correo || '';
     }
     // Botón quitar
     div.querySelector('.aprendiz-quitar').addEventListener('click', () => {
@@ -230,6 +237,63 @@
     agregarAprendiz();
   }
   actualizarVacio();
+})();
+
+(function(){
+  document.addEventListener('input', function(e){
+    const t = e.target;
+    if(!t || !t.classList || !t.classList.contains('up-case')) return;
+    const pos = t.selectionStart; const len = t.value.length;
+    t.value = (t.value || '').toUpperCase();
+    try { t.setSelectionRange(Math.min(pos, len), Math.min(pos, len)); }catch(_){}
+  }, true);
+  document.addEventListener('blur', function(e){
+    const t = e.target;
+    if(!t || !t.classList || !t.classList.contains('up-case')) return;
+    t.value = (t.value || '').toUpperCase();
+  }, true);
+})();
+
+(function(){
+  const nomIns = document.getElementById('inp-ins-nombre');
+  const docIns = document.getElementById('inp-ins-doc');
+  const dl = document.getElementById('fichas_dl');
+  if(!nomIns || !docIns) return;
+  function autoDoc(){
+    const n = (nomIns.value || '').toUpperCase().trim();
+    if(!n) return;
+    // (a) Buscar en opciones existentes del datalist (data-instructor/data-cedula)
+    if(dl){
+      const opts = Array.from(dl.querySelectorAll('option'));
+      for(const o of opts){
+        const inombre = (o.dataset.instructor || '').toUpperCase().trim();
+        if(inombre === n){
+          const cedu = o.dataset.cedula || '';
+          if(cedu && !docIns.value){ docIns.value = cedu; try{ docIns.dispatchEvent(new Event('input',{bubbles:true})); }catch(_){} }
+          return;
+        }
+      }
+    }
+    // (b) Buscar en GET /buscar/?tipo=instrucor por nombre via AJAX
+    try{
+      const url = (new URL('/buscar/', location.href));
+      url.searchParams.set('tipo','instructor');
+      url.searchParams.set('q', n.slice(0,120));
+      fetch(url, {headers: {'Accept':'application/json'}})
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if(!d || !d.ok || !Array.isArray(d.resultados)) return;
+          const hit = d.resultados.find(x => (x.nombre_completo || x.label || '').toUpperCase().trim() === n);
+          if(hit && hit.numero_identificacion && !docIns.value){
+            docIns.value = hit.numero_identificacion;
+            try{ docIns.dispatchEvent(new Event('input',{bubbles:true})); }catch(_){}
+          }
+        })
+        .catch(()=>{});
+    }catch(_){}
+  }
+  nomIns.addEventListener('blur', autoDoc);
+  nomIns.addEventListener('change', autoDoc);
 })();
 
 (function(){

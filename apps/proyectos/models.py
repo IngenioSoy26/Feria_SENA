@@ -106,6 +106,7 @@ class Proyecto(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
         if self.ficha_id and not self.codigo:
             self.codigo = str(self.ficha.numero)
         if self.ficha_id:

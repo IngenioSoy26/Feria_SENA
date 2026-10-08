@@ -50,12 +50,20 @@ class Persona(models.Model):
         return (self.nombres or '').strip().split(' ')[0] or f"Persona-{self.id}"
 
     def save(self, *args, **kwargs):
+        self.nombres = (self.nombres or '').strip().upper() or self.nombres or ''
+        self.apellidos = (self.apellidos or '').strip().upper() or self.apellidos or ''
+        if self.correo:
+            self.correo = (self.correo or '').strip().lower()
+        if self.correo_sena:
+            self.correo_sena = (self.correo_sena or '').strip().lower()
+        if self.correo_personal:
+            self.correo_personal = (self.correo_personal or '').strip().lower()
         if self._state.adding:
             while True:
                 token = uuid.uuid4()
                 if not Persona.objects.filter(qr_token=token).exists():
                     self.qr_token = token
-                    break
+                break
         super().save(*args, **kwargs)
 
     def __str__(self):

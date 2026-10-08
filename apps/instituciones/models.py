@@ -26,3 +26,15 @@ class InstitucionEducativa(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def save(self, *args, **kwargs):
+        self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
+        if self.municipio:
+            self.municipio = (self.municipio or '').strip().upper()
+        if self.secretaria_educacion:
+            self.secretaria_educacion = (self.secretaria_educacion or '').strip().upper()
+        if self.nombre_rector:
+            self.nombre_rector = (self.nombre_rector or '').strip().upper()
+        if self.nombre_coordinador:
+            self.nombre_coordinador = (self.nombre_coordinador or '').strip().upper()
+        super().save(*args, **kwargs)

@@ -12,3 +12,7 @@ class ProgramaTecnico(models.Model):
 
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
+
+    def save(self, *args, **kwargs):
+        self.nombre = (self.nombre or '').strip().upper() or self.nombre or ''
+        super().save(*args, **kwargs)

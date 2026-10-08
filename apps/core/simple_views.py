@@ -319,14 +319,14 @@ class WizardRegistroView(View):
             max_ap = settings.MAX_APRENDICES_POR_PROYECTO
 
             # ---- DATOS DEL PROYECTO / FICHA ----
-            nombre_ie = request.POST.get('nombre_ie', '').strip()
-            municipio_ie = request.POST.get('municipio_ie', '').strip() or 'Riohacha'
-            nombre_programa = request.POST.get('nombre_programa', '').strip()
-            nombre_proyecto = request.POST.get('nombre_proyecto', '').strip()
+            nombre_ie = (request.POST.get('nombre_ie', '') or '').strip().upper() or ''
+            municipio_ie = (request.POST.get('municipio_ie', '') or '').strip() or 'Riohacha'
+            nombre_programa = (request.POST.get('nombre_programa', '') or '').strip().upper() or ''
+            nombre_proyecto = (request.POST.get('nombre_proyecto', '') or '').strip().upper() or ''
             codigo_ficha_raw = request.POST.get('codigo_ficha', request.POST.get('codigo_proyecto', '') or '').strip()
             codigo_ficha = re.sub(r'\D', '', codigo_ficha_raw)
-            nombre_instructor = request.POST.get('instructor_nombre', '').strip()
-            cedula_instructor = request.POST.get('instructor_cedula', '').strip()
+            nombre_instructor = (request.POST.get('instructor_nombre', '') or '').strip().upper() or ''
+            cedula_instructor = (request.POST.get('instructor_cedula', '') or '').strip()
 
             if not nombre_ie or not nombre_programa or not nombre_proyecto:
                 messages.error(request, '⚠ Faltan datos obligatorios: Institución, Programa y Nombre del proyecto.')
@@ -436,18 +436,28 @@ class WizardRegistroView(View):
             tipos = request.POST.getlist('apr_tipo_doc[]') or request.POST.getlist('apr_tipo_doc') or []
             nums = request.POST.getlist('apr_num_doc[]') or request.POST.getlist('apr_num_doc') or []
             noms = request.POST.getlist('apr_nombre[]') or request.POST.getlist('apr_nombre') or []
+            correos = request.POST.getlist('apr_correo[]') or request.POST.getlist('apr_correo') or []
             tels = request.POST.getlist('apr_telefono[]') or request.POST.getlist('apr_telefono') or []
 
-            n = max(len(tipos), len(nums), len(noms), len(tels))
+            n = max(len(tipos), len(nums), len(noms), len(correos), len(tels))
             tuplas = []
             for i in range(n):
                 t = (tipos[i] if i < len(tipos) else '').strip() or 'CC'
                 nd = re.sub(r'\D', '', (nums[i] if i < len(nums) else '') or '')
-                nm = (noms[i] if i < len(noms) else '').strip()
+                nm = (noms[i] if i < len(noms) else '').strip().upper() or ''
+                co = (correos[i] if i < len(correos) else '').strip().lower() or ''
                 tl = re.sub(r'\D', '', (tels[i] if i < len(tels) else '') or '')
-                if not nd or not nm:
-                    continue  # skip filas vacías
-                tuplas.append((t, nd, nm, tl))
+                # Validación: Todos los campos obligatorios excepto teléfono
+                if not nd or not nm or not co:
+                    # Skip sólo filas COMPLETAMENTE vacías (sin doc ni nombre); si falta alguno obligatorio mostrar error
+                    if not nd and not nm:
+                        continue
+                    messages.error(
+                        request,
+                        f'⚠ El aprendiz #{i+1} requiere TODOS los campos obligatorios (Documento, Nombre completo, Correo electrónico). Revisa e intenta de nuevo.'
+                    )
+                    return redirect('simple:wizard')
+                tuplas.append((t, nd, nm, co, tl))
 
             # Capo MAX por configuración
             if len(tuplas) > max_ap:
@@ -458,22 +468,42 @@ class WizardRegistroView(View):
                 messages.warning(request, 'ℹ No se incluyeron aprendices. Puedes agregarlos después editando la ficha.')
 
             aprendices_guardados = 0
-            for t, nd, nm, tl in tuplas:
+            for t, nd, nm, co, tl in tuplas:
                 nombres_a, apellidos_a = self._separar_nombres_apellidos(nm)
                 persona_a, _ = Persona.objects.get_or_create(
                     tipo_identificacion=_obtener_tipo_id(t),
                     numero_identificacion=nd,
                     defaults={
-                        'nombres': nombres_a,
-                        'apellidos': apellidos_a,
+                        'nombres': (nombres_a or '').upper(),
+                        'apellidos': (apellidos_a or '').upper(),
+                        'correo': co,
                         'telefono': tl or None,
                         'tipo_persona': 'APRENDIZ',
                     },
                 )
-                # Actualizar teléfono si cambió
+                # Actualizar correo / teléfono si cambió (y hay valor nuevo no vacío para correo)
+                need_save = False
+                upd_fields = []
+                if persona_a.correo != co and co:
+                    persona_a.correo = co
+                    upd_fields.append('correo')
+                    need_save = True
                 if tl and persona_a.telefono != tl:
                     persona_a.telefono = tl
-                    persona_a.save(update_fields=['telefono'])
+                    upd_fields.append('telefono')
+                    need_save = True
+                nombres_up = (nombres_a or '').upper()
+                apellidos_up = (apellidos_a or '').upper()
+                if persona_a.nombres != nombres_up:
+                    persona_a.nombres = nombres_up
+                    upd_fields.append('nombres')
+                    need_save = True
+                if persona_a.apellidos != apellidos_up:
+                    persona_a.apellidos = apellidos_up
+                    upd_fields.append('apellidos')
+                    need_save = True
+                if need_save and upd_fields:
+                    persona_a.save(update_fields=upd_fields)
                 Aprendiz.objects.get_or_create(persona=persona_a, defaults={'proyecto': proyecto, 'grado': '11'})
                 aprendices_guardados += 1
 
