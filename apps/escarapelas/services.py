@@ -39,54 +39,51 @@ BADGE_ROL_TEXTO = {
 }
 
 # =================================================================
-# COORDENADAS SOBRE DISEÑO REAL DE Credencial.png (971×1619 px → 107×135 mm).
-# 0,0 = esquina inf-izq (ReportLab).
-# AJUSTADAS para NO REDIBUJAR MARCOS (la plantilla YA LOS TIENE):
-#   - SOLO TAPAMOS el badge verde fijo con blanco opaco + pintamos nuevo badge.
-#   - El resto: SOLO TEXTO sobre las CAJAS QUE YA EXISTEN en la PNG.
+# COORDENADAS AJUSTADAS A LA NUEVA Credencial.png (1024 x 1536 px → 107x135 mm)
+# Foto de referencia: Jorge Arrieta (enviada x usuario)
+# 0,0 = esquina inf-izq (ReportLab)
+# ESTRATEGIA: NO REDIBUJAR NINGÚN MARCO; los marcos YA ESTÁN DIBUJADOS en la PNG.
+# Solo: (1) capa blanca opaca TAPA el badge verde original + badge nuevo color.
+#       (2) TEXTOS y QR SOBRE LAS CAJAS EXISTENTES sin contornos nuevos.
 # =================================================================
 
 POS_BADGE = {
-    'x':      14 * mm,     # aprox 13.88 medido
-    'y':      78 * mm,     # BADGE ORIGINAL tapado ~ 67.5 .. 82.5 H=15 → y inf = 67.5
-    'w':      79 * mm,
-    'h':      15 * mm,
-    'r':      7 * mm,
+    'x':   13.4 * mm,
+    'y':   88.0 * mm,   # Y inferior (esquina inf-izq badge)
+    'w':   80.2 * mm,
+    'h':   15.0 * mm,
+    'r':    7.0 * mm,
     'dy_txt': 4.2 * mm,
-    'size':   18,
+    'size':   19,
 }
 
 POS_TEXTO_NOMBRE = {
-    # Alineado sobre la CAJA BLANCA SUPERIOR de Credencial.png (nombre/IE/municipio)
     'w':      88 * mm,
-    'y1': 57.5 * mm,  # Nombre (línea 1)
-    'y2': 50.5 * mm,  # IE (línea 2)
-    'y3': 44.5 * mm,  # Municipio (línea 3)
-    'size_1': 19,
-    'size_2': 10.5,
-    'size_3': 10,
+    'y1': 76.5 * mm,   # 1) Nombre (arriba de la caja blanca)
+    'y2': 67.5 * mm,   # 2) I.E. (medio)
+    'y3': 59.0 * mm,   # 3) Municipio (abajo)
+    'size_1': 20,
+    'size_2': 11,
+    'size_3': 10.5,
 }
 
 POS_TEXTO_DOC = {
-    # Sobre la CAJA VERDE DOCUMENTO "CC: xxxxx" de la plantilla
-    'w':      55 * mm,
-    'y': 32 * mm,
-    'size':   13,
+    'w':    55 * mm,
+    'y':    40 * mm,
+    'size': 14,
 }
 
 POS_TEXTO_PROYECTO = {
-    # Dentro de la CAJA GRANDE INFERIOR (arriba del QR). Texto sin marco nuevo.
-    'w': 60 * mm,
-    'y': 26 * mm,
-    'size_label': 11,
-    'size_valor': 12,
+    'w': 62 * mm,
+    'y': 35.0 * mm,
+    'size_label': 11.5,
+    'size_valor': 12.5,
 }
 
 POS_QR = {
-    # Dentro de la CAJA GRANDE INFERIOR (no sobre el mar).
-    'size': 22 * mm,
-    'centro_x': 53.5 * mm,  # ~ centro 107/2
-    'y_inf':    4.5 * mm,   # desde esquina inf
+    'size':     24 * mm,
+    'centro_x': 53.5 * mm,
+    'y_inf':    10.5 * mm,
 }
 
 
