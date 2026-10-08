@@ -43,7 +43,9 @@
       📷 INICIAR LECTOR QR
     </button>
     <button id="btn-ingreso-manual" type="button" class="w-100" style="min-height:44px;padding:6px 12px;border-radius:14px;background:rgba(255,255,255,.1);color:white;font-weight:600;font-size:.88rem;border:1.5px solid rgba(255,255,255,.22);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0;">
-      🔎 INGRESO MANUAL POR N° DE DOCUMENTO
+      {% if tipo == 'asistencia' %}🔎 INGRESO MANUAL POR N° DE DOCUMENTO
+      {% elif tipo == 'refrigerios' %}🍱 ENTREGA DE REFRIGERIO MANUAL
+      {% else %}📜 ENTREGA DE CERTIFICADO MANUAL{% endif %}
       <span class="badge text-bg-light text-dark rounded-pill opacity-85 fw-bold" style="font-size:.7rem;line-height:1;padding:3px 8px;">sin escarapela</span>
     </button>
   </div>
@@ -130,10 +132,20 @@
      style="position:fixed;inset:0;z-index:1070;background:rgba(0,0,0,0.58);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;padding:8px 10px 10px 10px;">
   <div id="panel-manual" style="width:100%;max-width:460px;border-radius:22px;background:#ffffff;box-shadow:0 24px 80px rgba(0,0,0,0.55);padding:16px 16px 14px;animation:slideUpFade .32s cubic-bezier(.2,.8,.2,1) both;">
     <div class="d-flex align-items-center mb-3" style="gap:10px;">
-      <div style="font-size:1.9rem;line-height:1;">🔎</div>
+      <div style="font-size:1.9rem;line-height:1;">
+        {% if tipo == 'asistencia' %}🔎
+        {% elif tipo == 'refrigerios' %}🍱
+        {% else %}📜{% endif %}
+      </div>
       <div class="flex-grow-1 min-0">
-        <div class="fw-bold" style="font-size:1.05rem;line-height:1.1;color:#202124;">Ingreso Manual · N° de Documento</div>
-        <div class="opacity-65" style="font-size:.76rem;line-height:1.15;color:#5f6368;">Usa esta opción cuando el asistente NO lleve su escarapela física.</div>
+        <div class="fw-bold" style="font-size:1.05rem;line-height:1.1;color:#202124;">
+          {% if tipo == 'asistencia' %}Ingreso Manual · N° de Documento
+          {% elif tipo == 'refrigerios' %}Entrega Manual de Refrigerio · N° de Documento
+          {% else %}Entrega Manual de Certificado · N° de Documento{% endif %}
+        </div>
+        <div class="opacity-65" style="font-size:.76rem;line-height:1.15;color:#5f6368;">
+          Usa esta opción cuando el asistente NO lleve su escarapela física.
+        </div>
       </div>
       <button id="panel-manual-cerrar" type="button" class="btn btn-sm flex-shrink-0" style="min-height:34px;background:rgba(0,0,0,.06);border-radius:10px;padding:2px 9px;font-size:.95rem;color:#4a4a4a;">✖</button>
     </div>
@@ -144,7 +156,9 @@
              style="width:100%;min-height:58px;padding:0 14px;border-radius:14px;border:2px solid #b7eba0;font-size:1.15rem;font-family:ui-monospace,Consolas,monospace;letter-spacing:0.5px;background:white;color:#1b1b1b;outline:none;">
       <div id="manual-error" class="mt-2 p-2 rounded-3 text-center fw-semibold d-none" style="font-size:.86rem;background:rgba(198,40,40,.12);color:#a32424;"></div>
       <button id="manual-validar-btn" type="button" class="mt-3 w-100 text-white fw-bold" style="min-height:60px;border:none;border-radius:16px;font-size:1.05rem;background:linear-gradient(160deg,#39A900,#2e7a00);box-shadow:0 10px 30px rgba(57,169,0,.35);letter-spacing:0.25px;line-height:1.05;display:flex;align-items:center;justify-content:center;gap:10px;">
-        ✅ BUSCAR · VALIDAR Y REGISTRAR
+        {% if tipo == 'asistencia' %}✅ BUSCAR · VALIDAR Y REGISTRAR ASISTENCIA
+        {% elif tipo == 'refrigerios' %}✅ BUSCAR · VALIDAR Y ENTREGAR REFRIGERIO
+        {% else %}✅ BUSCAR · VALIDAR Y ENTREGAR CERTIFICADO{% endif %}
       </button>
     </div>
     <div class="mt-3 text-center opacity-65" style="font-size:.7rem;color:#5f6368;line-height:1.2;">
