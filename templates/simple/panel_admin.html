@@ -140,7 +140,7 @@
       <div class="kpi-card" style="background:linear-gradient(180deg,#f5faff,#fff);">
         <div class="kpi-label">📥 Importar Excel + 🔑 Enlaces</div>
         <div class="d-flex gap-2 mt-2 flex-wrap">
-          <a class="mini-link" target="_blank" href="{{ admin_root }}reportes/importacionexcel/">🗂 Importador (Admin)</a>
+          <a class="mini-link" href="{% url 'simple:importador_excel' %}?tipo=instituciones">🗂 Importador (Admin)</a>
           <a class="mini-link" href="{% url 'simple:listados' 'proyectos' %}">🔄 Verificar</a>
         </div>
         <div class="mt-3">

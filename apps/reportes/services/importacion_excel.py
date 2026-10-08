@@ -42,14 +42,30 @@ MAPEO_HEADERS = {
     'instituciones': {
         'id': 'codigo',
         'instituciones_educativas': 'nombre',
+        'institucion': 'nombre',
+        'institucion_educativa': 'nombre',
+        'ie': 'nombre',
+        'colegio': 'nombre',
+        'nombre_ie': 'nombre',
         'municipio': 'municipio',
+        'secretaria': 'secretaria_educacion',
+        'secretaria_educacion': 'secretaria_educacion',
+        'secretaria_de_educacion': 'secretaria_educacion',
         'tipo': 'tipo',
         'zona': 'zona',
         'sector': 'sector',
         'caracter': 'caracter',
         'especialidad': 'especialidad',
         'direccion_i.e': 'direccion',
+        'direccion': 'direccion',
         'correo_i.e': 'correo_institucional',
+        'correo': 'correo_institucional',
+        'correo_ie': 'correo_institucional',
+        'correo_institucional': 'correo_institucional',
+        'email': 'correo_institucional',
+        'telefono': 'telefono',
+        'telefono_ie': 'telefono',
+        'telefono_institucional': 'telefono',
         'rector': 'nombre_rector',
         'celular_/_telefono': 'telefono_rector',
         'coordinador/contacto': 'nombre_coordinador',
@@ -156,7 +172,7 @@ class ImportacionExcelService:
 
     COLUMNAS = {
         'instituciones': [
-            'codigo', 'nombre', 'municipio',
+            'codigo', 'nombre', 'municipio', 'secretaria_educacion', 'telefono',
             'tipo', 'zona', 'sector', 'caracter', 'especialidad', 'direccion',
             'correo_institucional', 'nombre_rector', 'telefono_rector',
             'nombre_coordinador', 'celular_coordinador',
@@ -186,7 +202,7 @@ class ImportacionExcelService:
     }
 
     REQUERIDOS = {
-        'instituciones': {'codigo', 'nombre', 'municipio'},
+        'instituciones': {'nombre', 'municipio'},
         'programas': {'nombre'},
         'instructores': {'nombres_y_apellidos'},
         'fichas': {'ficha_7_digitos', 'programa_nombre', 'institucion_nombre'},
@@ -249,10 +265,21 @@ class ImportacionExcelService:
             for fila_num, datos in filas:
                 nuevos_datos = {}
                 for k_old, k_new in mapeo.items():
-                    nuevos_datos[k_new] = datos.get(k_old, '')
+                    valor = datos.get(k_old)
+                    if valor is None:
+                        valor = ''
+                    valor = str(valor).strip() if not isinstance(valor, str) else valor.strip()
+                    if k_new not in nuevos_datos:
+                        nuevos_datos[k_new] = valor
+                    elif not nuevos_datos[k_new] and valor:
+                        nuevos_datos[k_new] = valor
                 for k, v in datos.items():
                     if k not in mapeo:
-                        nuevos_datos[k] = v
+                        v2 = v if isinstance(v, str) else _cell_value(v)
+                        if k not in nuevos_datos:
+                            nuevos_datos[k] = v2
+                        elif not nuevos_datos[k] and v2:
+                            nuevos_datos[k] = v2
                 filas_mapeadas.append((fila_num, nuevos_datos))
             filas = filas_mapeadas
 
@@ -282,13 +309,15 @@ class ImportacionExcelService:
                 codigo = datos.get('codigo', '')
                 nombre = datos.get('nombre', '')
                 municipio = datos.get('municipio', '')
+                secretaria_educacion = datos.get('secretaria_educacion') or datos.get('secretaria') or ''
+                telefono = datos.get('telefono') or datos.get('telefono_ie') or ''
                 tipo = datos.get('tipo', '')
                 zona = datos.get('zona', '')
                 sector = datos.get('sector', '')
                 caracter = datos.get('caracter', '')
                 especialidad = datos.get('especialidad', '')
                 direccion = datos.get('direccion', '')
-                correo_institucional = datos.get('correo_institucional', '')
+                correo_institucional = datos.get('correo_institucional') or datos.get('correo') or datos.get('email') or ''
                 nombre_rector = datos.get('nombre_rector', '')
                 telefono_rector = datos.get('telefono_rector', '')
                 nombre_coordinador = datos.get('nombre_coordinador', '')
@@ -317,6 +346,7 @@ class ImportacionExcelService:
 
                 datos_limpios = {
                     'codigo': codigo, 'nombre': nombre, 'municipio': municipio,
+                    'secretaria_educacion': secretaria_educacion, 'telefono': telefono,
                     'tipo': tipo, 'zona': zona, 'sector': sector, 'caracter': caracter,
                     'especialidad': especialidad, 'direccion': direccion,
                     'correo_institucional': correo_institucional, 'nombre_rector': nombre_rector,
@@ -728,6 +758,20 @@ class ImportacionExcelService:
             'resultados': resultados_validados,
             'estadisticas': ImportacionExcelService.estadisticas(resultados_validados),
         }
+
+    @staticmethod
+    def _serializar_para_confirmar(resultados):
+        import json
+        import zlib
+        import base64
+        datos = [
+            r for r in resultados
+            if r.get('campo') == '__fila__'
+            and r.get('clasificacion') in (CLASIFICACION_VALIDO, CLASIFICACION_ADVERTENCIA, CLASIFICACION_DUPLICADO)
+        ]
+        json_str = json.dumps(datos, ensure_ascii=False, default=str)
+        comprimido = zlib.compress(json_str.encode('utf-8'), 9)
+        return base64.urlsafe_b64encode(comprimido).decode('utf-8')
 
     @staticmethod
     @transaction.atomic

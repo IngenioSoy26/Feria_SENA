@@ -24,6 +24,15 @@ from apps.invitados.models import Invitado
 from apps.asistencia.models import AsistenciaEvento
 from apps.refrigerios.models import EntregaServicio
 from apps.certificados.models import Certificado
+from apps.reportes.services.importacion_excel import (
+    ImportacionExcelService,
+    TIPOS_IMPORTACION,
+    CLASIFICACIONES,
+    CLASIFICACION_VALIDO,
+    CLASIFICACION_ADVERTENCIA,
+    CLASIFICACION_DUPLICADO,
+    CLASIFICACION_ERROR,
+)
 
 
 def _evento_activo():
@@ -1258,3 +1267,114 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         resp['Pragma'] = 'no-cache'
         resp['Expires'] = '0'
         return resp
+
+
+TIPOS_IMPORTACION_LABELS = {
+    'instituciones': '🏫 Instituciones Educativas',
+    'programas': '📚 Programas Técnicos',
+    'instructores': '👨‍🏫 Instructores',
+    'fichas': '📋 Fichas (7 dígitos)',
+    'proyectos': '🚀 Proyectos Productivos',
+    'participantes': '👥 Participantes (Personas)',
+}
+
+
+class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
+    roles_requeridos = ['ADMINISTRADOR']
+    template_name = 'simple/importador_excel.html'
+    paso = None
+
+    def get(self, request, **_):
+        ctx = {
+            'tipos_importacion': [(t, TIPOS_IMPORTACION_LABELS.get(t, t)) for t in TIPOS_IMPORTACION],
+            'tipo_seleccionado': request.GET.get('tipo', 'instituciones'),
+            'vista': None,
+            'resultados': None,
+            'estadisticas': None,
+            'archivo_nombre': '',
+        }
+        return render(request, self.template_name, ctx)
+
+    def post(self, request, **_):
+        accion = request.POST.get('accion', 'validar')
+        tipo_importacion = (request.POST.get('tipo_importacion') or '').strip()
+        archivo = request.FILES.get('archivo_excel')
+
+        if tipo_importacion not in TIPOS_IMPORTACION:
+            messages.error(request, f'Tipo de importación no válido: {tipo_importacion}')
+            return redirect('simple:importador_excel')
+
+        if accion == 'validar':
+            if not archivo:
+                messages.error(request, 'Debe seleccionar un archivo Excel (.xlsx).')
+                return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+            try:
+                resultados = ImportacionExcelService.validar(archivo, tipo_importacion)
+            except Exception as e:
+                messages.error(request, f'Error leyendo el archivo: {e}')
+                return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+            preview = ImportacionExcelService.preview(request, resultados)
+            ctx = {
+                'tipos_importacion': [(t, TIPOS_IMPORTACION_LABELS.get(t, t)) for t in TIPOS_IMPORTACION],
+                'tipo_seleccionado': tipo_importacion,
+                'vista': 'preview',
+                'resultados': preview['resultados'],
+                'estadisticas': preview['estadisticas'],
+                'archivo_nombre': (archivo.name or 'archivo.xlsx')[:80],
+                '_resultados_serializados': ImportacionExcelService._serializar_para_confirmar(resultados),
+                'clases_estado': {
+                    CLASIFICACION_VALIDO: 'success',
+                    CLASIFICACION_ADVERTENCIA: 'warning',
+                    CLASIFICACION_DUPLICADO: 'info',
+                    CLASIFICACION_ERROR: 'danger',
+                },
+            }
+            resp = render(request, self.template_name, ctx)
+            resp.set_cookie(
+                f'_imp_{tipo_importacion}',
+                ctx['_resultados_serializados'],
+                max_age=60 * 30,
+                httponly=True,
+                samesite='Lax',
+            )
+            return resp
+
+        if accion == 'confirmar':
+            import base64
+            import json
+            import zlib
+            cookie = request.COOKIES.get(f'_imp_{tipo_importacion}', '')
+            if not cookie:
+                messages.error(request, 'Sesión de importación expiró o no se encontró. Suba el archivo nuevamente.')
+                return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+            try:
+                compressed_b64 = cookie
+                compressed_bytes = base64.urlsafe_b64decode(compressed_b64.encode('utf-8'))
+                json_bytes = zlib.decompress(compressed_bytes)
+                resultados_serializados = json.loads(json_bytes.decode('utf-8'))
+            except Exception as e:
+                messages.error(request, f'No se pudo restaurar el preview: {e}. Vuelva a subir el archivo.')
+                return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+            try:
+                with transaction.atomic():
+                    resumen = ImportacionExcelService.confirmar(request, tipo_importacion, resultados_serializados)
+            except Exception as e:
+                messages.error(request, f'Error guardando datos: {e}')
+                return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+            filas = resumen.get('filas_procesadas', 0)
+            detalle = resumen.get('detalle', [])
+            creados = sum(1 for d in detalle if d.get('accion') == 'CREATE')
+            actualizados = sum(1 for d in detalle if d.get('accion') == 'UPDATE')
+            messages.success(
+                request,
+                f'✅ Importación completada: {filas} filas procesadas · {creados} nuevos · {actualizados} actualizados.',
+            )
+            return redirect(f"{reverse('simple:importador_excel')}?tipo={tipo_importacion}")
+
+        messages.error(request, 'Acción no reconocida.')
+        return redirect('simple:importador_excel')

@@ -42,6 +42,7 @@ urlpatterns = [
     path('', simple_views.HomeSimpleView.as_view(), name='home'),
 
     path('panel-admin/', simple_views.PanelAdminDashboardView.as_view(), name='panel_admin'),
+    path('importar-excel/', simple_views.ImportadorExcelView.as_view(), name='importador_excel'),
     path('api/stats-operativos/', simple_views.StatsOperativosAjax.as_view(), name='api_stats'),
 
     path('registro/', simple_views.WizardRegistroView.as_view(), {'paso': 1}, name='wizard'),
