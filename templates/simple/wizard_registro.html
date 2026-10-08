@@ -25,7 +25,7 @@
       <h5 class="mb-3 text-sena-dark">🏫 Datos del proyecto</h5>
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label">Institución Educativa <span class="req">*</span> <span class="hint-sena">(solo catálogo administrador)</span></label>
+          <label class="form-label">Institución Educativa <span class="req">*</span></label>
           <select name="nombre_ie" id="inp-nombre-ie" class="form-field select combo-filtro" data-combo="ie" required>
             <option value="">⬇️ Seleccione o busque una Institución Educativa</option>
           </select>
@@ -38,7 +38,7 @@
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Programa Técnico <span class="req">*</span> <span class="hint-sena">(solo catálogo administrador)</span></label>
+          <label class="form-label">Programa Técnico <span class="req">*</span></label>
           <select name="nombre_programa" id="inp-nombre-programa" class="form-field select combo-filtro" data-combo="programa" required>
             <option value="">⬇️ Seleccione o busque un Programa Técnico</option>
           </select>
@@ -46,7 +46,6 @@
         <div class="col-12 col-md-6">
           <label class="form-label">
             Código de Ficha <span class="req">*</span>
-            <span class="hint-sena">(solo catálogo administrador)</span>
             <span class="hint-sena" id="fichas-count-hint"></span>
           </label>
           <select name="codigo_ficha" id="inp-codigo-ficha" class="form-field select combo-filtro" data-combo="ficha" required>
@@ -55,12 +54,12 @@
         </div>
 
         <div class="col-12">
-          <label class="form-label">Nombre del proyecto <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA SOSTENIDA)</span></label>
+          <label class="form-label">Nombre del proyecto <span class="req">*</span></label>
           <input name="nombre_proyecto" class="form-field up-case" placeholder="Ej: APLICACIÓN PARA CONTROL DE ASISTENCIA EN LA FERIA" required>
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Instructor líder <span class="req">*</span> <span class="hint-sena">(catálogo + documento auto)</span></label>
+          <label class="form-label">Instructor líder <span class="req">*</span></label>
           <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name" list="instructor_dl" required>
           <datalist id="instructor_dl"></datalist>
         </div>
@@ -515,7 +514,7 @@
                  placeholder="Ej: 1012345678" style="min-height:48px;" required>
         </div>
         <div class="col-12 col-md-3">
-          <label class="form-label mb-1" style="font-size:.82rem;">Nombres y apellidos * <span class="hint-sena">(MAYÚSCULA)</span></label>
+          <label class="form-label mb-1" style="font-size:.82rem;">Nombres y apellidos *</label>
           <input type="text" name="apr_nombre[]" class="form-field apr-nombre up-case" autocomplete="name"
                  placeholder="Ej: JUAN SEBASTIÁN PÉREZ GÓMEZ" style="min-height:48px;" required>
         </div>
