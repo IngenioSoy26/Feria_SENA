@@ -104,16 +104,10 @@
         <div id="panel-detalles" class="small mt-2 opacity-90 lh-base"></div>
 
         <div id="panel-datos-completos" class="mt-3 p-3 rounded-4" style="background:rgba(57,169,0,.08);border:1.5px solid rgba(57,169,0,.25);display:none;">
-          <div class="fw-bold text-sena mb-2" style="font-size:1rem;">📋 Datos Completos del Asistente</div>
-          <div class="row g-2">
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🏫 Institución / Procedencia</div><div id="pd-institucion" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📍 Municipio</div><div id="pd-municipio" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🎯 Proyecto</div><div id="pd-proyecto" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🔢 Ficha (7 dígitos)</div><div id="pd-ficha" class="fw-semibold" style="font-family:ui-monospace,Consolas,monospace;"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📧 Correo</div><div id="pd-correo" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📱 Teléfono</div><div id="pd-telefono" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">🏠 Dirección</div><div id="pd-direccion" class="fw-semibold"></div></div>
-            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">👤 Género</div><div id="pd-genero" class="fw-semibold"></div></div>
+          <div class="fw-bold text-sena mb-2" style="font-size:1rem;">📋 Datos de Contacto del Asistente</div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📧 Correo electrónico</div><div id="pd-correo" class="fw-semibold"></div></div>
+            <div class="col-12 col-md-6"><div class="small text-muted mb-0" style="font-size:.78rem;">📱 Teléfono de contacto</div><div id="pd-telefono" class="fw-semibold"></div></div>
           </div>
         </div>
 
@@ -190,14 +184,8 @@
   const pDetalles=document.getElementById('panel-detalles');
   const pMensaje=document.getElementById('panel-mensaje');
   const pDatosBox=document.getElementById('panel-datos-completos');
-  const pdInstitucion=document.getElementById('pd-institucion');
-  const pdMunicipio=document.getElementById('pd-municipio');
-  const pdProyecto=document.getElementById('pd-proyecto');
-  const pdFicha=document.getElementById('pd-ficha');
   const pdCorreo=document.getElementById('pd-correo');
   const pdTelefono=document.getElementById('pd-telefono');
-  const pdDireccion=document.getElementById('pd-direccion');
-  const pdGenero=document.getElementById('pd-genero');
   const $ing=document.getElementById('num-ingresaron');
   const $fal=document.getElementById('num-faltan');
   const $tot=document.getElementById('num-total');
@@ -289,10 +277,7 @@
     pNombre.textContent=data.nombre||'';
     pTipoDoc.textContent=(data.tipo_documento||'CC')+':';
     pNumDoc.textContent=data.numero_documento||'';
-    let detalleHtml=data.extra||'';
-    if(data.nombre_proyecto){detalleHtml=detalleHtml||'<b>Proyecto:</b> '+data.nombre_proyecto;}
-    if(data.codigo_ficha){detalleHtml+=detalleHtml?' · ':'<b>Ficha:</b> ';detalleHtml+=data.codigo_ficha;}
-    pDetalles.innerHTML=detalleHtml;
+    pDetalles.innerHTML='';
 
     const esDuplicado = !!data.es_duplicado || data.status==='AMARILLO';
     const esNuevo = !!data.es_nuevo || (data.status==='VERDE' && !esDuplicado);
@@ -302,14 +287,8 @@
         pDatosBox.style.display='block';
         pDatosBox.style.background='rgba(57,169,0,.10)';
         pDatosBox.style.borderColor='rgba(57,169,0,.35)';
-        if(pdInstitucion){pdInstitucion.textContent=data.institucion||'—';}
-        if(pdMunicipio){pdMunicipio.textContent=data.municipio||'—';}
-        if(pdProyecto){pdProyecto.textContent=data.nombre_proyecto||'—';}
-        if(pdFicha){pdFicha.textContent=data.codigo_ficha||'—';}
         if(pdCorreo){pdCorreo.textContent=data.correo||'—';}
         if(pdTelefono){pdTelefono.textContent=data.telefono||'—';}
-        if(pdDireccion){pdDireccion.textContent=data.direccion||'—';}
-        if(pdGenero){pdGenero.textContent=data.genero||'—';}
         if(bVal){
           bVal.textContent='✅ ACEPTAR · Confirmar y Continuar';
           bVal.style.background='linear-gradient(160deg,#39A900,#2e7a00)';

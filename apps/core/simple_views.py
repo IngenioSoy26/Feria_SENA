@@ -793,44 +793,10 @@ class RegistrarOperadorAjax(View):
         municipio_persona = ''
         correo = ''
         telefono = ''
-        direccion = ''
-        genero = ''
         try:
             correo = getattr(persona, 'correo', '') or ''
             telefono = getattr(persona, 'telefono', '') or ''
-            direccion = getattr(persona, 'direccion', '') or getattr(persona, 'direccion_residencia', '') or getattr(persona, 'domicilio', '') or ''
-            _g = getattr(persona, 'genero', None)
-            if _g:
-                genero = {'M': 'Masculino', 'F': 'Femenino', 'O': 'Otro'}.get((_g or '').strip()) or ''
-            if persona.tipo_persona == 'APRENDIZ':
-                try:
-                    if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz and getattr(persona.perfil_aprendiz, 'proyecto', None):
-                        proy = persona.perfil_aprendiz.proyecto
-                        _ie = getattr(proy, 'institucion', None)
-                        if _ie:
-                            nombre_ie = getattr(_ie, 'nombre', '') or ''
-                            municipio_persona = getattr(_ie, 'municipio', '') or getattr(_ie, 'ciudad', '') or ''
-                        if getattr(proy, 'ficha', None):
-                            _fc = getattr(proy.ficha, 'numero', '')
-                            if _fc and not ficha_codigo:
-                                ficha_codigo = _fc
-                except Exception:
-                    pass
-            elif persona.tipo_persona == 'INSTRUCTOR':
-                try:
-                    if hasattr(persona, 'perfil_instructor') and persona.perfil_instructor:
-                        municipio_persona = getattr(persona.perfil_instructor, 'municipio', '') or getattr(persona.perfil_instructor, 'ciudad', '') or ''
-                except Exception:
-                    pass
-            elif persona.tipo_persona == 'INVITADO':
-                try:
-                    if hasattr(persona, 'perfil_invitado') and persona.perfil_invitado:
-                        nombre_ie = getattr(persona.perfil_invitado, 'institucion_procedencia', '') or getattr(persona.perfil_invitado, 'institucion', '') or ''
-                        municipio_persona = getattr(persona.perfil_invitado, 'municipio', '') or getattr(persona.perfil_invitado, 'ciudad', '') or ''
-                except Exception:
-                    pass
         except Exception:
-            # Cualquier AttributeError de campos faltantes → simplemente ignorar y continuar (NO MÁS 500)
             pass
 
         return JsonResponse({
@@ -839,18 +805,11 @@ class RegistrarOperadorAjax(View):
             'mensaje': mensaje,
             'nombre': label,
             'rol': (persona.tipo_persona or '').title(),
-            'extra': extra,
             'tipo_asistente': tipo_asistente,
             'tipo_documento': tipo_doc,
             'numero_documento': numero_doc,
-            'nombre_proyecto': nombre_proyecto,
-            'codigo_ficha': ficha_codigo,
-            'institucion': nombre_ie,
-            'municipio': municipio_persona or (evento.municipio if evento else ''),
             'correo': correo,
             'telefono': telefono,
-            'direccion': direccion,
-            'genero': genero,
             'es_duplicado': (status == 'AMARILLO'),
             'es_nuevo': (status == 'VERDE'),
         })
