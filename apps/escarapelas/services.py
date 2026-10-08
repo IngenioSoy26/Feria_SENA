@@ -128,28 +128,22 @@ POS_CAJA_INFERIOR = {
     "r": 6 * mm,
     "borde_grosor": 0,
 
-    # ✅ COLOR PERMITIDO SENA: BLANCO PURO (#FFFFFF) 100% OPACO.
-    # Elimina transparencia 0.40 que mataba el contraste con el fondo
-    # artístico de montañas/naranja del PNG. Proyecto NEGRO ahora
-    # perfectamente legible.
-    "fill_alpha": 1.0,
+    # ✅ Fondo TRANSPARENTE (tal como lo solicitó el usuario).
+    # Blanco con 40% opacidad: deja ver el arte del fondo Credencial.png
+    # sin mezclar texto (ya NO pintamos nombre-proyecto → N/A).
+    "fill_alpha": 0.40,
 
-    # NOMBRE PROYECTO 1 LÍNEA — ZONA BAJA, DESPUÉS DEL QR.
+    # KEYS RETENIDAS (compatibilidad) — NUNCA se usan porque ahora la
+    # caja inferior es SOLO QR para TODOS los roles (incluido APRENDIZ).
     "y_valor_solo": 13.5 * mm,
     "size_valor_solo": 9.2,
-
-    # PROYECTO 2 LÍNEAS — TAMBIÉN DESPUÉS DEL QR (por debajo).
-    # Gap QR_inf(14.5) vs L1(13.2) = 1.3mm ✅
-    # Gap L1(13.2) vs L2(11.9) = 1.3mm ✅
-    # L2 descentre 1.3 → 10.6mm > borde_inf(8.5) ✅
     "y_proyecto_1": 13.2 * mm,
     "size_label": 8.8,
     "y_proyecto_2": 11.9 * mm,
     "size_valor": 8.6,
 
-    # ✅ QR MÁS GRANDE: 28mm → 32mm.
-    # QR OCUOPA LA ZONA ALTA (PRIMERO en el orden visual):
-    #   y_inf = 14.5,  top = y_inf + 32 = 46.5  ≡ borde sup.
+    # QR 32mm (+14% vs v17 28mm) — CENTRADO, ocupa toda la zona.
+    # qr_inf=14.5, qr_sup = 14.5 + 32 = 46.5 ≡ borde sup caja.
     "qr_size": 32 * mm,
     "qr_centro_x": 53.5 * mm,
     "qr_y_inf": 14.5 * mm,
@@ -677,92 +671,12 @@ class EscarapelaPDFService:
         c.restoreState()
 
         # ----------------------------------------------------
-        # TEXTO DEL PROYECTO
-        # - SÓLO SE PINTAN 1-2 LÍNEAS PARA APRENDIZ: nombre del proyecto.
-        # - NUNCA se muestra el label "Proyecto: CODIGO".
-        # - INSTRUCTOR / INVITADO / ORGANIZADOR: caja inferior sólo contiene
-        #   el QR; el rol ya se muestra explícitamente en el badge superior.
+        # ✅ SIN TEXTO DE PROYECTO (orden explícita del usuario).
+        # CAJA INFERIOR = SOLO QR 32mm PARA TODOS LOS ROLES
+        # (APRENDIZ / INSTRUCTOR / INVITADO / ORGANIZADOR).
+        # El nombre del proyecto NUNCA se muestra en la credencial.
         # ----------------------------------------------------
-        rol_key = (rol or "").strip().upper()
-
-        proyecto = str(info["proyecto"] or "").strip()
-        programa = str(info["programa"] or "").strip()
-
-        linea1 = ""
-        linea2 = ""
-
-        if rol_key == "APRENDIZ":
-            if proyecto:
-                linea2 = proyecto.upper()
-            elif programa:
-                linea2 = programa.upper()
-
-        max_w = w - 8 * mm
-
-        if linea1:
-            EscarapelaPDFService._centrar_en_caja(
-                c=c,
-                texto=linea1,
-                caja_x=x,
-                caja_w=w,
-                y=dy + p["y_proyecto_1"],
-                fuente="Helvetica-Bold",
-                tam=p["size_label"],
-                color=black,
-                max_w=max_w,
-                tam_min=6,
-            )
-
-        if linea2:
-            l2a, l2b = EscarapelaPDFService._partir_texto_dos_lineas(
-                c,
-                linea2,
-                "Helvetica-Bold",
-                p["size_valor"],
-                max_w,
-            )
-
-            if l2b:
-                # Dos líneas compactadas: centroide alrededor de
-                # p["y_proyecto_2"] con gap 2.6mm entre líneas.
-                EscarapelaPDFService._centrar_en_caja(
-                    c=c,
-                    texto=l2a,
-                    caja_x=x,
-                    caja_w=w,
-                    y=dy + p["y_proyecto_2"] + 1.3 * mm,
-                    fuente="Helvetica-Bold",
-                    tam=8.0,
-                    color=black,
-                    max_w=max_w,
-                    tam_min=6,
-                )
-
-                EscarapelaPDFService._centrar_en_caja(
-                    c=c,
-                    texto=l2b,
-                    caja_x=x,
-                    caja_w=w,
-                    y=dy + p["y_proyecto_2"] - 1.3 * mm,
-                    fuente="Helvetica-Bold",
-                    tam=8.0,
-                    color=black,
-                    max_w=max_w,
-                    tam_min=6,
-                )
-            else:
-                EscarapelaPDFService._centrar_en_caja(
-                    c=c,
-                    texto=l2a,
-                    caja_x=x,
-                    caja_w=w,
-                    y=dy + p["y_proyecto_2"],
-                    fuente="Helvetica-Bold",
-                    tam=p["size_valor_solo"],
-                    color=black,
-                    max_w=max_w,
-                    tam_min=6,
-                )
+        pass
 
         # ----------------------------------------------------
         # QR (achicado 26mm + semi-transparente alpha)
