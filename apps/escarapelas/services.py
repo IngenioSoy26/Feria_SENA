@@ -136,6 +136,23 @@ POS_CAJA_INFERIOR = {
 }
 
 
+# =========================================================================
+# CACHE GLOBAL DE LA IMAGEN DE FONDO YA PROCESADA CON ImageOps.fit().
+#
+# SIN ESTO: ImageOps.fit LANCZOS 2140×2700 + save PNG + io.BytesIO() se ejecuta
+#          POR CADA TARJETA. Para 300 personas = ×300 ~ 30-60 segundos →
+#          Railway mata request por timeout (Gateway Timeout / Pantalla negra
+#          "Cargando...").
+#
+# CON ESTO: Se ejecuta 1 SOLA VEZ por proceso Railway (primer render lento 1.5s)
+#          y los siguientes 299 renders reutilizan el BytesIO seek(0)
+#          (0ms overhead). Request /lote/todos/ 300 personas = ~1 segundo.
+# =========================================================================
+_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO con el PNG ya fit-2140×2700
+_FONDO_CREDENCIAL_MTIME = None            # mtime Credencial.png si cambia
+_FONDO_CREDENCIAL_RUTA_STR = None         # ruta que generó la cache
+
+
 class EscarapelaPDFService:
     W = ESCARAPELA_W
     H = ESCARAPELA_H
@@ -302,65 +319,104 @@ class EscarapelaPDFService:
     @staticmethod
     def _dibujar_imagen_fondo(c, dx=0, dy=0):
         """
-        Dibuja Credencial.png sin deformarla.
+        Dibuja Credencial.png sin deformarla CON CACHE GLOBAL (1 vez/proceso).
 
-        Se utiliza ImageOps.fit() para adaptar cualquier PNG a la relación
-        107:135 mediante recorte centrado, no mediante estiramiento.
+        - ImageOps.fit LANCZOS recorte centrado 2140×2700 → 300dpi impresión.
+        - 1 sola vez: Cache BytesIO + mtime invalidation si el usuario sube
+          una nueva Credencial.png (cambia mtime).
+        - 0 Pillow overhead por tarjeta. Lote 300 personas = ~1 segundo.
         """
+        global _FONDO_CREDENCIAL_BYTESIO, _FONDO_CREDENCIAL_MTIME, _FONDO_CREDENCIAL_RUTA_STR
         ruta = EscarapelaPDFService._ruta_credencial()
 
         if not ruta.exists():
             c.setFillColor(HexColor("#FFF8E7"))
             c.rect(
-                dx,
-                dy,
-                EscarapelaPDFService.W,
-                EscarapelaPDFService.H,
-                fill=1,
-                stroke=0,
+                dx, dy, EscarapelaPDFService.W, EscarapelaPDFService.H,
+                fill=1, stroke=0,
             )
             return
 
+        # --- Calcular si cache válida ---
+        usar_cache = False
+        ruta_str = str(ruta)
+        try:
+            mtime = ruta.stat().st_mtime_ns
+        except OSError:
+            mtime = None
+        if (
+            _FONDO_CREDENCIAL_BYTESIO is not None
+            and _FONDO_CREDENCIAL_RUTA_STR == ruta_str
+            and _FONDO_CREDENCIAL_MTIME == mtime
+        ):
+            usar_cache = True
+
+        if usar_cache:
+            # Path RÁPIDO: BytesIO cached, 0 Pillow, 0 overhead.
+            try:
+                _FONDO_CREDENCIAL_BYTESIO.seek(0)
+                c.drawImage(
+                    ImageReader(_FONDO_CREDENCIAL_BYTESIO),
+                    dx, dy,
+                    width=EscarapelaPDFService.W,
+                    height=EscarapelaPDFService.H,
+                    mask="auto",
+                    preserveAspectRatio=False,
+                )
+                return
+            except Exception:
+                # Cache corrupta: invalidar y regenerar.
+                _FONDO_CREDENCIAL_BYTESIO = None
+                _FONDO_CREDENCIAL_RUTA_STR = None
+                _FONDO_CREDENCIAL_MTIME = None
+
+        # --- Path LENTO: regenerar fit + guardar en cache ---
         try:
             with Image.open(ruta) as img:
                 img = img.convert("RGBA")
-
-                # Resolución suficiente para impresión.
-                # La relación 107:135 se conserva exactamente.
                 target_w = 2140
                 target_h = 2700
-
                 img = ImageOps.fit(
                     img,
                     (target_w, target_h),
                     method=Image.Resampling.LANCZOS,
                     centering=(0.5, 0.5),
                 )
-
                 memoria = io.BytesIO()
                 img.save(memoria, format="PNG", optimize=True)
                 memoria.seek(0)
-
+            # Poblar cache global
+            _FONDO_CREDENCIAL_BYTESIO = memoria
+            _FONDO_CREDENCIAL_RUTA_STR = ruta_str
+            _FONDO_CREDENCIAL_MTIME = mtime
+            # Dibujar 1ª vez (usa la misma memoria)
+            _FONDO_CREDENCIAL_BYTESIO.seek(0)
+            c.drawImage(
+                ImageReader(_FONDO_CREDENCIAL_BYTESIO),
+                dx, dy,
+                width=EscarapelaPDFService.W,
+                height=EscarapelaPDFService.H,
+                mask="auto",
+                preserveAspectRatio=False,
+            )
+        except Exception:
+            # --- FALLBACK DEFINITIVO: drawImage RÁPIDO DIRECTO, SIN Pillow ---
+            # Nunca más pantalla "Cargando...", incluso si Pillow/LANCZOS falla.
+            try:
                 c.drawImage(
-                    ImageReader(memoria),
-                    dx,
-                    dy,
+                    ruta_str,
+                    dx, dy,
                     width=EscarapelaPDFService.W,
                     height=EscarapelaPDFService.H,
                     mask="auto",
                     preserveAspectRatio=False,
                 )
-
-        except Exception:
-            c.setFillColor(HexColor("#FFF8E7"))
-            c.rect(
-                dx,
-                dy,
-                EscarapelaPDFService.W,
-                EscarapelaPDFService.H,
-                fill=1,
-                stroke=0,
-            )
+            except Exception:
+                c.setFillColor(HexColor("#FFF8E7"))
+                c.rect(
+                    dx, dy, EscarapelaPDFService.W, EscarapelaPDFService.H,
+                    fill=1, stroke=0,
+                )
 
     # ========================================================
     # COLORES POR ROL
