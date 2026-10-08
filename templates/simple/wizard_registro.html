@@ -177,6 +177,10 @@
 
   function llenarCombo(sel, placeholder, items){
     if(!sel) return 0;
+    // 🔁 PRESERVAR VALOR SELECCIONADO ANTERIOR — clave para no perder la selección
+    //    del usuario cuando actualizarCascada() re-llena el combo dinámicamente.
+    const previousValue = String(sel.value || '').trim();
+    const previousUpper = previousValue.toUpperCase();
     try{ sel.innerHTML = ''; }catch(_){ while(sel && sel.firstChild) sel.removeChild(sel.firstChild); }
     if(placeholder){
       const p = document.createElement('option');
@@ -185,11 +189,13 @@
       sel.appendChild(p);
     }
     let count = 0;
+    let foundPrevious = false;
     for(const it of (items||[])){
       if(!it || !it.value) continue;
       const opt = document.createElement('option');
-      opt.value = String(it.value);
-      opt.textContent = it.label? String(it.label) : String(it.value);
+      const v = String(it.value);
+      opt.value = v;
+      opt.textContent = it.label? String(it.label) : v;
       if(it.dataset && typeof it.dataset === 'object'){
         for(const k of Object.keys(it.dataset)){
           try{ opt.setAttribute('data-'+k, (it.dataset[k]==null?'':String(it.dataset[k]))); }catch(_){}
@@ -197,6 +203,21 @@
       }
       sel.appendChild(opt);
       count++;
+      if(previousUpper && v.toUpperCase().trim() === previousUpper){
+        opt.selected = true;
+        foundPrevious = true;
+      }
+    }
+    // Asegurar que el <select> refleje el valor restaurado (o placeholder si no existía)
+    if(foundPrevious){
+      // Normalizar mayúsculas/minúsculas al valor real del option (no el que digitó usuario)
+      sel.value = sel.options[sel.selectedIndex]? sel.options[sel.selectedIndex].value : previousValue;
+    } else if (previousUpper) {
+      // El valor anterior no corresponde a las nuevas options → dejar placeholder
+      sel.value = '';
+      sel.selectedIndex = 0;
+    } else {
+      sel.selectedIndex = 0;
     }
     return count;
   }
