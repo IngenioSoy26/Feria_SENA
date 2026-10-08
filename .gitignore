@@ -102,6 +102,8 @@ acta_*.docx
 minuta_*.docx
 notas_*.txt
 notas_*.md
+Revisar*.md
+revisar*.md
 
 # Scripts y archivos auxiliares de una sola ejecución
 extraer_contenido.py

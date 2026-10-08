@@ -77,7 +77,7 @@ BADGE_ROL_TEXTO = {
 
 POS_BADGE = {
     "x": 18 * mm,
-    "y": 79 * mm,
+    "y": 69 * mm,
     "w": 71 * mm,
     "h": 8.5 * mm,
     "r": 4.25 * mm,
@@ -87,16 +87,17 @@ POS_BADGE = {
 
 POS_CAJA_NOMBRE = {
     "x": 7 * mm,
-    "y": 58 * mm,
+    "y": 52 * mm,
     "w": 93 * mm,
-    "h": 16 * mm,
+    "h": 15 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.0,
     "padding_lados": 5 * mm,
+    "fill_alpha": 0.64,
 
-    # Baselines (calculadas delta=-13mm vs anterior)
-    "y_nombre": 68.7 * mm,
-    "y_institucion": 61.7 * mm,
+    # Baselines
+    "y_nombre": 62.8 * mm,
+    "y_institucion": 56.3 * mm,
 
     "size_nombre": 14,
     "size_institucion": 8.2,
@@ -105,34 +106,39 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 27 * mm,
-    "y": 47 * mm,
+    "y": 41 * mm,
     "w": 53 * mm,
     "h": 6.8 * mm,
     "r": 3.4 * mm,
     "borde_grosor": 0.9,
-    "y_texto": 49.2 * mm,
+    "y_texto": 43.3 * mm,
     "size": 9.5,
 }
 
 
 POS_CAJA_INFERIOR = {
-    "x": 9 * mm,
-    "y": 4 * mm,
-    "w": 89 * mm,
-    "h": 38 * mm,
+    "x": 19.5 * mm,
+    "y": 3 * mm,
+    "w": 68 * mm,
+    "h": 34 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.1,
+    "fill_alpha": 0.58,
 
-    # Proyecto (zona superior cajaInf 18mm altura)
-    "y_proyecto_1": 36.5 * mm,
-    "y_proyecto_2": 31.8 * mm,
-    "size_label": 8.0,
-    "size_valor": 8.6,
+    # NOMBRE-PROYECTO solo 1 línea (ELIMINADO prefijo "Proyecto: ...")
+    "y_valor_solo": 32.0 * mm,
+    "size_valor_solo": 10.0,
 
-    # QR achicado 31.5 → 26mm + semi-transparente
-    "qr_size": 26 * mm,
+    # PROYECTO 2 líneas (label + valor) — arriba del QR, entre 28-33mm
+    "y_proyecto_1": 33.8 * mm,
+    "size_label": 8.5,
+    "y_proyecto_2": 30.8 * mm,
+    "size_valor": 9.0,
+
+    # QR achicado (caja más estrecha)
+    "qr_size": 24 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 5.7 * mm,
+    "qr_y_inf": 4.5 * mm,
 }
 
 
