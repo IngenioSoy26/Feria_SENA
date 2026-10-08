@@ -73,24 +73,97 @@ MAPEO_HEADERS = {
     },
     'programas': {
         'programa': 'nombre',
+        'nombre_programa': 'nombre',
+        'nombre': 'nombre',
+        'programas': 'nombre',
+        'programa_tecnico': 'nombre',
+        'codigo': 'codigo',
+        'codigo_programa': 'codigo',
+        'duracion': 'duracion_meses',
+        'duracion_meses': 'duracion_meses',
+        'descripcion': 'descripcion',
+        'sector': 'sector',
     },
     'instructores': {
+        'id': 'numero_identificacion',
+        'cedula': 'numero_identificacion',
+        'numero_identificacion': 'numero_identificacion',
+        'numero_de_identificacion': 'numero_identificacion',
+        'identificacion': 'numero_identificacion',
+        'documento': 'numero_identificacion',
+        'tipo_id': 'tipo_identificacion_cod',
+        'tipo_identificacion': 'tipo_identificacion_cod',
+        'tipo_de_identificacion': 'tipo_identificacion_cod',
+        'tipo_documento': 'tipo_identificacion_cod',
+        'nombre': 'nombres_y_apellidos',
+        'nombres': 'nombres_y_apellidos',
+        'apellidos': 'nombres_y_apellidos_2',
+        'nombres_apellidos': 'nombres_y_apellidos',
         'nombres_y_apellidos': 'nombres_y_apellidos',
-        'programas_de_formacion_a_cargo': 'programas_formacion',
+        'nombre_completo': 'nombres_y_apellidos',
+        'nombre_y_apellidos': 'nombres_y_apellidos',
+        'instructor': 'nombres_y_apellidos',
+        'telefono': 'numero_telefono',
+        'celular': 'numero_telefono',
         'numero_de_telefono': 'numero_telefono',
+        'telefono_instructor': 'numero_telefono',
+        'telefono_contacto': 'numero_telefono',
+        'contacto': 'numero_telefono',
+        'correo': 'correo_electronico_sena',
+        'email': 'correo_electronico_sena',
+        'correo_sena': 'correo_electronico_sena',
         'correo_electronico_sena': 'correo_electronico_sena',
+        'correo_electronico': 'correo_electronico_sena',
+        'correo_personal': 'correo_electronico_personal',
         'correo_electronico_personal': 'correo_electronico_personal',
+        'email_personal': 'correo_electronico_personal',
+        'fecha_nacimiento': 'fecha_nacimiento',
         'fecha_de_nacimiento': 'fecha_nacimiento',
+        'cumpleanos': 'fecha_nacimiento',
+        'programas': 'programas_formacion',
+        'programas_formacion': 'programas_formacion',
+        'programas_de_formacion': 'programas_formacion',
+        'programas_a_cargo': 'programas_formacion',
+        'programas_de_formacion_a_cargo': 'programas_formacion',
     },
     'fichas': {
+        'ficha': 'ficha_7_digitos',
         'ficha_(7_digitos)': 'ficha_7_digitos',
+        'numero_ficha': 'ficha_7_digitos',
+        'codigo_ficha': 'ficha_7_digitos',
+        'ficha_7_digitos': 'ficha_7_digitos',
+        'numero': 'ficha_7_digitos',
         'programa': 'programa_nombre',
+        'programa_tecnico': 'programa_nombre',
+        'programa_nombre': 'programa_nombre',
+        'nombre_programa': 'programa_nombre',
         'institucion_educativa': 'institucion_nombre',
+        'institucion': 'institucion_nombre',
+        'institucion_nombre': 'institucion_nombre',
+        'ie': 'institucion_nombre',
+        'colegio': 'institucion_nombre',
         'grado': 'grado',
         'municipio': 'municipio',
         'lider': 'lider_nombre',
+        'instructor_lider': 'lider_nombre',
+        'instructor': 'lider_nombre',
+        'lider_nombre': 'lider_nombre',
+        'instructor_lider_nombre': 'lider_nombre',
+        'cedula_instructor': 'instructor_cedula',
+        'id_instructor': 'instructor_cedula',
+        'numero_identificacion_instructor': 'instructor_cedula',
+        'documento_instructor': 'instructor_cedula',
         'telefono_instructor': 'telefono_instructor',
+        'telefono_lider': 'telefono_instructor',
         'correo_instructor': 'correo_instructor',
+        'correo_lider': 'correo_instructor',
+        'jornada': 'jornada',
+        'modalidad': 'modalidad',
+        'fecha_inicio': 'fecha_inicio',
+        'fecha_fin': 'fecha_fin',
+        'programacionrama': 'programa_nombre',
+        'programacion': 'programa_nombre',
+        'rama': 'programa_nombre',
     },
 }
 
@@ -178,17 +251,20 @@ class ImportacionExcelService:
             'nombre_coordinador', 'celular_coordinador',
         ],
         'programas': [
-            'nombre',
+            'codigo', 'nombre', 'duracion_meses', 'sector', 'descripcion',
         ],
         'instructores': [
-            'nombres_y_apellidos', 'numero_telefono',
+            'tipo_identificacion_cod', 'numero_identificacion',
+            'nombres_y_apellidos',
+            'numero_telefono',
             'correo_electronico_sena', 'correo_electronico_personal',
             'programas_formacion', 'fecha_nacimiento',
         ],
         'fichas': [
             'ficha_7_digitos', 'programa_nombre', 'institucion_nombre',
-            'grado', 'municipio', 'lider_nombre',
+            'grado', 'municipio', 'lider_nombre', 'instructor_cedula',
             'telefono_instructor', 'correo_instructor',
+            'jornada', 'modalidad', 'fecha_inicio', 'fecha_fin',
         ],
         'proyectos': [
             'codigo', 'nombre', 'descripcion', 'institucion_codigo',
@@ -204,7 +280,7 @@ class ImportacionExcelService:
     REQUERIDOS = {
         'instituciones': {'nombre', 'municipio'},
         'programas': {'nombre'},
-        'instructores': {'nombres_y_apellidos'},
+        'instructores': {'numero_identificacion', 'nombres_y_apellidos'},
         'fichas': {'ficha_7_digitos', 'programa_nombre', 'institucion_nombre'},
         'proyectos': {'codigo', 'nombre', 'institucion_codigo', 'programa_codigo', 'evento_nombre'},
         'participantes': {'tipo_identificacion', 'numero_identificacion', 'nombres', 'apellidos', 'tipo_persona'},
@@ -218,7 +294,7 @@ class ImportacionExcelService:
         header = None
         for idx, row in enumerate(ws.iter_rows(values_only=True), start=1):
             if idx == header_row:
-                header = [str(c).strip().lower().replace(' ', '_').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u') if c is not None else '' for c in row]
+                header = [str(c).strip().lower().replace(' ', '_').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').rstrip('_') if c is not None else '' for c in row]
                 continue
             if idx < start_row:
                 continue
@@ -244,10 +320,7 @@ class ImportacionExcelService:
             raise ValueError(f'Tipo de importación no válido: {tipo_importacion}')
 
         try:
-            if tipo_importacion == 'instructores':
-                filas = ImportacionExcelService._leer_filas(archivo_excel, start_row=3, header_row=2)
-            else:
-                filas = ImportacionExcelService._leer_filas(archivo_excel)
+            filas = ImportacionExcelService._leer_filas(archivo_excel)
         except Exception as e:
             return [{
                 'fila': 0,
@@ -376,38 +449,55 @@ class ImportacionExcelService:
 
             elif tipo_importacion == 'instructores':
                 nombres_y_apellidos = datos.get('nombres_y_apellidos', '')
+                apellidos_solo = datos.get('nombres_y_apellidos_2', '')
+                if apellidos_solo and nombres_y_apellidos and not nombres_y_apellidos.endswith(apellidos_solo):
+                    nombres_y_apellidos = (nombres_y_apellidos + ' ' + apellidos_solo).strip()
+
                 numero_telefono = datos.get('numero_telefono', '')
                 correo_electronico_sena = datos.get('correo_electronico_sena', '')
                 correo_electronico_personal = datos.get('correo_electronico_personal', '')
                 programas_formacion_str = datos.get('programas_formacion', '')
                 fecha_nacimiento_str = datos.get('fecha_nacimiento', '')
+                tipo_identificacion_cod = (datos.get('tipo_identificacion_cod') or 'CC').strip().upper() or 'CC'
+
+                # Traducción común TIPO_ID: nombres completos a códigos
+                if tipo_identificacion_cod in ('CÉDULA DE CIUDADANÍA', 'CEDULA DE CIUDADANIA', 'CC.', 'C.C', 'CC', 'CEDULA'):
+                    tipo_identificacion_cod = 'CC'
+                elif tipo_identificacion_cod in ('TARJETA DE IDENTIDAD', 'TI.', 'T.I', 'TI', 'TARJETA IDENTIDAD'):
+                    tipo_identificacion_cod = 'TI'
+                elif tipo_identificacion_cod in ('PERMISO POR PROTECCIÓN TEMPORAL', 'PPT', 'PERMISO TEMPORAL'):
+                    tipo_identificacion_cod = 'PPT'
 
                 nombres, apellidos = _split_nombres_apellidos(nombres_y_apellidos)
 
-                tipo_identificacion_cod = 'CC'
                 tipo_identificacion_id = None
-                numero_identificacion = ''
-                advertencia_cc = False
-
                 try:
-                    tipo_id_cc = TipoIdentificacion.objects.get(codigo__iexact='CC', activo=True)
-                    tipo_identificacion_id = tipo_id_cc.id
+                    tipo_id_obj = TipoIdentificacion.objects.get(codigo__iexact=tipo_identificacion_cod, activo=True)
+                    tipo_identificacion_id = tipo_id_obj.id
                 except TipoIdentificacion.DoesNotExist:
-                    pass
+                    clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ERROR)
+                    _agregar_error(
+                        fila_num, 'tipo_identificacion_cod', tipo_identificacion_cod,
+                        f'Tipo de identificación "{tipo_identificacion_cod}" no existe. Use CC, TI o PPT.',
+                        'Verifique el tipo de identificación (CC, TI, PPT).',
+                        CLASIFICACION_ERROR, fila_resultados,
+                    )
 
+                numero_identificacion = (datos.get('numero_identificacion') or '').strip()
                 if not numero_identificacion:
-                    clave_temp = (nombres + apellidos).strip() or nombres_y_apellidos
-                    if clave_temp:
-                        hash_str = hashlib.md5(clave_temp.encode('utf-8')).hexdigest()[:10]
-                        numero_identificacion = f'TEMP-{hash_str}'
-                    advertencia_cc = True
-
-                if advertencia_cc:
+                    clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ERROR)
+                    _agregar_error(
+                        fila_num, 'numero_identificacion', '',
+                        'El número de identificación (cédula) es obligatorio.',
+                        'Diligencie la cédula del instructor.',
+                        CLASIFICACION_ERROR, fila_resultados,
+                    )
+                if numero_identificacion and len(numero_identificacion) < 5:
                     clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
                     _agregar_error(
                         fila_num, 'numero_identificacion', numero_identificacion,
-                        'No se proporcionó identificación. Se generará número temporal TEMP-*. Actualice luego el CC real.',
-                        'Verifique y actualice el número de identificación después de la importación.',
+                        'Número de identificación muy corto (mínimo 5 dígitos).',
+                        'Verifique el número de cédula.',
                         CLASIFICACION_ADVERTENCIA, fila_resultados,
                     )
 
@@ -415,14 +505,18 @@ class ImportacionExcelService:
                 if numero_identificacion:
                     if clave_unica in ids_en_archivo:
                         clasificacion_fila = max(clasificacion_fila, CLASIFICACION_DUPLICADO)
-                        _agregar_error(fila_num, 'nombres_y_apellidos', nombres_y_apellidos, 'Instructor repetido en archivo.', '', CLASIFICACION_DUPLICADO, fila_resultados)
+                        _agregar_error(fila_num, 'numero_identificacion', numero_identificacion,
+                                       'Instructor repetido en archivo (mismo ID).',
+                                       '', CLASIFICACION_DUPLICADO, fila_resultados)
                     ids_en_archivo.add(clave_unica)
                     if tipo_identificacion_id and Persona.objects.filter(
                         tipo_identificacion_id=tipo_identificacion_id,
                         numero_identificacion=numero_identificacion,
                     ).exists():
                         clasificacion_fila = max(clasificacion_fila, CLASIFICACION_DUPLICADO)
-                        _agregar_error(fila_num, 'nombres_y_apellidos', nombres_y_apellidos, 'Instructor ya existe en BD. Se actualizará.', '', CLASIFICACION_DUPLICADO, fila_resultados)
+                        _agregar_error(fila_num, 'nombres_y_apellidos', nombres_y_apellidos,
+                                       'Instructor ya existe en BD (mismo ID). Se actualizará.',
+                                       '', CLASIFICACION_DUPLICADO, fila_resultados)
 
                 if correo_electronico_sena and not EMAIL_REGEX.match(correo_electronico_sena):
                     clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
@@ -431,15 +525,27 @@ class ImportacionExcelService:
                     clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
                     _agregar_error(fila_num, 'correo_electronico_personal', correo_electronico_personal, 'Formato correo personal no válido.', 'Ej: instructor@gmail.com', CLASIFICACION_ADVERTENCIA, fila_resultados)
 
-                fecha_nacimiento = _parsear_fecha_espanola(fecha_nacimiento_str)
-                if fecha_nacimiento_str and fecha_nacimiento is None:
-                    clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
-                    _agregar_error(
-                        fila_num, 'fecha_nacimiento', fecha_nacimiento_str,
-                        'Formato fecha no reconocido. Use "17 DE AGOSTO DE 1981".',
-                        'Verifique el formato de la fecha.',
-                        CLASIFICACION_ADVERTENCIA, fila_resultados,
-                    )
+                fecha_nacimiento = None
+                if fecha_nacimiento_str:
+                    if isinstance(fecha_nacimiento_str, (date, datetime)):
+                        fecha_nacimiento = fecha_nacimiento_str if isinstance(fecha_nacimiento_str, date) else fecha_nacimiento_str.date()
+                    else:
+                        fecha_nacimiento = _parsear_fecha_espanola(fecha_nacimiento_str)
+                    if fecha_nacimiento is None:
+                        try:
+                            import datetime as _dt
+                            if re.match(r'^\d{4}-\d{2}-\d{2}$', str(fecha_nacimiento_str)):
+                                y, m, d = str(fecha_nacimiento_str).split('-')
+                                fecha_nacimiento = _dt.date(int(y), int(m), int(d))
+                        except Exception:
+                            pass
+                    if fecha_nacimiento is None:
+                        clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
+                        _agregar_error(
+                            fila_num, 'fecha_nacimiento', fecha_nacimiento_str,
+                            'Formato fecha no reconocido. Use "YYYY-MM-DD", "17 DE AGOSTO DE 1981" o fecha Excel.',
+                            '', CLASIFICACION_ADVERTENCIA, fila_resultados,
+                        )
 
                 programas_nombres = []
                 programas_nombres_existentes = []
@@ -467,9 +573,9 @@ class ImportacionExcelService:
                     'numero_identificacion': numero_identificacion,
                     'nombres': nombres,
                     'apellidos': apellidos,
-                    'correo_sena': correo_electronico_sena,
-                    'correo_personal': correo_electronico_personal,
-                    'telefono': numero_telefono,
+                    'correo_sena': correo_electronico_sena or None,
+                    'correo_personal': correo_electronico_personal or None,
+                    'telefono': numero_telefono or None,
                     'fecha_nacimiento': fecha_nacimiento.isoformat() if fecha_nacimiento else None,
                     'programas_nombres': programas_nombres_existentes,
                 }
@@ -481,8 +587,13 @@ class ImportacionExcelService:
                 grado = datos.get('grado', '')
                 municipio = datos.get('municipio', '')
                 lider_nombre = datos.get('lider_nombre', '')
+                instructor_cedula = datos.get('instructor_cedula', '') or ''
                 telefono_instructor = datos.get('telefono_instructor', '')
                 correo_instructor = datos.get('correo_instructor', '')
+                jornada = datos.get('jornada', '') or None
+                modalidad = datos.get('modalidad', '') or None
+                fecha_inicio = datos.get('fecha_inicio', '') or None
+                fecha_fin = datos.get('fecha_fin', '') or None
 
                 if ficha_7_digitos:
                     ficha_solo_numeros = re.sub(r'\D', '', ficha_7_digitos)
@@ -535,12 +646,14 @@ class ImportacionExcelService:
                         )
 
                 instructor_lider_id = None
-                if lider_nombre or correo_instructor:
+                if instructor_cedula or lider_nombre or correo_instructor:
                     from apps.personas.models import Persona as PersonaModel
                     from apps.instructores.models import Instructor
                     qs = Instructor.objects.filter(activo=True).select_related('persona')
                     encontrado = None
-                    if correo_instructor:
+                    if instructor_cedula:
+                        encontrado = qs.filter(persona__numero_identificacion=str(instructor_cedula).strip()).first()
+                    if not encontrado and correo_instructor:
                         encontrado = qs.filter(
                             models.Q(persona__correo_sena__iexact=correo_instructor)
                             | models.Q(persona__correo_personal__iexact=correo_instructor)
@@ -560,12 +673,12 @@ class ImportacionExcelService:
                             ).first()
                     if encontrado:
                         instructor_lider_id = encontrado.id
-                    elif lider_nombre or correo_instructor:
+                    elif lider_nombre or correo_instructor or instructor_cedula:
                         clasificacion_fila = max(clasificacion_fila, CLASIFICACION_ADVERTENCIA)
                         _agregar_error(
-                            fila_num, 'lider_nombre', lider_nombre,
+                            fila_num, 'instructor_lider', lider_nombre or instructor_cedula,
                             'Instructor líder no encontrado. Se guardará la ficha sin instructor asignado.',
-                            'Verifique el nombre/correo del instructor.',
+                            'Verifique el nombre/cédula/correo del instructor (instructores deben importarse primero).',
                             CLASIFICACION_ADVERTENCIA, fila_resultados,
                         )
 
@@ -582,8 +695,13 @@ class ImportacionExcelService:
                     'grado': grado,
                     'municipio': municipio,
                     'instructor_lider_id': instructor_lider_id,
+                    'instructor_cedula': instructor_cedula,
                     'telefono_instructor': telefono_instructor,
                     'correo_instructor': correo_instructor,
+                    'jornada': jornada,
+                    'modalidad': modalidad,
+                    'fecha_inicio': fecha_inicio,
+                    'fecha_fin': fecha_fin,
                 }
 
             elif tipo_importacion == 'proyectos':
@@ -888,6 +1006,15 @@ class ImportacionExcelService:
                     continue
                 nombre = datos['nombre']
                 codigo = datos.get('codigo') or ''
+                duracion_meses = datos.get('duracion_meses') or None
+                if duracion_meses:
+                    try:
+                        duracion_meses = int(re.sub(r'\D', '', str(duracion_meses)))
+                    except Exception:
+                        duracion_meses = None
+                        pass
+                sector = datos.get('sector') or None
+                descripcion = datos.get('descripcion') or None
                 if not codigo:
                     usados = set(ProgramaTecnico.objects.values_list('codigo', flat=True))
                     codigo = _generar_codigo_programa(nombre, usados_set=usados, existe_bd_fn=lambda c: False)
@@ -896,15 +1023,28 @@ class ImportacionExcelService:
                 if obj is None:
                     obj = ProgramaTecnico.objects.filter(codigo=codigo).first()
                     if obj is None:
-                        obj = ProgramaTecnico.objects.create(codigo=codigo, nombre=nombre[:200])
+                        obj = ProgramaTecnico.objects.create(
+                            codigo=codigo, nombre=nombre[:200],
+                            duracion_meses=duracion_meses,
+                            sector=(sector[:120] if sector else None),
+                            descripcion=(descripcion[:2000] if descripcion else None),
+                            activo=True,
+                        )
                         created = True
                     else:
                         obj.nombre = nombre[:200]
+                        if duracion_meses: obj.duracion_meses = duracion_meses
+                        if sector: obj.sector = sector[:120]
+                        if descripcion: obj.descripcion = descripcion[:2000]
+                        obj.activo = True
                         obj.save()
                 else:
                     obj.nombre = nombre[:200]
-                    if not obj.codigo:
-                        obj.codigo = codigo
+                    if not obj.codigo: obj.codigo = codigo
+                    if duracion_meses: obj.duracion_meses = duracion_meses
+                    if sector: obj.sector = sector[:120]
+                    if descripcion: obj.descripcion = descripcion[:2000]
+                    obj.activo = True
                     obj.save()
                 info_fila['accion'] = 'CREATE' if created else 'UPDATE'
                 info_fila['id'] = obj.id
@@ -924,6 +1064,7 @@ class ImportacionExcelService:
                     'correo_personal': datos.get('correo_personal') or None,
                     'fecha_nacimiento': datos.get('fecha_nacimiento') or None,
                     'tipo_persona': 'INSTRUCTOR',
+                    'activo': True,
                 }
                 if request and hasattr(request, 'user') and request.user.is_authenticated:
                     persona_defaults['creado_por'] = request.user
@@ -932,7 +1073,11 @@ class ImportacionExcelService:
                     numero_identificacion=datos['numero_identificacion'],
                     defaults=persona_defaults,
                 )
+                # Asegurarse perfil instructor activo
                 instructor, i_created = Instructor.objects.get_or_create(persona=persona)
+                if not i_created and not instructor.activo:
+                    instructor.activo = True
+                    instructor.save(update_fields=['activo'])
                 programas_nombres = datos.get('programas_nombres') or []
                 if programas_nombres:
                     progs = ProgramaTecnico.objects.filter(nombre__in=[p for p in programas_nombres])
@@ -950,17 +1095,36 @@ class ImportacionExcelService:
                     continue
                 defaults = {}
                 if datos.get('grado') is not None:
-                    defaults['grado'] = datos.get('grado')[:10] or '11'
+                    defaults['grado'] = str(datos.get('grado') or '11')[:10] or '11'
                 if datos.get('municipio') is not None:
-                    defaults['municipio'] = datos.get('municipio')[:100]
+                    defaults['municipio'] = (datos.get('municipio') or '')[:100] or None
                 if datos.get('instructor_lider_id'):
                     defaults['instructor_lider_id'] = datos['instructor_lider_id']
                 if datos.get('telefono_instructor'):
-                    defaults['telefono_instructor'] = (datos.get('telefono_instructor') or '')[:30] or None
+                    defaults['telefono_instructor'] = (str(datos.get('telefono_instructor') or '')[:30] or None)
                 if datos.get('correo_instructor'):
-                    defaults['correo_instructor'] = datos.get('correo_instructor') or None
+                    defaults['correo_instructor'] = (datos.get('correo_instructor') or None)
+                if datos.get('jornada'):
+                    defaults['jornada'] = str(datos.get('jornada'))[:50]
+                if datos.get('modalidad'):
+                    defaults['modalidad'] = str(datos.get('modalidad'))[:50]
+                # fechas inicio/fin: parsear si llega date/datetime/string
+                for campof, campod in [('fecha_inicio', 'fecha_inicio'), ('fecha_fin', 'fecha_fin')]:
+                    v = datos.get(campof)
+                    if v:
+                        if isinstance(v, (date, datetime)):
+                            defaults[campod] = v if isinstance(v, date) else v.date()
+                        else:
+                            vs = str(v).strip()
+                            m = re.match(r'^(\d{4})-(\d{2})-(\d{2})$', vs)
+                            if m:
+                                try:
+                                    defaults[campod] = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                                except Exception:
+                                    pass
                 defaults['institucion_id'] = datos['institucion_id']
                 defaults['programa_id'] = datos['programa_id']
+                defaults['activo'] = True
                 obj, created = Ficha.objects.update_or_create(
                     numero=datos['numero'],
                     defaults=defaults,
