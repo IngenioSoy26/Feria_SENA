@@ -47,81 +47,85 @@ BADGE_ROL_TEXTO = {
 #       (2) TEXTOS y QR SOBRE LAS CAJAS EXISTENTES sin contornos nuevos.
 # =================================================================
 
+# =========================================================================
+# GRID VERTICAL DEFINITIVO — VERIFICADO SIN SOLAPAMIENTO (0,0=inf-izq)
+# Altura total = 135mm. Padding superior/inferior = 3.5mm cada uno.
+#
+#   LÍMITES (Y inf → Y sup):
+#     [3.5mm ── 62.5mm] = ROW6 Caja Informativa Inferior (Proyecto + QR)  H=59mm
+#     [62.5mm ─ 64.5mm] = espacio libre 2mm
+#     [64.5mm ─ 74.5mm] = ROW4 Caja Documento (CC: xxxxxxxx)            H=10mm
+#     [74.5mm ─ 76.5mm] = espacio libre 2mm
+#     [76.5mm ─ 109.5mm] = ROW3 Caja Nombre (Nombre/IE/Municipio)         H=33mm
+#     [109.5mm ─ 111.5mm] = espacio libre 2mm
+#     [111.5mm ─ 123.5mm] = ROW1 Badge rol (título color)                 H=12mm
+#     [123.5mm ─ 131.5mm] = TÍTULO VI Feria / SENA (propiedad de la PNG, NO tocar)
+#
+# GAP MÍNIMO ENTRE FILAS = 2mm (GARANTIZA 0 solapamientos).
+# =========================================================================
+
 POS_BADGE = {
-    'x':   13.4 * mm,
-    'y':   82.0 * mm,
-    'w':   80.2 * mm,
-    'h':   15.0 * mm,
-    'r':    7.0 * mm,
-    'dy_txt': 4.2 * mm,
-    'size':   19,
+    'x':      13.5 * mm,
+    'y':     111.5 * mm,
+    'w':      80 * mm,
+    'h':      12 * mm,
+    'r':       6 * mm,
+    'dy_txt':  3.5 * mm,
+    'size':   18,
 }
 
-# ---------------------------------------------------------------------------
-# CAJA NOMBRE BLANCA con BORDE color rol → FONDO BLANCO SÓLIDO + TEXTO dentro.
-#   - Oculta exactamente el contenido donde irán Nombre/IE/Municipio.
-#   - NUNCA sobrepasa: Y_top = badge.y - 3mm espacio visual
-#   - NUNCA llega al desierto inferior.
-# ---------------------------------------------------------------------------
+# ROW3 = Nombre (fila robusta, la más grande de las 3 centrales)
 POS_CAJA_NOMBRE = {
-    'x':      8 * mm,
-    'y':     42 * mm,
-    'w':     91 * mm,
-    'h':     37 * mm,
-    'r':    8.5 * mm,
-    'borde_grosor': 2.2,
-    'padding_lados':  5 * mm,
-    'y1_texto': 72.5 * mm,   # Nombre (arriba)
-    'y2_texto': 64.5 * mm,   # I.E.
-    'y3_texto': 56.5 * mm,   # Municipio
+    'x':       7 * mm,
+    'y':    76.5 * mm,
+    'w':      93 * mm,
+    'h':      33 * mm,
+    'r':     8.5 * mm,
+    'borde_grosor':  2.2,
+    'padding_lados': 5 * mm,
+    'y1_texto': 103.5 * mm,   # Nombre (12mm abajo del techo ROW3)
+    'y2_texto':  94.5 * mm,   # IE
+    'y3_texto':  85.5 * mm,   # Municipio (9mm sobre piso ROW3)
     'size_1': 20,
     'size_2': 11,
     'size_3': 10.5,
 }
 
-# ---------------------------------------------------------------------------
-# CAJA DOCUMENTO BLANCA borde color rol → FONDO BLANCO SÓLIDO
-#   - No toca el mar ni el verde del badge, solo zona central limpia.
-# ---------------------------------------------------------------------------
+# ROW4 = Documento (fila corta)
 POS_CAJA_DOC = {
-    'x':  23 * mm,
-    'y':  30 * mm,
-    'w':  61 * mm,
-    'h':  10 * mm,
-    'r':   6 * mm,
+    'x':     22 * mm,
+    'y':   64.5 * mm,
+    'w':     63 * mm,
+    'h':     10 * mm,
+    'r':      6 * mm,
     'borde_grosor': 2.0,
-    'y_texto': 33.0 * mm,
+    'y_texto': 67.5 * mm,
     'size':   14,
 }
 
-# ---------------------------------------------------------------------------
-# CAJA INFERIOR GRANDE (Proyecto + QR) borde color rol.
-#   - DENTRO del hueco "foto" de la plantilla → NUNCA sobre el desierto/mar.
-#   - Borde GROSOR color rol → igual que el ejemplo Jorge.
-# ---------------------------------------------------------------------------
+# ROW6 = Caja Inferior Proyecto + QR (GRANDE: 59mm alto)
+#   Distribución INTERNA (top=62.5 bottom=3.5):
+#     ZONA SUP (62.5 → 44.5) = 18mm  = "Proyecto: COD - Nombre" (2 líns si hace falta)
+#     ZONA INF (44.5 → 3.5)  = 41mm  = QR +38mm centrado vertical
 POS_CAJA_INFERIOR = {
-    'x':  19 * mm,
-    'y':   5 * mm,
-    'w':  69 * mm,
-    'h':  23 * mm,      # temporalmente se sobreescribe abajo
-    'r':  9.5 * mm,
+    'x':       6 * mm,
+    'y':     3.5 * mm,
+    'w':      95 * mm,
+    'h':     59 * mm,
+    'r':     9.5 * mm,
     'borde_grosor_exterior': 3.2,
     'borde_grosor_interior': 1.2,
-    'padding':      4 * mm,
-    'y_proyecto':  24.5 * mm,
+    'padding': 4 * mm,
+    # Texto Proyecto (18mm de alto disponible, zona superior):
+    'y_proyecto_1': 56.5 * mm,   # línea 1 (2 líneas si el nombre es largo)
+    'y_proyecto_2': 50.5 * mm,   # línea 2
     'size_label':  11.5,
     'size_valor':  12.5,
-    'qr_size':     0,       # se calcula después
-    'qr_centro_x': 53.5 * mm,
-    'qr_y_inf':    8.5 * mm,
+    # QR (zona inferior de la caja inf):
+    'qr_size':     38 * mm,
+    'qr_centro_x': (6 + 95 / 2) * mm,
+    'qr_y_inf':    5.5 * mm,
 }
-
-# Ampliar la caja inferior a 44mm de alto (para QR 36mm + texto proyecto arriba)
-POS_CAJA_INFERIOR['h'] = 44 * mm
-POS_CAJA_INFERIOR['qr_size'] = 36 * mm
-POS_CAJA_INFERIOR['y_proyecto'] = POS_CAJA_INFERIOR['y'] + POS_CAJA_INFERIOR['h'] - 10 * mm  # 10mm debajo del techo
-POS_CAJA_INFERIOR['qr_centro_x'] = (POS_CAJA_INFERIOR['x'] + POS_CAJA_INFERIOR['x'] + POS_CAJA_INFERIOR['w']) / 2
-POS_CAJA_INFERIOR['qr_y_inf']  = POS_CAJA_INFERIOR['y'] + 4 * mm
 
 
 class EscarapelaPDFService:
@@ -317,31 +321,25 @@ class EscarapelaPDFService:
 
     @staticmethod
     def _caja_inferior_proyecto_y_qr(c, persona, info, rol, dx=0, dy=0):
-        """CAJA BLANCA con BORDE color rol GROSOR (doble borde exterior+interior):
-               ______________    ← exterior color rol
-              |  _________  |    ← interior blanco con línea color rol 1mm
-              | |Proyecto: |  |    10mm desde el techo
-              | |          |  |
-              | |   QR 36mm|  |    4mm desde el suelo
-              | |          |  |
-              | |__________|  |
-              |______________|
+        """CAJA BLANCA GRANDE inferior (ancho 95mm). NUNCA toca el desierto.
+        Distribución VERTICAL 2 zonas:
+            ZONA SUP (~18mm): label Proyecto (si nombre largo 2 líneas).
+            ZONA INF (~41mm): QR 38mm cuadrado centrado).
         """
         p = POS_CAJA_INFERIOR
         x, y, w, h = dx + p['x'], dy + p['y'], p['w'], p['h']
         borde = EscarapelaPDFService._color_borde_rol(rol)
-        # --- exterior (color rol, GROSOR) ---
+        # Exterior color rol, interior blanco con borde delgado color rol.
         c.setFillColor(borde)
         c.roundRect(x, y, w, h, p['r'], fill=1, stroke=0)
-        # --- interior blanco + línea borde color rol delgada ---
         pad = p['padding']
-        xi, yi, wi, hi = x + pad, y + pad, w - 2 * pad, h - 2 * pad
+        xi, yi, wi, hi = x+pad, y+pad, w-2*pad, h-2*pad
         c.setFillColor(white)
-        c.roundRect(xi, yi, wi, hi, max(p['r'] - 4 * mm, 1 * mm), fill=1, stroke=0)
+        c.roundRect(xi, yi, wi, hi, max(p['r']-4*mm, 1*mm), fill=1, stroke=0)
         c.setStrokeColor(borde)
         c.setLineWidth(p['borde_grosor_interior'])
-        c.roundRect(xi, yi, wi, hi, max(p['r'] - 4 * mm, 1 * mm), fill=0, stroke=1)
-        # --- TEXTO PROYECTO (10mm debajo techo interior) ---
+        c.roundRect(xi, yi, wi, hi, max(p['r']-4*mm, 1*mm), fill=0, stroke=1)
+        # --- PROYECTO (ZONA SUP, permite 2 líneas)
         if info['codigo_proyecto'] and info['proyecto']:
             valor = info['codigo_proyecto'] + ' - ' + info['proyecto']
         elif info['proyecto']:
@@ -360,22 +358,54 @@ class EscarapelaPDFService:
             label = 'Proyecto: '
             tam_l = p['size_label']
             tam_v = p['size_valor']
-            max_w_total = wi - 4 * mm
+            max_w_total = wi - 8 * mm
             ancho_l = c.stringWidth(label, 'Helvetica-Bold', tam_l)
             ancho_v = c.stringWidth(valor, 'Helvetica-Bold', tam_v)
-            while ancho_v > max_w_total - ancho_l and tam_v > 7:
-                tam_v -= 0.5
-                ancho_v = c.stringWidth(valor, 'Helvetica-Bold', tam_v)
-            ancho_total = ancho_l + ancho_v
-            x1 = xi + (wi - ancho_total) / 2
-            x2 = x1 + ancho_l
-            yt = dy + p['y_proyecto']
-            c.setFillColor(black)
-            c.setFont('Helvetica-Bold', tam_l)
-            c.drawString(x1, yt, label)
-            c.setFont('Helvetica-Bold', tam_v)
-            c.drawString(x2, yt, valor)
-        # --- QR (4mm desde el suelo interior) ---
+            # Probar 1 línea
+            if ancho_l + ancho_v <= max_w_total:
+                ancho_total = ancho_l + ancho_v
+                x1 = xi + (wi - ancho_total) / 2
+                x2 = x1 + ancho_l
+                yt = dy + p['y_proyecto_1']
+                c.setFillColor(black)
+                c.setFont('Helvetica-Bold', tam_l)
+                c.drawString(x1, yt, label)
+                c.setFont('Helvetica-Bold', tam_v)
+                c.drawString(x2, yt, valor)
+            else:
+                # 2 LÍNEAS (para proyectos largos:
+                # Línea 1 = "Proyecto: COD-PROY"
+                parte1 = (info['codigo_proyecto'] + ' - ' + info['proyecto'])
+                if info['codigo_proyecto'] and info['proyecto']:
+                    linea1 = label + info['codigo_proyecto'] + ' - '
+                    linea2 = info['proyecto']
+                else:
+                    mitad = len(valor)//2
+                    linea1 = valor[:mitad]
+                    linea2 = valor[mitad:]
+                    for sep in (' - ', ' · ', ': ', ' de ', ' y '):
+                        if sep in valor:
+                            a, b = valor.split(sep, 1)
+                            linea1 = a + sep
+                            linea2 = b
+                            break
+                ancho_l1 = c.stringWidth(linea1, 'Helvetica-Bold', tam_l)
+                while ancho_l1 > max_w_total and tam_l > 7:
+                    tam_l -= 0.5
+                    ancho_l1 = c.stringWidth(linea1, 'Helvetica-Bold', tam_l)
+                x1_lin1 = xi + (wi - ancho_l1) / 2
+                c.setFillColor(black)
+                c.setFont('Helvetica-Bold', tam_l)
+                c.drawString(x1_lin1, dy + p['y_proyecto_1'], linea1)
+                # Línea 2 centrada
+                ancho_l2 = c.stringWidth(linea2, 'Helvetica-Bold', tam_v)
+                while ancho_l2 > max_w_total and tam_v > 7:
+                    tam_v -= 0.5
+                    ancho_l2 = c.stringWidth(linea2, 'Helvetica-Bold', tam_v)
+                x1_lin2 = xi + (wi - ancho_l2) / 2
+                c.setFont('Helvetica-Bold', tam_v)
+                c.drawString(x1_lin2, dy + p['y_proyecto_2'], linea2)
+        # --- QR (ZONA INF)
         qr_s = p['qr_size']
         qr_x = dx + p['qr_centro_x'] - qr_s / 2
         qr_y = dy + p['qr_y_inf']
