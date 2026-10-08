@@ -77,7 +77,7 @@ BADGE_ROL_TEXTO = {
 
 POS_BADGE = {
     "x": 19 * mm,
-    "y": 78.5 * mm,
+    "y": 72.5 * mm,
     "w": 69 * mm,
     "h": 8.5 * mm,
     "r": 4.25 * mm,
@@ -87,17 +87,17 @@ POS_BADGE = {
 
 POS_CAJA_NOMBRE = {
     "x": 7 * mm,
-    "y": 58 * mm,
+    "y": 51 * mm,
     "w": 93 * mm,
     "h": 18 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.0,
     "padding_lados": 5 * mm,
-    "fill_alpha": 0.64,
+    "fill_alpha": 0.40,
 
     # Baselines (dentro de la caja, de ARRIBA hacia ABAJO)
-    "y_nombre": 71.3 * mm,
-    "y_institucion": 63.6 * mm,
+    "y_nombre": 64.3 * mm,
+    "y_institucion": 56.0 * mm,
 
     "size_nombre": 14,
     "size_institucion": 8.2,
@@ -106,12 +106,13 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 26 * mm,
-    "y": 47.3 * mm,
+    "y": 40.7 * mm,
     "w": 55 * mm,
     "h": 7.5 * mm,
     "r": 3.75 * mm,
     "borde_grosor": 0.9,
-    "y_texto": 49.9 * mm,
+    "fill_alpha": 0.40,
+    "y_texto": 43.4 * mm,
     "size": 9.5,
 }
 
@@ -120,25 +121,25 @@ POS_CAJA_INFERIOR = {
     "x": 9 * mm,
     "y": 4.0 * mm,
     "w": 89 * mm,
-    "h": 40.8 * mm,
+    "h": 33.5 * mm,
     "r": 6 * mm,
     "borde_grosor": 1.1,
-    "fill_alpha": 0.58,
+    "fill_alpha": 0.40,
 
-    # NOMBRE-PROYECTO solo 1 línea (ELIMINADO prefijo "Proyecto: ...")
-    "y_valor_solo": 40.0 * mm,
+    # NOMBRE-PROYECTO solo 1 línea
+    "y_valor_solo": 32.6 * mm,
     "size_valor_solo": 10.0,
 
-    # PROYECTO 2 líneas (label + valor) — zona superior de la caja inf.
-    "y_proyecto_1": 40.8 * mm,
+    # PROYECTO 2 líneas (label + valor) — compactado para no invadir QR
+    "y_proyecto_1": 34.6 * mm,
     "size_label": 8.8,
-    "y_proyecto_2": 36.0 * mm,
-    "size_valor": 9.2,
+    "y_proyecto_2": 31.8 * mm,
+    "size_valor": 9.0,
 
-    # QR grande + padding blanco alrededor para facilitar escaneo
-    "qr_size": 26 * mm,
+    # QR compactado 23mm → top = y_inf + 23 = 28.8, gap 3.0mm vs L2 31.8
+    "qr_size": 23 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 6.3 * mm,
+    "qr_y_inf": 5.8 * mm,
 }
 
 
@@ -503,7 +504,9 @@ class EscarapelaPDFService:
         w = p["w"]
         h = p["h"]
 
+        c.saveState()
         c.setFillColor(white)
+        c.setFillAlpha(p["fill_alpha"])
         c.setStrokeColor(borde)
         c.setLineWidth(p["borde_grosor"])
 
@@ -516,6 +519,7 @@ class EscarapelaPDFService:
             fill=1,
             stroke=1,
         )
+        c.restoreState()
 
         max_w = w - 2 * p["padding_lados"]
 
@@ -575,7 +579,9 @@ class EscarapelaPDFService:
         w = p["w"]
         h = p["h"]
 
+        c.saveState()
         c.setFillColor(white)
+        c.setFillAlpha(p["fill_alpha"])
         c.setStrokeColor(borde)
         c.setLineWidth(p["borde_grosor"])
 
@@ -588,6 +594,7 @@ class EscarapelaPDFService:
             fill=1,
             stroke=1,
         )
+        c.restoreState()
 
         tipo = (info["tipo_identificacion"] or "CC").upper()
         numero = str(info["numero_identificacion"] or "")
@@ -628,9 +635,10 @@ class EscarapelaPDFService:
         w = p["w"]
         h = p["h"]
 
-        # Caja blanca simple.
-        # Se elimina el marco verde exterior grueso.
+        # Caja blanca con transparencia (solo el fondo, no el borde)
+        c.saveState()
         c.setFillColor(white)
+        c.setFillAlpha(p["fill_alpha"])
         c.setStrokeColor(borde)
         c.setLineWidth(p["borde_grosor"])
 
@@ -643,6 +651,7 @@ class EscarapelaPDFService:
             fill=1,
             stroke=1,
         )
+        c.restoreState()
 
         # ----------------------------------------------------
         # TEXTO DEL PROYECTO
@@ -700,14 +709,14 @@ class EscarapelaPDFService:
             )
 
             if l2b:
-                # Dos líneas: alinear centro-verticalmente alrededor de
-                # p["y_proyecto_2"] con gap 3.1mm entre líneas.
+                # Dos líneas compactadas: centroide alrededor de
+                # p["y_proyecto_2"] con gap 2.6mm entre líneas.
                 EscarapelaPDFService._centrar_en_caja(
                     c=c,
                     texto=l2a,
                     caja_x=x,
                     caja_w=w,
-                    y=dy + p["y_proyecto_2"] + 2.1 * mm,
+                    y=dy + p["y_proyecto_2"] + 1.3 * mm,
                     fuente="Helvetica-Bold",
                     tam=7.8,
                     color=black,
@@ -720,7 +729,7 @@ class EscarapelaPDFService:
                     texto=l2b,
                     caja_x=x,
                     caja_w=w,
-                    y=dy + p["y_proyecto_2"] - 1.8 * mm,
+                    y=dy + p["y_proyecto_2"] - 1.3 * mm,
                     fuente="Helvetica-Bold",
                     tam=7.8,
                     color=black,
