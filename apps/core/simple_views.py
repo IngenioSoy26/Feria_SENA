@@ -354,14 +354,24 @@ class WizardRegistroView(View):
         import base64
         _catalogo_raw = json.dumps(catalogo, ensure_ascii=False, default=str).encode('utf-8')
         catalogo_b64 = base64.b64encode(_catalogo_raw).decode('ascii')
-        return render(request, 'simple/wizard_registro.html', {
-            'evento': evento,
-            'municipios': sorted(set(
+        municipios_unicos = sorted(
+            set(
                 list(InstitucionEducativa.objects
                      .exclude(municipio__isnull=True)
                      .values_list('municipio__nombre', flat=True).distinct())
-                + ['Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Albania', 'Dibulla', 'San Juan del Cesar', 'Fonseca', 'Barrancas', 'Hatonuevo']
-            ), key=lambda s: (s or '').lower()),
+                + ['RIOHACHA', 'MAICAO', 'URIBIA', 'MANAURE', 'ALBANIA', 'DIBULLA', 'SAN JUAN DEL CESAR', 'FONSECA', 'BARRANCAS', 'HATONUEVO']
+            ),
+            key=lambda s: (s or '').lower()
+        )
+        municipios_list = [
+            {'nombre': (m or '').strip().upper() or 'SIN MUNICIPIO'}
+            for m in municipios_unicos
+            if (m or '').strip()
+        ]
+        return render(request, 'simple/wizard_registro.html', {
+            'evento': evento,
+            'municipios': municipios_unicos,
+            'municipios_list': municipios_list,
             'tipos_identificacion': ['CC', 'TI', 'PPT'],
             'max_aprendices': settings.MAX_APRENDICES_POR_PROYECTO,
             'fichas_activas': fichas_activas,

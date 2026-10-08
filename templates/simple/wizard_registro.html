@@ -25,52 +25,40 @@
       <h5 class="mb-3 text-sena-dark">🏫 Datos del proyecto</h5>
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <label class="form-label">Institución Educativa <span class="req">*</span></label>
-          <select name="nombre_ie" id="inp-nombre-ie" class="form-field select combo-filtro" data-combo="ie" required>
-            <option value="">⬇️ Seleccione o busque una Institución Educativa</option>
-            {% for ie in ies_list %}
-              {% if ie.nombre %}
-                <option value="{{ ie.nombre }}"
-                        data-codigo="{{ ie.codigo|default:'' }}"
-                        data-municipio="{{ ie.municipio|default:'' }}"
-                        data-departamento="{{ ie.departamento|default:'' }}">
-                  {% if ie.codigo %}{{ ie.codigo }} · {% endif %}{{ ie.nombre }}{% if ie.municipio %} · {{ ie.municipio }}{% endif %}
-                </option>
+          <label class="form-label">1️⃣ Municipio <span class="req">*</span></label>
+          <select name="municipio_sel" id="inp-municipio-sel" class="form-field select combo-filtro" data-combo="municipio" required>
+            <option value="">⬇️ Primero seleccione un Municipio</option>
+            {% for m in municipios_list %}
+              {% if m.nombre %}
+                <option value="{{ m.nombre }}">{{ m.nombre }}</option>
               {% endif %}
             {% endfor %}
           </select>
+          <small id="departamento-ie-label" class="d-block mt-1 text-sena-dark" style="font-size:0.85rem;">
+            <i class="bi bi-geo-alt me-1"></i><span>Departamento: LA GUAJIRA</span>
+          </small>
+          <input type="hidden" name="municipio_ie" id="hidden-municipio-ie" value="">
         </div>
         <div class="col-12 col-md-6">
-          <label class="form-label">Municipio <small class="hint-sena">(auto de la I.E seleccionada)</small></label>
-          <select name="municipio_ie_display" id="inp-municipio-ie" class="form-field select" disabled style="background:#f1f5ec;border-color:#d6e8bc;cursor:not-allowed;">
-            <option value="">⬇️ Primero seleccione una Institución Educativa</option>
+          <label class="form-label">2️⃣ Institución Educativa <span class="req">*</span> <span class="hint-sena" id="ie-count-hint"></span></label>
+          <select name="nombre_ie" id="inp-nombre-ie" class="form-field select combo-filtro" data-combo="ie" required disabled style="background:#f1f5ec;border-color:#d6e8bc;cursor:not-allowed;">
+            <option value="">⬇️ Seleccione primero el Municipio</option>
           </select>
-          <input type="hidden" name="municipio_ie" id="hidden-municipio-ie" value="">
-          <small id="departamento-ie-label" class="d-block mt-1 text-muted" style="font-size:0.85rem;">
-            <i class="bi bi-geo-alt me-1"></i><span>Departamento: —</span>
-          </small>
         </div>
 
         <div class="col-12 col-md-6">
-          <label class="form-label">Programa Técnico <span class="req">*</span></label>
-          <select name="nombre_programa" id="inp-nombre-programa" class="form-field select combo-filtro" data-combo="programa" required>
-            <option value="">⬇️ Seleccione o busque un Programa Técnico</option>
-            {% for p in programas_list %}
-              {% if p.nombre %}
-                <option value="{{ p.nombre }}" data-codigo="{{ p.codigo|default:'' }}">
-                  {{ p.nombre }}{% if p.codigo %} · {{ p.codigo }}{% endif %}
-                </option>
-              {% endif %}
-            {% endfor %}
+          <label class="form-label">3️⃣ Programa Técnico <span class="req">*</span> <span class="hint-sena" id="programas-count-hint"></span></label>
+          <select name="nombre_programa" id="inp-nombre-programa" class="form-field select combo-filtro" data-combo="programa" required disabled style="background:#f1f5ec;border-color:#d6e8bc;cursor:not-allowed;">
+            <option value="">⬇️ Seleccione primero la Institución Educativa</option>
           </select>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">
-            Código de Ficha <span class="req">*</span>
+            4️⃣ Código de Ficha <span class="req">*</span>
             <span class="hint-sena" id="fichas-count-hint"></span>
           </label>
-          <select name="codigo_ficha" id="inp-codigo-ficha" class="form-field select combo-filtro" data-combo="ficha" required>
-            <option value="">⬇️ Seleccione o busque un código de Ficha (7 dígitos)</option>
+          <select name="codigo_ficha" id="inp-codigo-ficha" class="form-field select combo-filtro" data-combo="ficha" required disabled style="background:#f1f5ec;border-color:#d6e8bc;cursor:not-allowed;">
+            <option value="">⬇️ Seleccione primero el Programa Técnico</option>
           </select>
         </div>
 
@@ -162,86 +150,222 @@
   CAT.programas = Array.isArray(CAT.programas)? CAT.programas : [];
   CAT.instructores = Array.isArray(CAT.instructores)? CAT.instructores : [];
 
+  const munCombo = document.getElementById('inp-municipio-sel');
   const ieCombo = document.getElementById('inp-nombre-ie');
   const progCombo = document.getElementById('inp-nombre-programa');
   const fichaCombo = document.getElementById('inp-codigo-ficha');
   const insDL = document.getElementById('instructor_dl');
   const hintFichas = document.getElementById('fichas-count-hint');
+  const hintIE = document.getElementById('ie-count-hint');
+  const hintProg = document.getElementById('programas-count-hint');
 
-  const inpMun = document.getElementById('inp-municipio-ie');
   const inpIns = document.getElementById('inp-ins-nombre');
   const inpDoc = document.getElementById('inp-ins-doc');
   const inpNombreProyecto = document.querySelector('[name="nombre_proyecto"]');
 
-  function llenarCombo(sel, placeholder, items, extraFilter){
-    if(!sel) return 0;
-    // Preserva el placeholder inicial
-    const itemsFiltered = (extraFilter && typeof extraFilter === 'function') ? items.filter(extraFilter) : items;
-    // Mantener selected value si sigue disponible
-    const prevValue = sel.value || '';
-    try{ sel.innerHTML = ''; }catch(_){ while(sel.firstChild) sel.removeChild(sel.firstChild); }
-    if(placeholder){
-      const ph = document.createElement('option');
-      ph.value = ''; ph.textContent = String(placeholder);
-      sel.appendChild(ph);
+  function uniq(arr, keyFn){
+    const seen = new Set();
+    const out = [];
+    for(const x of (arr||[])){
+      const k = keyFn? keyFn(x) : x;
+      if(seen.has(k)) continue;
+      seen.add(k);
+      out.push(x);
     }
-    for(const it of itemsFiltered){
+    return out;
+  }
+
+  function llenarCombo(sel, placeholder, items){
+    if(!sel) return 0;
+    try{ sel.innerHTML = ''; }catch(_){ while(sel && sel.firstChild) sel.removeChild(sel.firstChild); }
+    if(placeholder){
+      const p = document.createElement('option');
+      p.value = '';
+      p.textContent = String(placeholder);
+      sel.appendChild(p);
+    }
+    let count = 0;
+    for(const it of (items||[])){
       if(!it || !it.value) continue;
       const opt = document.createElement('option');
       opt.value = String(it.value);
-      if(it.label){ opt.textContent = String(it.label); } else { opt.textContent = String(it.value); }
+      opt.textContent = it.label? String(it.label) : String(it.value);
       if(it.dataset && typeof it.dataset === 'object'){
         for(const k of Object.keys(it.dataset)){
           try{ opt.setAttribute('data-'+k, (it.dataset[k]==null?'':String(it.dataset[k]))); }catch(_){}
         }
       }
       sel.appendChild(opt);
+      count++;
     }
-    // Restaurar selected si aun existe
-    if(prevValue){
-      const vals = Array.from(sel.options).map(o => o.value);
-      if(vals.indexOf(prevValue) !== -1){ sel.value = prevValue; }
-    }
-    return sel.options.length - (placeholder? 1 : 0);
+    return count;
   }
 
-  function uniq(arr, keyFn){
-    const seen = new Set(); const out = [];
-    for(const x of arr){
-      const k = keyFn? keyFn(x) : x;
-      if(k==='' || k==null || seen.has(k)) continue;
-      seen.add(k); out.push(x);
+  function habilitarCombo(sel, enabled){
+    if(!sel) return;
+    if(enabled){
+      sel.disabled = false;
+      sel.style.background = '';
+      sel.style.borderColor = '';
+      sel.style.cursor = '';
+    } else {
+      sel.disabled = true;
+      sel.style.background = '#f1f5ec';
+      sel.style.borderColor = '#d6e8bc';
+      sel.style.cursor = 'not-allowed';
     }
-    return out;
   }
 
-  window.__FICHA_DATA_BY_NUM__ = new Map();
   function poblarTodo(){
-    // Inicializar Mapa índice por # ficha (7 dígitos)
-    window.__FICHA_DATA_BY_NUM__.clear();
+    // No poblamos nada inicial. El flujo es MUNICIPIO -> IE -> PROGRAMA -> FICHA.
+    // Solo inicializamos el mapa de fichas por número (para el autollenado final).
+    window.__FICHA_DATA_BY_NUM__ = new Map();
     for(const f of (CAT.fichas || [])){
       const num = String(f.numero || '').trim();
       if(/^\d{7}$/.test(num)) window.__FICHA_DATA_BY_NUM__.set(num, f);
     }
-    // (1) Instituciones combo (todas, ordenadas): CÓDIGO ÚNICO · NOMBRE · MUNICIPIO
-    const ieItems = uniq((CAT.instituciones||[]).map(x => {
-      const nom = (x.nombre||'').toUpperCase();
-      const cod = String(x.codigo || x.codigo_dane || '').trim().toUpperCase();
-      const mun = String(x.municipio || '').toUpperCase();
-      const dpto = String(x.departamento || '').toUpperCase();
-      const labelPiezas = [];
-      if(cod) labelPiezas.push(cod);
-      labelPiezas.push(nom);
-      if(mun) labelPiezas.push(mun);
-      return {
-        value: nom,
-        label: labelPiezas.join(' · '),
-        dataset: { municipio: mun || '', codigo: cod || '', departamento: dpto || '' }
-      };
-    })), x => x.value);
+    // MUNICIPIO combo: ya está renderizado SERVER-SIDE con opciones.
+    if(munCombo && munCombo.options && munCombo.options.length <= 1){
+      // Caso inusual: sin municipios, usar todos los de CAT.instituciones.
+      const munSet = new Map();
+      for(const ie of (CAT.instituciones||[])){
+        const m = String(ie.municipio||'').toUpperCase().trim();
+        const d = String(ie.departamento||'').toUpperCase().trim();
+        if(m && !munSet.has(m)) munSet.set(m, d||'LA GUAJIRA');
+      }
+      if(munSet.size > 0){
+        const opts = [{ value:'', label:'⬇️ Primero seleccione un Municipio' }];
+        for(const [m, d] of munSet.entries()) opts.push({value:m, label:m + (d?' · '+d:'')});
+        opts.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
+        llenarCombo(munCombo, null, opts);
+      }
+    }
+    // Estado inicial deshabilitado
+    habilitarCombo(ieCombo, false);
+    habilitarCombo(progCombo, false);
+    habilitarCombo(fichaCombo, false);
+  }
+
+  function actualizarCascada(){
+    const munSel = (munCombo && munCombo.value || '').toUpperCase().trim();
+    const ieSel = (ieCombo && ieCombo.value || '').toUpperCase().trim();
+    const progSel = (progCombo && progCombo.value || '').toUpperCase().trim();
+
+    // ===== 1) MUNICIPIO SELECCIONADO -> HABILITAR Y LLENAR INSTITUCIONES =====
+    if(!munSel){
+      llenarCombo(ieCombo, '⬇️ Seleccione primero el Municipio', []);
+      habilitarCombo(ieCombo, false);
+      llenarCombo(progCombo, '⬇️ Seleccione primero la Institución Educativa', []);
+      habilitarCombo(progCombo, false);
+      llenarCombo(fichaCombo, '⬇️ Seleccione primero el Programa Técnico', []);
+      habilitarCombo(fichaCombo, false);
+      if(hintIE) hintIE.textContent = '';
+      if(hintProg) hintProg.textContent = '';
+      if(hintFichas) hintFichas.textContent = '';
+      // hidden municipio
+      const hiddenM = document.getElementById('hidden-municipio-ie');
+      if(hiddenM) hiddenM.value = '';
+      return;
+    }
+    // Guardar hidden de municipio (obligatorio para el POST)
+    const hiddenM = document.getElementById('hidden-municipio-ie');
+    if(hiddenM) hiddenM.value = munSel;
+
+    // Filtrar I.E. por municipio
+    const ieItems = uniq((CAT.instituciones||[])
+      .filter(x => String(x.municipio||'').toUpperCase().trim() === munSel)
+      .map(x => {
+        const nom = (x.nombre||'').toUpperCase();
+        const cod = String(x.codigo || x.codigo_dane || '').trim().toUpperCase();
+        const mun = String(x.municipio || '').toUpperCase();
+        const dpto = String(x.departamento || '').toUpperCase();
+        const labelPiezas = [];
+        if(cod) labelPiezas.push(cod);
+        labelPiezas.push(nom);
+        return {
+          value: nom,
+          label: labelPiezas.join(' · '),
+          dataset: { municipio: mun || '', codigo: cod || '', departamento: dpto || '' }
+        };
+      }), x => x.value);
     ieItems.sort((a,b)=> (a.label||'').localeCompare(b.label||'', 'es'));
-    llenarCombo(ieCombo, '⬇️ Seleccione o busque una Institución Educativa', ieItems);
-    actualizarCascada();
+    const nIE = llenarCombo(ieCombo, '⬇️ Seleccione o busque una Institución Educativa', ieItems);
+    habilitarCombo(ieCombo, nIE > 0);
+    if(hintIE) hintIE.textContent = (nIE>0? (' · ' + nIE + ' I.E. disponibles') : ' · (sin I.E. en este municipio)');
+    if(!hintIE && document.getElementById('departamento-ie-label')){
+      const span = document.querySelector('#departamento-ie-label span');
+      if(span) span.textContent = 'Departamento: LA GUAJIRA';
+    }
+
+    // ===== 2) I.E. SELECCIONADA -> HABILITAR Y LLENAR PROGRAMAS (solo los que tienen FICHAS en esa I.E.) =====
+    if(!ieSel){
+      llenarCombo(progCombo, '⬇️ Seleccione primero la Institución Educativa', []);
+      habilitarCombo(progCombo, false);
+      llenarCombo(fichaCombo, '⬇️ Seleccione primero el Programa Técnico', []);
+      habilitarCombo(fichaCombo, false);
+      if(hintProg) hintProg.textContent = '';
+      if(hintFichas) hintFichas.textContent = '';
+      return;
+    }
+    const progSet = new Map();
+    for(const f of (CAT.fichas||[])){
+      if(String(f.ie||'').toUpperCase().trim() !== ieSel) continue;
+      const pnom = String(f.programa||'').toUpperCase().trim();
+      if(!pnom) continue;
+      if(!progSet.has(pnom)) progSet.set(pnom, String(f.programa_codigo||''));
+    }
+    // Si la I.E. no tiene FICHAS cargadas (aún), agregar los programas generales de CAT.programas
+    if(progSet.size === 0){
+      for(const p of (CAT.programas||[])){
+        const pnom = String(p.nombre||'').toUpperCase().trim();
+        if(pnom && !progSet.has(pnom)) progSet.set(pnom, String(p.codigo||''));
+      }
+    }
+    const progItems = [];
+    for(const [pnom, pcod] of progSet.entries()){
+      progItems.push({ value: pnom, label: pcod? (pnom + ' · ' + pcod) : pnom, dataset: { codigo: pcod||'' } });
+    }
+    progItems.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
+    const nProg = llenarCombo(progCombo, '⬇️ Seleccione o busque un Programa Técnico', progItems);
+    habilitarCombo(progCombo, nProg > 0);
+    if(hintProg) hintProg.textContent = (nProg>0? (' · ' + nProg + ' programas') : ' · (sin programas)');
+
+    // ===== 3) PROGRAMA SELECCIONADO -> HABILITAR Y LLENAR FICHAS (solo IE+Programa) =====
+    if(!progSel){
+      llenarCombo(fichaCombo, '⬇️ Seleccione primero el Programa Técnico', []);
+      habilitarCombo(fichaCombo, false);
+      if(hintFichas) hintFichas.textContent = '';
+      return;
+    }
+    const fichasFiltradas = (CAT.fichas||[]).filter(f => {
+      const fie = String(f.ie||'').toUpperCase().trim();
+      const fpr = String(f.programa||'').toUpperCase().trim();
+      return fie === ieSel && fpr === progSel;
+    });
+    fichasFiltradas.sort((a,b)=> String(a.numero||'').localeCompare(String(b.numero||''), 'es'));
+    const fItems = fichasFiltradas
+      .map(f => ({
+        value: String(f.numero||''),
+        label: [f.numero, f.programa, f.ie, f.instructor].filter(Boolean).join(' · '),
+        dataset: {
+          ie: f.ie||'', municipio: f.municipio||'',
+          programa: f.programa||'',
+          instructor: f.instructor||'', cedula: f.cedula||''
+        }
+      }))
+      .filter(x => x.value && /^\d{7}$/.test(x.value));
+    const nFich = llenarCombo(fichaCombo, '⬇️ Seleccione o busque un código de Ficha (7 dígitos)', fItems);
+    habilitarCombo(fichaCombo, nFich > 0);
+    if(hintFichas) hintFichas.textContent = (nFich>0? (' · ' + nFich + ' fichas disponibles') : ' · (sin fichas)');
+
+    // ===== INSTRUCTORES =====
+    const insItems = filtrarInstructores(ieSel, progSel);
+    llenarDL(insDL, insItems);
+    if(inpIns && inpIns.value && inpDoc && !inpDoc.value){
+      const n = (inpIns.value||'').toUpperCase().trim();
+      const hit = insItems.find(x => x.value === n);
+      if(hit && hit.dataset && hit.dataset.cedula){ inpDoc.value = hit.dataset.cedula; }
+    }
   }
 
   function filtrarInstructores(ieSel, progSel){
@@ -302,35 +426,52 @@
   function completarDesdeFicha(fichaNum, skipMsj){
     const f = window.__FICHA_DATA_BY_NUM__ && window.__FICHA_DATA_BY_NUM__.get(String(fichaNum || '').trim());
     if(!f) return false;
-    // Escribir campos en el formulario
+    // 1) MUNICIPIO (primero, para activar cascada) — usa munCombo NUEVO habilitado
+    const mun = (f.municipio || '').toUpperCase().trim();
+    if(mun && munCombo){
+      const opts = Array.from(munCombo.options).map(o => (o.value||'').toUpperCase());
+      const idx = opts.indexOf(mun);
+      if(idx !== -1){ munCombo.value = munCombo.options[idx].value; }
+      else {
+        const n = document.createElement('option');
+        n.value = mun; n.textContent = mun;
+        munCombo.appendChild(n); munCombo.value = n.value;
+      }
+      const hiddenM = document.getElementById('hidden-municipio-ie');
+      if(hiddenM) hiddenM.value = mun;
+      // Disparar change para activar cascada (llenar IE, luego Programa, luego Ficha)
+      try{ munCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+    }
+    // 2) INSTITUCIÓN EDUCATIVA — la cascada ya la llenó desde Municipio, pero aseguramos valor
+    const ieNom = (f.ie||'').toUpperCase().trim();
+    if(ieNom && ieCombo){
+      const opts = Array.from(ieCombo.options).map(o => (o.value||'').toUpperCase());
+      const idx = opts.indexOf(ieNom);
+      if(idx !== -1){
+        ieCombo.value = ieCombo.options[idx].value;
+        try{ ieCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+      }
+    }
+    // 3) PROGRAMA TÉCNICO
+    const progNom = (f.programa||'').toUpperCase().trim();
+    if(progNom && progCombo){
+      const opts = Array.from(progCombo.options).map(o => (o.value||'').toUpperCase());
+      const idx = opts.indexOf(progNom);
+      if(idx !== -1){
+        progCombo.value = progCombo.options[idx].value;
+        try{ progCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+      }
+    }
+    // 4) Campos Instructor + Cédula (inputs simples)
     const fields = [
-      ['nombre_ie', (f.ie||'').toUpperCase()],
-      ['nombre_programa', (f.programa||'').toUpperCase()],
       ['instructor_nombre', (f.instructor||'').toUpperCase()],
       ['instructor_cedula', f.cedula || ''],
     ];
     for(const [nm, v] of fields){
       const el = document.querySelector(`[name="${nm}"]`);
       if(!el || !v) continue;
-      if(el.tagName && el.tagName.toLowerCase() === 'select'){
-        const opts = Array.from(el.options).map(o => o.value.toUpperCase());
-        const idx = opts.indexOf(String(v).toUpperCase());
-        if(idx !== -1){ el.value = el.options[idx].value; try{ el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
-      } else {
-        el.value = v;
-        try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true})); }catch(_){}
-      }
-    }
-    // Municipio
-    const mun = f.municipio || '';
-    if(mun && inpMun){
-      let found = false;
-      for(const o of inpMun.options){
-        if((o.value||'').toUpperCase() === String(mun).toUpperCase()){ inpMun.value = o.value; found = true; break; }
-      }
-      if(!found){ const n = document.createElement('option'); n.value = mun; n.textContent = mun; inpMun.appendChild(n); inpMun.value = n.value; }
-      const hiddenM = document.getElementById('hidden-municipio-ie');
-      if(hiddenM) hiddenM.value = mun;
+      el.value = v;
+      try{ el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); el.dispatchEvent(new Event('blur',{bubbles:true})); }catch(_){}
     }
     // Proyecto nombre sugerencia si está vacío
     if(inpNombreProyecto && !inpNombreProyecto.value.trim() && f.programa && f.ie){
@@ -341,7 +482,7 @@
         const t = document.createElement('div');
         t.className = 'alert alert-success py-2 px-3 small mt-2 mb-0 show fade';
         t.style.cssText='border:0;border-radius:12px;border-left:5px solid #39A900;background:#eefbe0;';
-        t.innerHTML = '✔ Ficha #<b>' + String(fichaNum) + '</b> cargada desde el catálogo: Institución, Programa, Municipio e Instructor <b>pre-llenados</b> automáticamente.';
+        t.innerHTML = '✔ Ficha #<b>' + String(fichaNum) + '</b> cargada desde el catálogo: <b>Municipio, I.E., Programa, Instructor</b> pre-llenados automáticamente.';
         const target = fichaCombo;
         if(target && target.parentElement) target.parentElement.after(t);
         setTimeout(()=>{ try{ t.remove(); }catch(_){} }, 6000);
@@ -350,124 +491,21 @@
     return true;
   }
 
-  function actualizarCascada(){
-    const ieSel = (ieCombo && ieCombo.value || '').toUpperCase().trim();
-    const progSel = (progCombo && progCombo.value || '').toUpperCase().trim();
-
-    if(inpMun){
-      // Limpiar combo municipio
-      try{ inpMun.innerHTML = ''; }catch(_){ while(inpMun && inpMun.firstChild) inpMun.removeChild(inpMun.firstChild); }
-      const place = document.createElement('option');
-      place.value = '';
-      place.textContent = ieSel? ('Municipio auto: cargando…') : ('⬇️ Primero seleccione una Institución Educativa');
-      inpMun.appendChild(place);
-      const dptoLabel = document.getElementById('departamento-ie-label');
-      const dptoSpan = (dptoLabel && dptoLabel.querySelector('span')) ? dptoLabel.querySelector('span') : null;
-      // Hidden input paralelo para enviar valor (disabled no envía)
-      const hiddenMun = document.getElementById('hidden-municipio-ie');
-
-      let matchIe = null;
-      if(ieSel){
-        // Buscar en CAT por nombre
-        matchIe = (CAT.instituciones || []).find(x => (x.nombre||'').toUpperCase().trim() === ieSel);
-        // Si no, buscar en options del combo IE por data attrs
-        if(!matchIe && ieCombo && ieCombo.selectedIndex >= 0){
-          const opt = ieCombo.options[ieCombo.selectedIndex];
-          if(opt && (opt.getAttribute('data-municipio') || opt.getAttribute('data-departamento'))){
-            matchIe = {
-              municipio: (opt.getAttribute('data-municipio')||'').toUpperCase(),
-              departamento: (opt.getAttribute('data-departamento')||'').toUpperCase()
-            };
-          }
-        }
-      }
-      if(matchIe && (matchIe.municipio || matchIe.departamento)){
-        const munVal = String(matchIe.municipio || '').toUpperCase();
-        if(munVal){
-          const n = document.createElement('option');
-          n.value = munVal; n.textContent = munVal;
-          inpMun.appendChild(n); inpMun.value = munVal;
-          if(hiddenMun) hiddenMun.value = munVal;
-        } else {
-          if(hiddenMun) hiddenMun.value = '';
-        }
-        if(dptoSpan){
-          dptoSpan.textContent = (matchIe.departamento? ('Departamento: ' + matchIe.departamento) : 'Departamento: —');
-        }
-        if(dptoLabel && matchIe.departamento){
-          dptoLabel.classList.remove('text-muted');
-          dptoLabel.classList.add('text-sena-dark');
-        } else if(dptoLabel){
-          dptoLabel.classList.add('text-muted');
-          dptoLabel.classList.remove('text-sena-dark');
-        }
-      } else {
-        if(hiddenMun) hiddenMun.value = '';
-        if(dptoSpan){ dptoSpan.textContent = 'Departamento: —'; }
-        if(dptoLabel){
-          dptoLabel.classList.add('text-muted');
-          dptoLabel.classList.remove('text-sena-dark');
-        }
-      }
-    }
-
-    let itemsProg;
-    if(ieSel){
-      const progSet = new Map();
-      for(const f of (CAT.fichas||[])){
-        if((f.ie||'').toUpperCase().trim() !== ieSel) continue;
-        const pnom = (f.programa||'').toUpperCase().trim();
-        if(!pnom) continue;
-        if(!progSet.has(pnom)) progSet.set(pnom, f.programa_codigo||'');
-      }
-      if(progSet.size === 0){
-        itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre + ' · ' + x.codigo) : x.nombre })), x => x.value);
-      } else {
-        itemsProg = [];
-        for(const [pnom, cod] of progSet.entries()){
-          itemsProg.push({ value: pnom, label: cod? (pnom + ' · ' + cod) : pnom });
-        }
-      }
-    } else {
-      itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre + ' · ' + x.codigo) : x.nombre })), x => x.value);
-    }
-    itemsProg.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
-    llenarCombo(progCombo, '⬇️ Seleccione o busque un Programa Técnico', itemsProg);
-
-    let fichasFiltradas = (CAT.fichas || []).slice();
-    if(ieSel) fichasFiltradas = fichasFiltradas.filter(f => (f.ie||'').toUpperCase().trim() === ieSel);
-    if(progSel) fichasFiltradas = fichasFiltradas.filter(f => (f.programa||'').toUpperCase().trim() === progSel);
-    fichasFiltradas.sort((a,b)=> String(a.numero||'').localeCompare(String(b.numero||''), 'es'));
-    const fItems = fichasFiltradas.map(f => ({
-      value: String(f.numero||''),
-      label: [f.numero, f.programa, f.ie].filter(Boolean).join(' · '),
-      dataset: {
-        ie: f.ie||'',
-        municipio: f.municipio||'',
-        programa: f.programa||'',
-        instructor: f.instructor||'',
-        cedula: f.cedula||''
-      }
-    })).filter(x => x.value && /^\d{7}$/.test(x.value));
-    llenarCombo(fichaCombo, '⬇️ Seleccione o busque un código de Ficha (7 dígitos)', fItems);
-    if(hintFichas){
-      hintFichas.textContent = fItems.length? (' · ' + fItems.length + ' fichas disponibles') : '';
-    }
-
-    const insItems = filtrarInstructores(ieSel, progSel);
-    llenarDL(insDL, insItems);
-    if(inpIns && inpIns.value && inpDoc && !inpDoc.value){
-      const n = (inpIns.value||'').toUpperCase().trim();
-      const hit = insItems.find(x => x.value === n);
-      if(hit && hit.dataset && hit.dataset.cedula){ inpDoc.value = hit.dataset.cedula; }
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', poblarTodo);
   if(document.readyState === 'interactive' || document.readyState === 'complete'){
     try{ poblarTodo(); }catch(_){}
   }
-  // Eventos cascada
+  // Eventos cascada — ORDEN AMARRADO: 1) MUNICIPIO → 2) IE → 3) PROGRAMA → 4) FICHA
+  if(munCombo){
+    munCombo.addEventListener('change', function(){
+      actualizarCascada();
+      // Si el Municipio tiene ÚNICA I.E. → autoseleccionar
+      if(ieCombo && ieCombo.options.length === 2){
+        ieCombo.value = ieCombo.options[1].value;
+        try{ ieCombo.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+      }
+    });
+  }
   if(ieCombo){
     ieCombo.addEventListener('change', function(){
       actualizarCascada();
