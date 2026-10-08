@@ -296,6 +296,41 @@ class WizardRegistroView(View):
                 'institucion', 'programa', 'instructor_lider', 'instructor_lider__persona'
             ).order_by('numero')
         )
+        # Catálogo JSON para filtros cascada en FRONTEND
+        import json
+        catalogo_fichas = []
+        for f in fichas_activas:
+            catalogo_fichas.append({
+                'numero': f.numero,
+                'ie': f.institucion.nombre if f.institucion_id else '',
+                'municipio': (f.municipio or (f.institucion.municipio if f.institucion_id else '') or ''),
+                'programa': f.programa.nombre if f.programa_id else '',
+                'programa_codigo': f.programa.codigo if f.programa_id else '',
+                'instructor': f.instructor_lider.persona.nombre_completo if (f.instructor_lider_id and getattr(f.instructor_lider, 'persona', None)) else '',
+                'cedula': f.instructor_lider.persona.numero_identificacion if (f.instructor_lider_id and getattr(f.instructor_lider, 'persona', None)) else '',
+            })
+        ies_list = list(
+            InstitucionEducativa.objects.filter(activo=True).order_by('nombre').values('nombre', 'municipio')
+        )
+        programas_list = list(
+            ProgramaTecnico.objects.filter(activo=True).order_by('nombre').values('nombre', 'codigo')
+        )
+        instructores_list = []
+        for ins in Instructor.objects.select_related('persona').prefetch_related('programas').all():
+            p = getattr(ins, 'persona', None)
+            if not p:
+                continue
+            instructores_list.append({
+                'nombre_completo': p.nombre_completo,
+                'numero_identificacion': p.numero_identificacion,
+                'programas': [prog.nombre for prog in ins.programas.all()],
+            })
+        catalogo = {
+            'fichas': catalogo_fichas,
+            'instituciones': ies_list,
+            'programas': programas_list,
+            'instructores': instructores_list,
+        }
         return render(request, 'simple/wizard_registro.html', {
             'evento': evento,
             'municipios': sorted(set(
@@ -305,6 +340,7 @@ class WizardRegistroView(View):
             'tipos_identificacion': ['CC', 'TI', 'PPT'],
             'max_aprendices': settings.MAX_APRENDICES_POR_PROYECTO,
             'fichas_activas': fichas_activas,
+            'catalogo_json': json.dumps(catalogo, ensure_ascii=False),
         })
 
     @transaction.atomic

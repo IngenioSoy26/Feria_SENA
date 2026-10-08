@@ -26,23 +26,26 @@
       <div class="row g-3">
         <div class="col-12 col-md-6">
           <label class="form-label">Institución Educativa <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA)</span></label>
-          <input name="nombre_ie" class="form-field up-case" placeholder="Ej: INSTITUCIÓN EDUCATIVA SAN JOSÉ DE RIOHACHA" autocomplete="organization" required>
+          <input name="nombre_ie" id="inp-nombre-ie" class="form-field up-case" placeholder="Ej: INSTITUCIÓN EDUCATIVA SAN JOSÉ DE RIOHACHA" autocomplete="organization" list="ie_dl" required>
+          <datalist id="ie_dl"></datalist>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Municipio</label>
-          <select name="municipio_ie" class="form-field select">
+          <select name="municipio_ie" id="inp-municipio-ie" class="form-field select">
             {% for m in municipios %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
           </select>
         </div>
 
         <div class="col-12 col-md-6">
           <label class="form-label">Programa Técnico <span class="req">*</span> <span class="hint-sena">(se guarda en MAYÚSCULA)</span></label>
-          <input name="nombre_programa" class="form-field up-case" placeholder="Ej: TÉCNICO EN SISTEMAS · TÉCNICO EN COCINA" autocomplete="off" required>
+          <input name="nombre_programa" id="inp-nombre-programa" class="form-field up-case" placeholder="Ej: TÉCNICO EN SISTEMAS · TÉCNICO EN COCINA" autocomplete="off" list="programa_dl" required>
+          <datalist id="programa_dl"></datalist>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">
             Código de Ficha <span class="req">*</span>
             <span class="hint-sena">(7 dígitos numéricos)</span>
+            <span class="hint-sena" id="fichas-count-hint"></span>
           </label>
           <div class="d-flex gap-2">
             <input
@@ -61,17 +64,7 @@
               🔍 Cargar
             </button>
           </div>
-          <datalist id="fichas_dl">
-            {% for f in fichas_activas %}
-              <option value="{{ f.numero }}"
-                data-ie="{{ f.institucion.nombre|default:'' }}"
-                data-municipio="{{ f.municipio|default:f.institucion.municipio|default:'' }}"
-                data-programa="{{ f.programa.nombre|default:'' }}"
-                data-instructor="{{ f.instructor_lider.persona.nombre_completo|default:'' }}"
-                data-cedula="{{ f.instructor_lider.persona.numero_identificacion|default:'' }}"
-                >{{ f.numero }} · {{ f.programa.nombre|default:'' }} · {{ f.institucion.nombre|default:'' }}</option>
-            {% endfor %}
-          </datalist>
+          <datalist id="fichas_dl"></datalist>
         </div>
 
         <div class="col-12">
@@ -81,7 +74,8 @@
 
         <div class="col-12 col-md-6">
           <label class="form-label">Instructor líder <span class="hint-sena">(al escribir nombre o cargar ficha se completa el documento)</span></label>
-          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name">
+          <input name="instructor_nombre" id="inp-ins-nombre" class="form-field up-case" placeholder="NOMBRES Y APELLIDOS COMPLETOS" autocomplete="name" list="instructor_dl">
+          <datalist id="instructor_dl"></datalist>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Documento de identidad del instructor líder</label>
@@ -127,6 +121,212 @@
 {% endblock %}
 
 {% block extra_js %}
+<script id="catalogo-data" type="application/json">{{ catalogo_json|safe }}</script>
+<script>
+(function(){
+  // ============================================================
+  //  FILTROS EN CASCADA — Catálogo IE / Programa / Fichas / Instructores
+  // ============================================================
+  const raw = document.getElementById('catalogo-data');
+  let CAT = {fichas:[], instituciones:[], programas:[], instructores:[]};
+  try { if(raw && raw.textContent){ CAT = JSON.parse(raw.textContent) || CAT; } } catch(_) {}
+  CAT.fichas = Array.isArray(CAT.fichas)? CAT.fichas : [];
+  CAT.instituciones = Array.isArray(CAT.instituciones)? CAT.instituciones : [];
+  CAT.programas = Array.isArray(CAT.programas)? CAT.programas : [];
+  CAT.instructores = Array.isArray(CAT.instructores)? CAT.instructores : [];
+
+  const ieDL = document.getElementById('ie_dl');
+  const progDL = document.getElementById('programa_dl');
+  const fichasDL = document.getElementById('fichas_dl');
+  const insDL = document.getElementById('instructor_dl');
+  const hintFichas = document.getElementById('fichas-count-hint');
+
+  const inpIE = document.getElementById('inp-nombre-ie');
+  const inpMun = document.getElementById('inp-municipio-ie');
+  const inpProg = document.getElementById('inp-nombre-programa');
+  const inpIns = document.getElementById('inp-ins-nombre');
+  const inpDoc = document.getElementById('inp-ins-doc');
+
+  function llenarOptions(ul, items, extraAttrs){
+    try{ ul.innerHTML = ''; }catch(_){ while(ul && ul.firstChild) ul.removeChild(ul.firstChild); }
+    if(!ul) return 0;
+    let count = 0;
+    for(const it of items){
+      if(!it || !it.value) continue;
+      const opt = document.createElement('option');
+      opt.value = String(it.value);
+      if(it.label){ opt.textContent = String(it.label); }
+      if(extraAttrs && typeof extraAttrs === 'object'){
+        for(const k of Object.keys(extraAttrs)){
+          try{ opt.setAttribute(k, extraAttrs[k]); }catch(_){}
+        }
+      }
+      if(it.dataset && typeof it.dataset === 'object'){
+        for(const k of Object.keys(it.dataset)){
+          try{ opt.setAttribute('data-'+k, (it.dataset[k]==null?'':String(it.dataset[k]))); }catch(_){}
+        }
+      }
+      ul.appendChild(opt);
+      count++;
+    }
+    return count;
+  }
+
+  function uniq(arr, keyFn){
+    const seen = new Set(); const out = [];
+    for(const x of arr){
+      const k = keyFn? keyFn(x) : x;
+      if(k==='' || k==null || seen.has(k)) continue;
+      seen.add(k); out.push(x);
+    }
+    return out;
+  }
+
+  function poblarTodo(){
+    // (1) Instituciones (todas)
+    const ieItems = uniq((CAT.instituciones||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.municipio? (x.nombre+' · '+x.municipio) : x.nombre, dataset: { municipio: x.municipio||'' } })), x => x.value);
+    ieItems.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
+    llenarOptions(ieDL, ieItems);
+    actualizarCascada();
+  }
+
+  function filtrarInstructores(ieSel, progSel){
+    // 2 fuentes: (a) instructores de FICHAS que cumplen IE+Programa; (b) M2M programa exacto (siempre unir)
+    const setNombres = new Map(); // nombre_completo => {numero_identificacion}
+    const ficheros = CAT.fichas || [];
+    for(const f of ficheros){
+      if(ieSel && ((f.ie||'').toUpperCase() !== ieSel.toUpperCase())) continue;
+      if(progSel && ((f.programa||'').toUpperCase() !== progSel.toUpperCase())) continue;
+      if(f.instructor){
+        const nom = String(f.instructor||'').toUpperCase().trim();
+        if(!setNombres.has(nom) && f.cedula){ setNombres.set(nom, String(f.cedula)); }
+      }
+    }
+    // Añadir instructores M2M programa
+    for(const ins of (CAT.instructores||[])){
+      const n = (ins.nombre_completo||'').toUpperCase().trim();
+      if(!n) continue;
+      const programas = Array.isArray(ins.programas)? ins.programas : [];
+      let pasa = !progSel && !ieSel; // sin filtro → todos
+      if(progSel){
+        pasa = programas.some(p => (p||'').toUpperCase() === progSel.toUpperCase());
+        if(!pasa && setNombres.has(n)) pasa = true;
+      } else if(ieSel){
+        // IE+sin programa: pasar si está en setNombres (fichas con esa IE)
+        pasa = setNombres.has(n);
+      }
+      if(pasa){
+        if(!setNombres.has(n) && ins.numero_identificacion){
+          setNombres.set(n, String(ins.numero_identificacion));
+        } else if(ins.numero_identificacion){
+          setNombres.set(n, String(ins.numero_identificacion));
+        }
+      }
+    }
+    const items = [];
+    for(const [nom, doc] of setNombres.entries()){
+      items.push({ value: nom, label: doc? (nom+' · '+doc) : nom, dataset: { cedula: doc||'' }});
+    }
+    items.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
+    return items;
+  }
+
+  function actualizarCascada(){
+    const ieSel = (inpIE && inpIE.value || '').toUpperCase().trim();
+    const progSel = (inpProg && inpProg.value || '').toUpperCase().trim();
+    // -- MUNICIPIO desde Institución si hay match único
+    if(ieSel && inpMun){
+      const matchIe = (CAT.instituciones || []).find(x => (x.nombre||'').toUpperCase().trim() === ieSel);
+      if(matchIe && matchIe.municipio){
+        let found = false;
+        for(const o of inpMun.options){
+          if((o.value||'').toUpperCase() === (matchIe.municipio||'').toUpperCase()){
+            inpMun.value = o.value; found = true; break;
+          }
+        }
+        if(!found){
+          const n = document.createElement('option');
+          n.value = matchIe.municipio; n.textContent = matchIe.municipio;
+          inpMun.appendChild(n); inpMun.value = n.value;
+        }
+      }
+    }
+    // -- PROGRAMAS: uniq de los programas presentes en las fichas de la IE seleccionada; si no IE, todos.
+    let itemsProg;
+    if(ieSel){
+      const progSet = new Map();
+      for(const f of (CAT.fichas||[])){
+        if((f.ie||'').toUpperCase().trim() !== ieSel) continue;
+        const pnom = (f.programa||'').toUpperCase().trim();
+        if(!pnom) continue;
+        if(!progSet.has(pnom)) progSet.set(pnom, f.programa_codigo||'');
+      }
+      // Además combinar con cat.programas si no hay coincidencias (mostrar catálogo completo como fallback)
+      if(progSet.size === 0){
+        itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre+' · '+x.codigo) : x.nombre })), x => x.value);
+      } else {
+        itemsProg = [];
+        for(const [pnom, cod] of progSet.entries()){
+          itemsProg.push({ value: pnom, label: cod? (pnom + ' · ' + cod) : pnom });
+        }
+      }
+    } else {
+      itemsProg = uniq((CAT.programas||[]).map(x => ({ value: (x.nombre||'').toUpperCase(), label: x.codigo? (x.nombre+' · '+x.codigo) : x.nombre })), x => x.value);
+    }
+    itemsProg.sort((a,b)=> (a.value||'').localeCompare(b.value||'', 'es'));
+    llenarOptions(progDL, itemsProg);
+
+    // -- FICHAS: filtrar por IE + programa y poner data-attrs para buscarYCompletar
+    let fichasFiltradas = (CAT.fichas || []).slice();
+    if(ieSel) fichasFiltradas = fichasFiltradas.filter(f => (f.ie||'').toUpperCase().trim() === ieSel);
+    if(progSel) fichasFiltradas = fichasFiltradas.filter(f => (f.programa||'').toUpperCase().trim() === progSel);
+    fichasFiltradas.sort((a,b)=> String(a.numero||'').localeCompare(String(b.numero||''), 'es'));
+    const fItems = fichasFiltradas.map(f => ({
+      value: String(f.numero||''),
+      label: [f.numero, f.programa, f.ie].filter(Boolean).join(' · '),
+      dataset: {
+        ie: f.ie||'',
+        municipio: f.municipio||'',
+        programa: f.programa||'',
+        instructor: f.instructor||'',
+        cedula: f.cedula||''
+      }
+    })).filter(x => x.value && /^\d{7}$/.test(x.value));
+    llenarOptions(fichasDL, fItems);
+    if(hintFichas){
+      hintFichas.textContent = fItems.length? (' · ' + fItems.length + ' fichas encontradas') : '';
+    }
+
+    // -- INSTRUCTORES (combinado M2M + fichas filtradas)
+    const insItems = filtrarInstructores(ieSel, progSel);
+    llenarOptions(insDL, insItems);
+
+    // -- Si solo hay 1 instructor en filtro, autocompletar doc si usuario ya escribió nombre exacto
+    if(inpIns && inpIns.value && inpDoc && !inpDoc.value){
+      const n = (inpIns.value||'').toUpperCase().trim();
+      const hit = insItems.find(x => x.value === n);
+      if(hit && hit.dataset && hit.dataset.cedula){ inpDoc.value = hit.dataset.cedula; }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', poblarTodo);
+  // Si ya se cargó DOM (por si acaso):
+  if(document.readyState === 'interactive' || document.readyState === 'complete'){
+    try{ poblarTodo(); }catch(_){}
+  }
+  // Eventos cascada
+  if(inpIE){
+    inpIE.addEventListener('change', actualizarCascada);
+    inpIE.addEventListener('blur', actualizarCascada);
+  }
+  if(inpProg){
+    inpProg.addEventListener('change', actualizarCascada);
+    inpProg.addEventListener('blur', actualizarCascada);
+  }
+  // Exponer helper para reuso desde otros bloques
+  window.__REGISTRO_CASCADA_REFRESH__ = actualizarCascada;
+})();
+</script>
 <script>
 (function(){
   const MAX = parseInt(document.getElementById('aprendices-container').dataset.max || '3', 10) || 3;
