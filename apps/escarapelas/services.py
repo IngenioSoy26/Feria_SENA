@@ -512,6 +512,7 @@ class EscarapelaPDFService:
         c.setStrokeColor(borde)
         c.setLineWidth(p["borde_grosor"])
 
+        _stroke = 1 if p["borde_grosor"] > 0 else 0
         c.roundRect(
             x,
             y,
@@ -519,7 +520,7 @@ class EscarapelaPDFService:
             h,
             p["r"],
             fill=1,
-            stroke=1,
+            stroke=_stroke,
         )
         c.restoreState()
 
@@ -587,6 +588,7 @@ class EscarapelaPDFService:
         c.setStrokeColor(borde)
         c.setLineWidth(p["borde_grosor"])
 
+        _stroke = 1 if p["borde_grosor"] > 0 else 0
         c.roundRect(
             x,
             y,
@@ -594,7 +596,7 @@ class EscarapelaPDFService:
             h,
             p["r"],
             fill=1,
-            stroke=1,
+            stroke=_stroke,
         )
         c.restoreState()
 
@@ -644,6 +646,7 @@ class EscarapelaPDFService:
         c.setStrokeColor(borde)
         c.setLineWidth(p["borde_grosor"])
 
+        _stroke = 1 if p["borde_grosor"] > 0 else 0
         c.roundRect(
             x,
             y,
@@ -651,7 +654,7 @@ class EscarapelaPDFService:
             h,
             p["r"],
             fill=1,
-            stroke=1,
+            stroke=_stroke,
         )
         c.restoreState()
 
