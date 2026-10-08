@@ -791,40 +791,47 @@ class RegistrarOperadorAjax(View):
 
         nombre_ie = ''
         municipio_persona = ''
-        correo = persona.correo or ''
-        telefono = persona.telefono or ''
-        direccion = persona.direccion or ''
+        correo = ''
+        telefono = ''
+        direccion = ''
         genero = ''
-        if persona.genero:
-            genero = {'M': 'Masculino', 'F': 'Femenino', 'O': 'Otro'}.get(persona.genero, '')
-        if persona.tipo_persona == 'APRENDIZ':
-            try:
-                if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz and persona.perfil_aprendiz.proyecto:
-                    proy = persona.perfil_aprendiz.proyecto
-                    if proy.institucion:
-                        nombre_ie = proy.institucion.nombre or ''
-                        if proy.institucion.municipio:
-                            municipio_persona = proy.institucion.municipio
-                    if proy.ficha and proy.ficha.numero and not ficha_codigo:
-                        ficha_codigo = proy.ficha.numero
-            except Exception:
-                pass
-        elif persona.tipo_persona == 'INSTRUCTOR':
-            try:
-                if hasattr(persona, 'perfil_instructor') and persona.perfil_instructor:
-                    if persona.perfil_instructor.municipio:
-                        municipio_persona = persona.perfil_instructor.municipio
-            except Exception:
-                pass
-        elif persona.tipo_persona == 'INVITADO':
-            try:
-                if hasattr(persona, 'perfil_invitado') and persona.perfil_invitado:
-                    if persona.perfil_invitado.institucion_procedencia:
-                        nombre_ie = persona.perfil_invitado.institucion_procedencia
-                    if persona.perfil_invitado.municipio:
-                        municipio_persona = persona.perfil_invitado.municipio
-            except Exception:
-                pass
+        try:
+            correo = getattr(persona, 'correo', '') or ''
+            telefono = getattr(persona, 'telefono', '') or ''
+            direccion = getattr(persona, 'direccion', '') or getattr(persona, 'direccion_residencia', '') or getattr(persona, 'domicilio', '') or ''
+            _g = getattr(persona, 'genero', None)
+            if _g:
+                genero = {'M': 'Masculino', 'F': 'Femenino', 'O': 'Otro'}.get((_g or '').strip()) or ''
+            if persona.tipo_persona == 'APRENDIZ':
+                try:
+                    if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz and getattr(persona.perfil_aprendiz, 'proyecto', None):
+                        proy = persona.perfil_aprendiz.proyecto
+                        _ie = getattr(proy, 'institucion', None)
+                        if _ie:
+                            nombre_ie = getattr(_ie, 'nombre', '') or ''
+                            municipio_persona = getattr(_ie, 'municipio', '') or getattr(_ie, 'ciudad', '') or ''
+                        if getattr(proy, 'ficha', None):
+                            _fc = getattr(proy.ficha, 'numero', '')
+                            if _fc and not ficha_codigo:
+                                ficha_codigo = _fc
+                except Exception:
+                    pass
+            elif persona.tipo_persona == 'INSTRUCTOR':
+                try:
+                    if hasattr(persona, 'perfil_instructor') and persona.perfil_instructor:
+                        municipio_persona = getattr(persona.perfil_instructor, 'municipio', '') or getattr(persona.perfil_instructor, 'ciudad', '') or ''
+                except Exception:
+                    pass
+            elif persona.tipo_persona == 'INVITADO':
+                try:
+                    if hasattr(persona, 'perfil_invitado') and persona.perfil_invitado:
+                        nombre_ie = getattr(persona.perfil_invitado, 'institucion_procedencia', '') or getattr(persona.perfil_invitado, 'institucion', '') or ''
+                        municipio_persona = getattr(persona.perfil_invitado, 'municipio', '') or getattr(persona.perfil_invitado, 'ciudad', '') or ''
+                except Exception:
+                    pass
+        except Exception:
+            # Cualquier AttributeError de campos faltantes → simplemente ignorar y continuar (NO MÁS 500)
+            pass
 
         return JsonResponse({
             'ok': True,
