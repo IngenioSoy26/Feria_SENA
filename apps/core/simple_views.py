@@ -351,6 +351,9 @@ class WizardRegistroView(View):
             'programas': programas_list,
             'instructores': instructores_list,
         }
+        import base64
+        _catalogo_raw = json.dumps(catalogo, ensure_ascii=False, default=str).encode('utf-8')
+        catalogo_b64 = base64.b64encode(_catalogo_raw).decode('ascii')
         return render(request, 'simple/wizard_registro.html', {
             'evento': evento,
             'municipios': sorted(set(
@@ -362,7 +365,8 @@ class WizardRegistroView(View):
             'tipos_identificacion': ['CC', 'TI', 'PPT'],
             'max_aprendices': settings.MAX_APRENDICES_POR_PROYECTO,
             'fichas_activas': fichas_activas,
-            'catalogo_json': json.dumps(catalogo, ensure_ascii=False),
+            'catalogo_json': json.dumps(catalogo, ensure_ascii=False, default=str),
+            'catalogo_b64': catalogo_b64,
         })
 
     @transaction.atomic

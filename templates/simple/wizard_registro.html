@@ -111,15 +111,35 @@
 {% endblock %}
 
 {% block extra_js %}
-<script id="catalogo-data" type="application/json">{{ catalogo_json|safe }}</script>
+<div id="catalogo-data" data-catalogo-b64="{{ catalogo_b64 }}" style="display:none!important;"></div>
 <script>
 (function(){
   // ============================================================
   //  FILTROS EN CASCADA — Catálogo IE / Programa / Fichas / Instructores
   // ============================================================
-  const raw = document.getElementById('catalogo-data');
+  const _holder = document.getElementById('catalogo-data');
   let CAT = {fichas:[], instituciones:[], programas:[], instructores:[]};
-  try { if(raw && raw.textContent){ CAT = JSON.parse(raw.textContent) || CAT; } } catch(_) {}
+  try {
+    if (_holder && _holder.getAttribute('data-catalogo-b64')) {
+      const _b64 = String(_holder.getAttribute('data-catalogo-b64') || '').trim();
+      if (_b64) {
+        const _bin = atob(_b64);
+        const _bytes = new Uint8Array(_bin.length);
+        for (let i = 0; i < _bin.length; i++) _bytes[i] = _bin.charCodeAt(i);
+        const _json = new TextDecoder('utf-8').decode(_bytes);
+        const _parsed = JSON.parse(_json);
+        if (_parsed && typeof _parsed === 'object') CAT = Object.assign(CAT, _parsed);
+      }
+    }
+  } catch(_) {
+    try {
+      // FALLBACK: usar el antiguo si lo renderizaron en data-catalogo-json
+      if (_holder && _holder.getAttribute('data-catalogo-json')) {
+        const _j = String(_holder.getAttribute('data-catalogo-json') || '');
+        if (_j) CAT = Object.assign(CAT, JSON.parse(_j));
+      }
+    } catch(_2){}
+  }
   CAT.fichas = Array.isArray(CAT.fichas)? CAT.fichas : [];
   CAT.instituciones = Array.isArray(CAT.instituciones)? CAT.instituciones : [];
   CAT.programas = Array.isArray(CAT.programas)? CAT.programas : [];
