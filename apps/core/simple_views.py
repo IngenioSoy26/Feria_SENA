@@ -427,13 +427,22 @@ def guardar_persona_publica(datos, creado_por=None):
 
     if rol == 'INVITADO':
         try:
-            _, creado_inv = Invitado.objects.get_or_create(
-                persona=persona,
-                defaults={
+            # === Protección columna Invitado.activo no migrada aún (Railway ProgrammingError) ===
+            try:
+                Invitado._meta.get_field('activo')
+                _inv_defaults = {
                     'activo': True,
                     'entidad': entidad_up or '',
                     'cargo': cargo_cap or '',
-                },
+                }
+            except Exception:
+                _inv_defaults = {
+                    'entidad': entidad_up or '',
+                    'cargo': cargo_cap or '',
+                }
+            _, creado_inv = Invitado.objects.get_or_create(
+                persona=persona,
+                defaults=_inv_defaults,
             )
             if not creado_inv and (entidad_up or cargo_cap):
                 try:

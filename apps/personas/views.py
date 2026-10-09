@@ -93,9 +93,15 @@ class PersonaCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
         elif tipo == 'INVITADO':
             entidad = form.cleaned_data.get('entidad')
             cargo = form.cleaned_data.get('cargo')
+            _inv_defaults = {'entidad': entidad, 'cargo': cargo}
+            try:
+                Invitado._meta.get_field('activo')
+                _inv_defaults['activo'] = True
+            except Exception:
+                pass
             Invitado.objects.update_or_create(
                 persona=self.object,
-                defaults={'entidad': entidad, 'cargo': cargo},
+                defaults=_inv_defaults,
             )
             messages.info(self.request, 'Perfil de Invitado creado correctamente.')
 
@@ -204,12 +210,18 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
             instructor.programas.set(programas)
 
         elif tipo == 'INVITADO':
+            _inv_defaults = {
+                'entidad': form.cleaned_data.get('entidad'),
+                'cargo': form.cleaned_data.get('cargo'),
+            }
+            try:
+                Invitado._meta.get_field('activo')
+                _inv_defaults['activo'] = True
+            except Exception:
+                pass
             Invitado.objects.update_or_create(
                 persona=self.object,
-                defaults={
-                    'entidad': form.cleaned_data.get('entidad'),
-                    'cargo': form.cleaned_data.get('cargo'),
-                },
+                defaults=_inv_defaults,
             )
 
         elif tipo == 'ORGANIZADOR' and _Organizador_cls is not None:

@@ -1206,12 +1206,18 @@ class ImportacionExcelService:
                         },
                     )
                 elif datos['tipo_persona'] == 'INVITADO':
+                    _inv_defaults = {
+                        'entidad': (datos.get('entidad') or '')[:200],
+                        'cargo': (datos.get('cargo') or '')[:150],
+                    }
+                    try:
+                        Invitado._meta.get_field('activo')
+                        _inv_defaults['activo'] = True
+                    except Exception:
+                        pass
                     Invitado.objects.update_or_create(
                         persona=persona,
-                        defaults={
-                            'entidad': (datos.get('entidad') or '')[:200],
-                            'cargo': (datos.get('cargo') or '')[:150],
-                        },
+                        defaults=_inv_defaults,
                     )
                 elif datos['tipo_persona'] == 'INSTRUCTOR':
                     Instructor.objects.get_or_create(persona=persona)

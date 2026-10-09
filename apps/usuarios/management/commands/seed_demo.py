@@ -292,9 +292,15 @@ class Command(BaseCommand):
                 }
             )
 
+            _inv_defaults = {'entidad': entidad, 'cargo': cargo}
+            try:
+                Invitado._meta.get_field('activo')
+                _inv_defaults['activo'] = True
+            except Exception:
+                pass
             _, created = Invitado.objects.get_or_create(
                 persona=persona,
-                defaults={'entidad': entidad, 'cargo': cargo},
+                defaults=_inv_defaults,
             )
             if created:
                 self.stdout.write(self.style.SUCCESS(f'  ✓ Invitado: {persona.nombre_completo[:30]} ({entidad})'))
