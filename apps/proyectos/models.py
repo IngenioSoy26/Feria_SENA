@@ -146,6 +146,20 @@ class Aprendiz(models.Model):
         related_name='aprendices',
     )
     grado = models.CharField(max_length=10, default='11')
+    entidad = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='Entidad / I.E. / Colegio',
+        help_text='Normalmente la institución del Proyecto (se rellena automáticamente).',
+    )
+    cargo = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+        default='Aprendiz',
+        verbose_name='Cargo / Rol',
+    )
 
     class Meta:
         ordering = ['persona__apellidos', 'persona__nombres']

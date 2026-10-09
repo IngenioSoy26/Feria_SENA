@@ -68,6 +68,29 @@
         </div>
         <div class="col-12 col-md-4">
           <label class="form-label">
+            Entidad · Institución / Empresa
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.entidad }}
+          {% if form.entidad.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.entidad.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+          <div class="muted-small mt-1">De dónde proviene el Invitado.</div>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Cargo · Función
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.cargo }}
+          {% if form.cargo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.cargo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
             Correo electrónico
             <span class="req">*</span>
             <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>

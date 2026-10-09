@@ -209,6 +209,11 @@ class EscarapelaPDFService:
 
         info["numero_identificacion"] = persona.numero_identificacion or ""
 
+        # Campos de Persona raíz (ahora contienen entidad/cargo para TODOS los roles)
+        # Prioridad: entidad y cargo de Persona (nuevos campos), fallback al perfil específico
+        _p_ent = (getattr(persona, "entidad", None) or "").strip()
+        _p_car = (getattr(persona, "cargo", None) or "").strip()
+
         if persona.tipo_persona == "APRENDIZ":
             perfil = getattr(persona, "perfil_aprendiz", None)
 
@@ -219,13 +224,23 @@ class EscarapelaPDFService:
                 info["codigo_proyecto"] = getattr(proyecto, "codigo", None)
 
                 if proyecto.institucion:
-                    info["institucion"] = proyecto.institucion.nombre
+                    info["institucion"] = _p_ent or proyecto.institucion.nombre
+                else:
+                    info["institucion"] = _p_ent or info.get("institucion") or None
 
                 if proyecto.programa:
                     info["programa"] = proyecto.programa.nombre
 
                 if proyecto.ficha:
                     info["codigo_ficha"] = proyecto.ficha.numero
+            else:
+                if _p_ent:
+                    info["institucion"] = _p_ent
+
+            if _p_car:
+                info["extra"] = _p_car
+            else:
+                info["extra"] = info.get("extra") or "APRENDIZ"
 
         elif persona.tipo_persona == "INSTRUCTOR":
             perfil = getattr(persona, "perfil_instructor", None)
@@ -238,17 +253,23 @@ class EscarapelaPDFService:
                         p.nombre for p in programas
                     )
 
-                info["extra"] = "INSTRUCTOR SENA"
+            info["institucion"] = _p_ent or (getattr(perfil, "entidad", None) if perfil else None) or "SENA"
+            info["extra"] = _p_car or (getattr(perfil, "cargo", None) if perfil else None) or "INSTRUCTOR SENA"
 
         elif persona.tipo_persona == "INVITADO":
             perfil = getattr(persona, "perfil_invitado", None)
 
             if perfil:
-                info["institucion"] = perfil.entidad
-                info["extra"] = perfil.cargo
+                info["institucion"] = _p_ent or perfil.entidad or info.get("institucion") or None
+                info["extra"] = _p_car or perfil.cargo or info.get("extra") or None
+            else:
+                info["institucion"] = _p_ent or info.get("institucion") or None
+                info["extra"] = _p_car or info.get("extra") or None
 
         elif persona.tipo_persona == "ORGANIZADOR":
-            info["extra"] = "ORGANIZADOR"
+            perfil = getattr(persona, "perfil_organizador", None)
+            info["institucion"] = _p_ent or (getattr(perfil, "entidad", None) if perfil else None) or None
+            info["extra"] = _p_car or (getattr(perfil, "cargo", None) if perfil else None) or "ORGANIZADOR"
 
         return info
 

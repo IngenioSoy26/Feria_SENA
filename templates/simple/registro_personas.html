@@ -62,6 +62,26 @@
           {% endif %}
         </div>
         <div class="col-12 col-md-4">
+          <label class="form-label">
+            Entidad · Institución · SENA · Empresa
+            <span class="badge rounded-pill bg-warning text-dark px-2 ms-1" style="font-size:.6rem;">Solo Invi/Org obligatorio</span>
+          </label>
+          {{ form.entidad }}
+          {% if form.entidad.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.entidad.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Cargo · Función
+            <span class="badge rounded-pill bg-warning text-dark px-2 ms-1" style="font-size:.6rem;">Solo Invi/Org obligatorio</span>
+          </label>
+          {{ form.cargo }}
+          {% if form.cargo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.cargo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
           <label class="form-label">Correo electrónico <span class="muted-small opacity-75">· opcional</span></label>
           {{ form.correo }}
           {% if form.correo.errors %}

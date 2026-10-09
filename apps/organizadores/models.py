@@ -7,6 +7,12 @@ class Organizador(models.Model):
         on_delete=models.CASCADE,
         related_name='perfil_organizador',
     )
+    entidad = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='Entidad / Empresa / Comité organizador',
+    )
     cargo = models.CharField(max_length=150, blank=True, null=True, verbose_name='Cargo / Función')
     area_responsabilidad = models.CharField(max_length=200, blank=True, null=True, verbose_name='Área / Punto de atención')
     activo = models.BooleanField(default=True)

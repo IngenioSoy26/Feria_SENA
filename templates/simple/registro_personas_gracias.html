@@ -24,6 +24,16 @@
         <div class="muted-small">
           <i class="bi bi-person-vcard me-1"></i>{{ persona.tipo_identificacion }} · <span class="mono">{{ persona.numero_identificacion }}</span>
         </div>
+        {% with persona.entidad_canonica as ent_can %}
+        {% if ent_can %}
+        <div class="muted-small"><i class="bi bi-building me-1"></i>🏛️ Entidad: <b>{{ ent_can }}</b></div>
+        {% endif %}
+        {% endwith %}
+        {% with persona.cargo_canonico as car_can %}
+        {% if car_can %}
+        <div class="muted-small"><i class="bi bi-person-badge me-1"></i>🎖️ Cargo: <b>{{ car_can }}</b></div>
+        {% endif %}
+        {% endwith %}
         {% if persona.correo %}
           <div class="muted-small"><i class="bi bi-envelope me-1"></i>{{ persona.correo }}</div>
         {% endif %}

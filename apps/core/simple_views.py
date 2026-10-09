@@ -94,6 +94,26 @@ class RegistroPersonasPublicoForm(_forms.Form):
         widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
         required=True,
     )
+    entidad = _forms.CharField(
+        label='Entidad · Empresa · Institución · SENA',
+        max_length=200,
+        required=False,
+        help_text='Ej: Alcaldía de Soacha · Colegio San José · SENA · UIS · Indeportes',
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Entidad · Obligatorio para Invitados y Organizadores',
+            'autocomplete':'organization'}),
+    )
+    cargo = _forms.CharField(
+        label='Cargo · Función · Rol en la entidad',
+        max_length=150,
+        required=False,
+        help_text='Ej: Rector · Invitado especial · Coordinador de evento · Instructor',
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Cargo · Obligatorio para Invitados y Organizadores',
+            'autocomplete':'organization-title'}),
+    )
     correo = _forms.EmailField(
         label='Correo electrónico',
         required=False,
@@ -135,6 +155,27 @@ class RegistroPersonasPublicoForm(_forms.Form):
             raise _forms.ValidationError('❌ Escribe nombre(s) y apellido(s). Mínimo 2 palabras.')
         return limpio
 
+    def clean(self):
+        data = super().clean()
+        rol = (data.get('tipo_rol') or '').strip().upper()
+        entidad_raw = (data.get('entidad') or '').strip()
+        cargo_raw = (data.get('cargo') or '').strip()
+        if rol in {'INVITADO', 'ORGANIZADOR'}:
+            if not entidad_raw:
+                self.add_error('entidad',
+                    f'❌ La ENTIDAD es OBLIGATORIA para los {rol}. (Ej: Alcaldía, Colegio, SENA, Gobernación…).'
+                )
+            if not cargo_raw:
+                self.add_error('cargo',
+                    f'❌ El CARGO es OBLIGATORIO para los {rol}. (Ej: Rector, Coordinador, Invitado Especial…).'
+                )
+        if rol == 'INSTRUCTOR':
+            if not entidad_raw:
+                data['entidad'] = 'SENA'
+            if not cargo_raw:
+                data['cargo'] = 'Instructor'
+        return data
+
 
 class RegistroInvitadosPublicoForm(_forms.Form):
     ROL_SOLO_INVITADO = (('INVITADO', '🎟️ Invitado'),)
@@ -173,6 +214,26 @@ class RegistroInvitadosPublicoForm(_forms.Form):
             'readonly':'readonly',
             'title':'Rol pre-definido: Invitado - no modificable'}),
         required=True,
+    )
+    entidad = _forms.CharField(
+        label='Entidad ⚑ OBLIGATORIA · Empresa / Institución / Organismo',
+        max_length=200,
+        required=True,
+        help_text='¿De dónde viene? Ej: Alcaldía · Gobernación · Colegio · Universidad · SENA · Empresa',
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Alcaldía de Soacha · Colegio INEM · Universidad Nacional · SENA CBA',
+            'autocomplete':'organization'}),
+    )
+    cargo = _forms.CharField(
+        label='Cargo ⚑ OBLIGATORIO · Función / Rol en la entidad',
+        max_length=150,
+        required=True,
+        help_text='¿Cuál es su cargo? Ej: Rector · Invitado especial · Gerente · Coordinador · Presidente',
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Rector · Invitado Especial · Coordinador General · Docente',
+            'autocomplete':'organization-title'}),
     )
     correo = _forms.EmailField(
         label='Correo electrónico ⚑ OBLIGATORIO',
@@ -259,19 +320,32 @@ def guardar_persona_publica(datos, creado_por=None):
     nombres, apellidos = _split_nombre_apellidos(datos['nombre_completo'])
     correo = (datos.get('correo') or '').strip().lower() or None
     telefono = (datos.get('telefono') or '').strip() or None
+    entidad_raw = (datos.get('entidad') or '').strip()
+    cargo_raw = (datos.get('cargo') or '').strip()
+    entidad_up = entidad_raw.upper() if entidad_raw else None
+    cargo_cap = cargo_raw.title() if cargo_raw else None
+    if rol == 'INSTRUCTOR':
+        entidad_up = entidad_up or 'SENA'
+        cargo_cap = cargo_cap or 'Instructor'
+
+    defaults = {
+        'nombres': (nombres or '').upper(),
+        'apellidos': (apellidos or '').upper(),
+        'tipo_persona': rol,
+        'correo': correo,
+        'telefono': telefono,
+        'activo': True,
+        'creado_por': creado_por,
+    }
+    if entidad_up is not None:
+        defaults['entidad'] = entidad_up
+    if cargo_cap is not None:
+        defaults['cargo'] = cargo_cap
 
     persona, created = Persona.objects.update_or_create(
         tipo_identificacion=ti,
         numero_identificacion=nd,
-        defaults={
-            'nombres': (nombres or '').upper(),
-            'apellidos': (apellidos or '').upper(),
-            'tipo_persona': rol,
-            'correo': correo,
-            'telefono': telefono,
-            'activo': True,
-            'creado_por': creado_por,
-        },
+        defaults=defaults,
     )
     if not getattr(persona, 'qr_token', None):
         while True:
@@ -282,19 +356,57 @@ def guardar_persona_publica(datos, creado_por=None):
                 break
 
     if rol == 'INVITADO':
-        Invitado.objects.get_or_create(
-            persona=persona, defaults={'activo': True, 'entidad': '', 'cargo': ''},
+        _, creado_inv = Invitado.objects.get_or_create(
+            persona=persona,
+            defaults={
+                'activo': True,
+                'entidad': entidad_up or '',
+                'cargo': cargo_cap or '',
+            },
         )
+        if not creado_inv and (entidad_up or cargo_cap):
+            try:
+                Invitado.objects.filter(pk=persona.perfil_invitado.pk).update(
+                    entidad=entidad_up or '',
+                    cargo=cargo_cap or '',
+                )
+            except Exception:
+                pass
     elif rol == 'INSTRUCTOR':
-        Instructor.objects.get_or_create(
-            persona=persona, defaults={'activo': True},
+        _, creado_inst = Instructor.objects.get_or_create(
+            persona=persona,
+            defaults={
+                'activo': True,
+                'entidad': entidad_up or 'SENA',
+                'cargo': cargo_cap or 'Instructor',
+            },
         )
+        if not creado_inst:
+            try:
+                Instructor.objects.filter(pk=persona.perfil_instructor.pk).update(
+                    entidad=entidad_up or 'SENA',
+                    cargo=cargo_cap or 'Instructor',
+                )
+            except Exception:
+                pass
     elif rol == 'ORGANIZADOR':
         try:
             _org_cls = _Organizador
             if _org_cls is None:
                 from apps.organizadores.models import Organizador as _org_cls
-            _org_cls.objects.get_or_create(persona=persona, defaults={'activo': True})
+            obj, creado_org = _org_cls.objects.get_or_create(
+                persona=persona,
+                defaults={
+                    'activo': True,
+                    'entidad': entidad_up or None,
+                    'cargo': cargo_cap or None,
+                },
+            )
+            if not creado_org and (entidad_up or cargo_cap):
+                _org_cls.objects.filter(pk=obj.pk).update(
+                    entidad=entidad_up or None,
+                    cargo=cargo_cap or None,
+                )
         except Exception as _err:
             try: _conn_db_global.rollback()
             except Exception: pass

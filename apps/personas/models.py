@@ -24,6 +24,20 @@ class Persona(models.Model):
     correo_sena = models.EmailField(max_length=180, null=True, blank=True, verbose_name='Correo SENA')
     correo_personal = models.EmailField(max_length=180, null=True, blank=True, verbose_name='Correo personal')
     tipo_persona = models.CharField(max_length=20, choices=TIPOS, db_index=True)
+    entidad = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        verbose_name='Entidad / Institución / Empresa',
+        help_text='SENA · I.E. · Colegio · Alcaldía · Empresa · etc.',
+    )
+    cargo = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True,
+        verbose_name='Cargo / Función / Rol en la Entidad',
+        help_text='Aprendiz · Instructor · Coordinador · Rector · Invitado especial · etc.',
+    )
     qr_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     activo = models.BooleanField(default=True)
     creado_por = models.ForeignKey(Usuario, null=True, blank=True, on_delete=models.SET_NULL)
@@ -49,6 +63,53 @@ class Persona(models.Model):
     def get_short_name(self):
         return (self.nombres or '').strip().split(' ')[0] or f"Persona-{self.id}"
 
+    @property
+    def entidad_canonica(self):
+        if self.entidad:
+            return self.entidad
+        try:
+            if self.tipo_persona == 'INVITADO':
+                return (getattr(self.perfil_invitado, 'entidad', None) or '').strip().upper() or None
+        except Exception:
+            pass
+        try:
+            if self.tipo_persona == 'ORGANIZADOR':
+                return (getattr(self.perfil_organizador, 'area_responsabilidad', None) or '').strip().upper() or None
+        except Exception:
+            pass
+        try:
+            if self.tipo_persona == 'APRENDIZ':
+                perfil = getattr(self, 'perfil_aprendiz', None)
+                if perfil and perfil.proyecto:
+                    return (str(getattr(perfil.proyecto.institucion, 'nombre', '')) or '').upper() or None
+        except Exception:
+            pass
+        if self.tipo_persona == 'INSTRUCTOR':
+            return 'SENA'
+        return None
+
+    @property
+    def cargo_canonico(self):
+        if self.cargo:
+            return self.cargo
+        try:
+            if self.tipo_persona == 'INVITADO':
+                _car = (getattr(self.perfil_invitado, 'cargo', None) or '').strip()
+                return _car.title() if _car else None
+        except Exception:
+            pass
+        try:
+            if self.tipo_persona == 'ORGANIZADOR':
+                _car = (getattr(self.perfil_organizador, 'cargo', None) or '').strip()
+                return _car.title() if _car else None
+        except Exception:
+            pass
+        if self.tipo_persona == 'APRENDIZ':
+            return 'Aprendiz'
+        if self.tipo_persona == 'INSTRUCTOR':
+            return 'Instructor'
+        return None
+
     def save(self, *args, **kwargs):
         self.nombres = (self.nombres or '').strip().upper() or self.nombres or ''
         self.apellidos = (self.apellidos or '').strip().upper() or self.apellidos or ''
@@ -58,6 +119,12 @@ class Persona(models.Model):
             self.correo_sena = (self.correo_sena or '').strip().lower()
         if self.correo_personal:
             self.correo_personal = (self.correo_personal or '').strip().lower()
+        if self.entidad is not None:
+            _ent = (self.entidad or '').strip()
+            self.entidad = _ent.upper() if _ent else None
+        if self.cargo is not None:
+            _car = (self.cargo or '').strip()
+            self.cargo = _car.title() if _car else None
         if self._state.adding:
             while True:
                 token = uuid.uuid4()
