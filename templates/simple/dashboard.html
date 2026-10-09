@@ -2,7 +2,7 @@
 {% load static %}
 {% block titulo %}Dashboard Gerencial · {{ evento.nombre|default:"Evento" }}{% endblock %}
 {% block contenido_extra_head %}
-<meta http-equiv="refresh" content="30">
+<meta http-equiv="refresh" content="5">
 <style>
   body{background-color:#f8fafc;color:#0f172a;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
   .card{border:none;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);}
@@ -60,7 +60,7 @@
           <span style="color:#94a3b8;margin:0 .25rem 0 .65rem;opacity:.7;">|</span>
           <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🕒 Actualizado: <span class="txt-mono" style="color:#334155;font-weight:700;">{{ hora_actual }}</span></span>
           <span style="color:#94a3b8;margin:0 .4rem;opacity:.7;">|</span>
-          <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🔄 Auto-refresh cada 30s</span>
+          <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🔄 Auto-refresh cada 5s</span>
         </div>
         <h1 class="h5 mb-1" style="color:#0f172a;font-weight:800;">📊 {{ evento.nombre|default:"Dashboard Gerencial" }}</h1>
         <div style="color:#64748b;font-size:.85rem;">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
@@ -231,7 +231,7 @@
               <div class="progress" style="height:8px;border-radius:999px;background:#e2e8f0;">
                 <div class="progress-bar" style="background:linear-gradient(90deg,#4ade80,#16a34a);width:{% widthratio asistentes_aprendices total_aprendices|default:1 100 %}%;height:100%;border-radius:999px;"></div>
               </div>
-              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ total_aprendices|default:0 }}</b></div>
+              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ ausentes_aprendices|default:0 }}</b></div>
             </div>
           </div>
           <div class="col-12 col-sm-6">
@@ -243,7 +243,7 @@
               <div class="progress" style="height:8px;border-radius:999px;background:#e2e8f0;">
                 <div class="progress-bar" style="background:linear-gradient(90deg,#38bdf8,#0ea5e9);width:{% widthratio asistentes_instructores total_instructores|default:1 100 %}%;height:100%;border-radius:999px;"></div>
               </div>
-              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ total_instructores|default:0 }}</b></div>
+              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ ausentes_instructores|default:0 }}</b></div>
             </div>
           </div>
           <div class="col-12 col-sm-6">
@@ -255,7 +255,7 @@
               <div class="progress" style="height:8px;border-radius:999px;background:#e2e8f0;">
                 <div class="progress-bar" style="background:linear-gradient(90deg,#c084fc,#a855f7);width:{% widthratio asistentes_invitados total_invitados|default:1 100 %}%;height:100%;border-radius:999px;"></div>
               </div>
-              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ total_invitados|default:0 }}</b></div>
+              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ ausentes_invitados|default:0 }}</b></div>
             </div>
           </div>
           <div class="col-12 col-sm-6">
@@ -267,7 +267,7 @@
               <div class="progress" style="height:8px;border-radius:999px;background:#e2e8f0;">
                 <div class="progress-bar" style="background:linear-gradient(90deg,#fbbf24,#f59e0b);width:{% widthratio asistentes_organizadores total_organizadores|default:1 100 %}%;height:100%;border-radius:999px;"></div>
               </div>
-              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ total_organizadores|default:0 }}</b></div>
+              <div class="kpi-sub mt-2">Ausentes: <b style="color:#b91c1c;">{{ ausentes_organizadores|default:0 }}</b></div>
             </div>
           </div>
         </div>

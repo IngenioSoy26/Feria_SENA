@@ -2199,6 +2199,10 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         asist_qr = qs_asistencia.filter(medio='QR').count()
         asist_manual = qs_asistencia.filter(medio='MANUAL').count()
 
+        ausentes_aprendices = max(total_aprendices - asistentes_aprendices, 0)
+        ausentes_instructores = max(total_instructores - asistentes_instructores, 0)
+        ausentes_invitados = max(total_invitados - asistentes_invitados, 0)
+        ausentes_organizadores = max(total_organizadores - asistentes_organizadores, 0)
         ausentes = max(total_personas - asistentes_total, 0)
         pct_asistencia = (asistentes_total * 100 // total_personas) if total_personas else 0
 
@@ -2340,6 +2344,10 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             'asistentes_instructores': asistentes_instructores,
             'asistentes_invitados': asistentes_invitados,
             'asistentes_organizadores': asistentes_organizadores,
+            'ausentes_aprendices': ausentes_aprendices,
+            'ausentes_instructores': ausentes_instructores,
+            'ausentes_invitados': ausentes_invitados,
+            'ausentes_organizadores': ausentes_organizadores,
             'asist_qr': asist_qr,
             'asist_manual': asist_manual,
 
