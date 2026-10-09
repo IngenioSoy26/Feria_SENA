@@ -4,6 +4,16 @@ from django.utils.html import format_html
 from apps.asistencia.models import AsistenciaEvento
 from apps.refrigerios.models import EntregaServicio
 from apps.certificados.models import Certificado
+from apps.eventos.models import TipoServicio
+
+
+@admin.register(TipoServicio)
+class TipoServicioAdmin(admin.ModelAdmin):
+    list_display = ['evento', 'nombre', 'orden', 'activo']
+    list_filter = ['evento', 'activo']
+    search_fields = ['nombre', 'evento__nombre']
+    ordering = ['evento', 'orden']
+    autocomplete_fields = ['evento']
 
 
 def _badge_tipo_persona(tp):
