@@ -6,10 +6,10 @@ from .models import Invitado
 class InvitadoAdmin(admin.ModelAdmin):
     list_display = [
         '_identificacion', '_nombre_completo',
-        'entidad', 'cargo', '_correo',
+        'entidad', 'cargo', '_correo', 'activo',
     ]
     list_filter = [
-        'entidad',
+        'activo', 'entidad',
     ]
     search_fields = [
         'persona__nombres', 'persona__apellidos',
@@ -20,6 +20,7 @@ class InvitadoAdmin(admin.ModelAdmin):
     readonly_fields = []
     list_per_page = 30
     list_display_links = ['_identificacion', '_nombre_completo']
+    list_editable = ['activo']
     save_on_top = True
 
     def _identificacion(self, obj):
@@ -45,6 +46,6 @@ class InvitadoAdmin(admin.ModelAdmin):
             'fields': ('persona',),
         }),
         ('Perfil Invitado', {
-            'fields': ('entidad', 'cargo'),
+            'fields': ('entidad', 'cargo', 'activo'),
         }),
     )
