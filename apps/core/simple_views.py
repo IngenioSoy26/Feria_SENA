@@ -882,15 +882,16 @@ class WizardRegistroView(View):
             return resp
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request, paso=1, **_ignorado):
+    def _get_wizard_context(self, request):
+        """Construye catálogos, municipios y listas base usadas en GET y POST (render same wizard)."""
         evento = _evento_activo()
         fichas_activas = list(
             Ficha.objects.filter(activo=True).select_related(
                 'institucion', 'programa', 'instructor_lider', 'instructor_lider__persona'
             ).order_by('numero')
         )
-        # Catálogo JSON para filtros cascada en FRONTEND
         import json
+        import base64
         catalogo_fichas = []
         for f in fichas_activas:
             catalogo_fichas.append({
@@ -912,7 +913,6 @@ class WizardRegistroView(View):
                 'secretaria_educacion', 'telefono'
             )
         )
-        # Aplanar para compatibilidad con template (municipio, departamento)
         for ie in ies_list:
             ie['municipio'] = ie.pop('municipio__nombre', '') or ''
             ie['departamento'] = ie.pop('municipio__departamento', '') or ''
@@ -920,15 +920,12 @@ class WizardRegistroView(View):
             ProgramaTecnico.objects.filter(activo=True).order_by('nombre').values('nombre', 'codigo')
         )
         instructores_list = []
-        # === PROTECCIÓN v29: Instructor.entidad / cargo aún no migrados en PostgreSQL ===
         try:
             from django.db.utils import ProgrammingError as _PE_WZ
         except Exception:
             _PE_WZ = Exception
         _instructor_qs = None
         try:
-            # Intentar pedir solo las columnas que SEGURAMENTE existen (id, persona_id)
-            # para evitar el ProgrammingError al pedir entidad/cargo.
             _instructor_qs = list(
                 Instructor.objects.select_related('persona').prefetch_related('programas').all()
             )
@@ -937,7 +934,6 @@ class WizardRegistroView(View):
             except Exception: pass
             try: _conn_db_global.close()
             except Exception: pass
-            # Reintento con .values() de solo campos seguros, si falla → []
             try:
                 _instructor_qs = list(
                     Instructor.objects.select_related('persona').prefetch_related('programas')
@@ -977,7 +973,6 @@ class WizardRegistroView(View):
             'programas': programas_list,
             'instructores': instructores_list,
         }
-        import base64
         _catalogo_raw = json.dumps(catalogo, ensure_ascii=False, default=str).encode('utf-8')
         catalogo_b64 = base64.b64encode(_catalogo_raw).decode('ascii')
         municipios_unicos = sorted(
@@ -994,7 +989,7 @@ class WizardRegistroView(View):
             for m in municipios_unicos
             if (m or '').strip()
         ]
-        return render(request, 'simple/wizard_registro.html', {
+        return {
             'evento': evento,
             'municipios': municipios_unicos,
             'municipios_list': municipios_list,
@@ -1005,14 +1000,76 @@ class WizardRegistroView(View):
             'catalogo_b64': catalogo_b64,
             'ies_list': ies_list,
             'programas_list': programas_list,
-        })
+        }
 
-    @transaction.atomic
+    def _extract_valores_previos(self, request, tuplas_aprendices=None):
+        """Extrae dict repintable desde request.POST para re-llenar el formulario tras error."""
+        import re
+        municipio = (request.POST.get('municipio_sel', '') or '').strip().upper() or (request.POST.get('municipio_ie', '') or '').strip().upper() or ''
+        nombre_ie = (request.POST.get('nombre_ie', '') or '').strip().upper() or ''
+        nombre_programa = (request.POST.get('nombre_programa', '') or '').strip().upper() or ''
+        nombre_proyecto = (request.POST.get('nombre_proyecto', '') or '').strip().upper() or ''
+        codigo_ficha_raw = request.POST.get('codigo_ficha', request.POST.get('codigo_proyecto', '') or '').strip()
+        codigo_ficha = re.sub(r'\D', '', codigo_ficha_raw) or ''
+        instructor_nombre = (request.POST.get('instructor_nombre', '') or '').strip().upper() or ''
+        instructor_cedula = re.sub(r'\D', '', request.POST.get('instructor_cedula', '') or '') or ''
+        if tuplas_aprendices is None:
+            tipos = request.POST.getlist('apr_tipo_doc[]') or request.POST.getlist('apr_tipo_doc') or []
+            nums = request.POST.getlist('apr_num_doc[]') or request.POST.getlist('apr_num_doc') or []
+            noms = request.POST.getlist('apr_nombre[]') or request.POST.getlist('apr_nombre') or []
+            correos = request.POST.getlist('apr_correo[]') or request.POST.getlist('apr_correo') or []
+            tels = request.POST.getlist('apr_telefono[]') or request.POST.getlist('apr_telefono') or []
+            n = max(len(tipos), len(nums), len(noms), len(correos), len(tels))
+            tuplas_aprendices = []
+            for i in range(n):
+                t = (tipos[i] if i < len(tipos) else '').strip() or 'CC'
+                nd = re.sub(r'\D', '', (nums[i] if i < len(nums) else '') or '')
+                nm = (noms[i] if i < len(noms) else '').strip().upper() or ''
+                co = (correos[i] if i < len(correos) else '').strip().lower() or ''
+                tl = re.sub(r'\D', '', (tels[i] if i < len(tels) else '') or '')
+                tuplas_aprendices.append((t, nd, nm, co, tl))
+        aprendices = []
+        for t, nd, nm, co, tl in tuplas_aprendices:
+            aprendices.append({
+                'tipo_doc': t or 'CC',
+                'num_doc': nd or '',
+                'nombre': nm or '',
+                'correo': co or '',
+                'telefono': tl or '',
+            })
+        return {
+            'municipio': municipio,
+            'nombre_ie': nombre_ie,
+            'nombre_programa': nombre_programa,
+            'codigo_ficha': codigo_ficha,
+            'nombre_proyecto': nombre_proyecto,
+            'instructor_nombre': instructor_nombre,
+            'instructor_cedula': instructor_cedula,
+            'aprendices': aprendices,
+        }
+
+    def _render_wizard(self, request, valores_previos=None, resumen_exito=None):
+        """Renderiza el template wizard_registro.html, opcionalmente con datos previos o resumen de éxito."""
+        import json
+        ctx = self._get_wizard_context(request)
+        if valores_previos is not None:
+            ctx['valores_previos_json'] = json.dumps(valores_previos, ensure_ascii=False, default=str)
+        else:
+            ctx['valores_previos_json'] = ''
+        if resumen_exito is not None:
+            ctx['resumen_exito_json'] = json.dumps(resumen_exito, ensure_ascii=False, default=str)
+        else:
+            ctx['resumen_exito_json'] = ''
+        return render(request, 'simple/wizard_registro.html', ctx)
+
+    def get(self, request, paso=1, **_ignorado):
+        return self._render_wizard(request, valores_previos=None, resumen_exito=None)
+
     def post(self, request, paso=1, **_ignorado):
         evento = _evento_activo()
         if not evento:
             messages.error(request, 'No hay un evento ACTIVO. Crea primero un evento desde Administración.')
-            return redirect('simple:wizard')
+            return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
         try:
             import re
@@ -1035,18 +1092,18 @@ class WizardRegistroView(View):
 
             if not nombre_ie or not nombre_programa or not nombre_proyecto:
                 messages.error(request, '⚠ Faltan datos obligatorios: Institución, Programa y Nombre del proyecto.')
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
             if not nombre_instructor or not cedula_instructor:
                 messages.error(request, '⚠ El Instructor líder y su Documento de identidad son OBLIGATORIOS.')
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
             if not RE_NUM5_15.match(cedula_instructor):
                 messages.error(
                     request,
                     f'⚠ Documento del instructor líder inválido: "{cedula_instructor_raw}".\n'
                     f'Sólo se admiten DÍGITOS, entre 5 y 15 caracteres.'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
             if not codigo_ficha or not RE_NUM7.match(codigo_ficha):
                 messages.error(
@@ -1054,7 +1111,7 @@ class WizardRegistroView(View):
                     f'⚠ El Código de Ficha es obligatorio y debe tener EXACTAMENTE 7 dígitos numéricos.\n'
                     f'Valor recibido: "{codigo_ficha_raw}" → "{codigo_ficha}" ({len(codigo_ficha)} dígitos).'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
             # ---- INSTITUCIÓN + PROGRAMA (SOLO CATÁLOGO ADMIN — NO se crean nuevos desde registro) ----
             colegio = InstitucionEducativa.objects.filter(nombre__iexact=nombre_ie, activo=True).order_by('id').first()
@@ -1064,7 +1121,7 @@ class WizardRegistroView(View):
                     f'❌ La Institución Educativa "{nombre_ie}" NO EXISTE en el catálogo del administrador.\n'
                     'No se puede crear desde el registro de proyectos: el Administrador debe crearla manualmente o por Excel.'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
             programa = ProgramaTecnico.objects.filter(nombre__iexact=nombre_programa, activo=True).order_by('id').first()
             if not programa:
@@ -1073,7 +1130,7 @@ class WizardRegistroView(View):
                     f'❌ El Programa Técnico "{nombre_programa}" NO EXISTE en el catálogo del administrador.\n'
                     'No se puede crear desde el registro de proyectos: el Administrador debe crearlo manualmente o por Excel.'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
             # ---- INSTRUCTOR LÍDER = OPCIÓN A (ESTRICTAMENTE CATÁLOGO) ----
             # Regla Opción A aprobada por usuario: Instructor LÍDER viene ÚNICAMENTE del
@@ -1091,7 +1148,7 @@ class WizardRegistroView(View):
                     f'❌ La Ficha #{codigo_ficha} NO EXISTE en el catálogo del administrador.\n'
                     'No se puede crear desde aquí: el Administrador debe dar de alta la ficha (Institución + Programa + Instructor líder).'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
             # Coherencia entre la ficha existente y la selección actual
             if ficha_obj.institucion_id != colegio.pk or ficha_obj.programa_id != programa.pk:
                 messages.warning(
@@ -1110,7 +1167,7 @@ class WizardRegistroView(View):
                     'Por favor contacte al Administrador para que cargue el Instructor líder de la Ficha '
                     f'#{codigo_ficha} mediante la importación Excel o el panel administrativo.'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
             p_lider = getattr(ficha_obj.instructor_lider, 'persona', None)
             if not p_lider:
                 messages.error(
@@ -1118,7 +1175,7 @@ class WizardRegistroView(View):
                     f'❌ La Ficha #{codigo_ficha} tiene Instructor Líder sin registro de Persona. '
                     'Contacte al Administrador para corregir la integridad de datos del instructor.'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
             instructor_obj = ficha_obj.instructor_lider
             nombre_instructor = p_lider.nombre_completo
             cedula_instructor = p_lider.numero_identificacion
@@ -1131,23 +1188,6 @@ class WizardRegistroView(View):
             # ================ OPCIÓN A FIN: ya NO se usa el instructor que venga del form POST ==============
             if ficha_obj.municipio:
                 municipio_ie = ficha_obj.municipio
-
-            # ---- PROYECTO (Ficha) ---
-            # UNA MISMA FICHA PUEDE TENER MÚLTIPLES PROYECTOS (cada uno con sus aprendices)
-            # NO USAMOS get_or_create por (evento, codigo_ficha): eso hacía update del 1er proyecto y perdía datos
-            # Código de proyecto lo genera Proyecto.save() automático: 3160423 (1er), 3160423-P2 (2do), 3160423-P3 (3er)...
-            proyecto = Proyecto(
-                evento=evento,
-                nombre=nombre_proyecto,
-                descripcion=f'{nombre_proyecto} - {colegio.nombre}',
-                institucion=colegio,
-                programa=programa,
-                instructor_responsable=instructor_obj,
-                estado='APROBADO',
-            )
-            if ficha_obj:
-                proyecto.ficha = ficha_obj
-            proyecto.save()  # save() genera el código secuencial único por evento+ficha
 
             # ---- APRENDICES (SUB-FORMULARIO DINÁMICO, arreglos) ----
             tipos = request.POST.getlist('apr_tipo_doc[]') or request.POST.getlist('apr_tipo_doc') or []
@@ -1183,7 +1223,7 @@ class WizardRegistroView(View):
                         f'⚠ El aprendiz #{i+1} tiene campos obligatorios vacíos: {", ".join(faltan)}.\n'
                         'Todos los campos son obligatorios (incluye Teléfono).'
                     )
-                    return redirect('simple:wizard')
+                    return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
                 # Validación FORMATO estricto por campo
                 errores_fmt = []
@@ -1205,7 +1245,7 @@ class WizardRegistroView(View):
                         f'❌ El aprendiz #{i+1} tiene campos con formato incorrecto:\n  • '
                         + '\n  • '.join(errores_fmt)
                     )
-                    return redirect('simple:wizard')
+                    return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
                 tuplas.append((t, nd, nm, co, tl))
 
@@ -1219,7 +1259,7 @@ class WizardRegistroView(View):
                         'ya está incluido varias veces en este mismo registro. '
                         'Por favor elimina las filas repetidas.'
                     )
-                    return redirect('simple:wizard')
+                    return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
                 numeros_en_submision.add(nd)
                 # Búsqueda transversal: Mismo número de documento (INDEPENDIENTEMENTE DE TIPO DOC) en BD
                 num_solo_dig = re.sub(r'\D', '', nd) or None
@@ -1257,7 +1297,7 @@ class WizardRegistroView(View):
                         f'❕ Cómo solucionarlo: (1) Ve al listado de Proyectos y elimina al aprendiz del proyecto original, '
                         f'o (2) Usa el proyecto original, o (3) Contacta al Administrador.'
                     )
-                    return redirect('simple:wizard')
+                    return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
                 # También bloqueamos si existe Persona con ese mismo #DOC como INVITADO/INSTRUCTOR/ORGANIZADOR PERO CON tipo_persona != APRENDIZ pero queremos pasarlo a Aprendiz
                 # — NADA: permitimos que la misma persona cambie de rol (ej: persona era Invitado y ahora es Aprendiz, es válido).
                 # Lo único que NO se permite es 2 Aprendices del MISMO #DOC = regla anterior.
@@ -1287,6 +1327,7 @@ class WizardRegistroView(View):
                     proyecto.save()  # save() genera el código secuencial único por evento+ficha
 
                     aprendices_guardados = 0
+                    aprendices_resumen = []
                     for t, nd, nm, co, tl in tuplas:
                         nombres_a, apellidos_a = self._separar_nombres_apellidos(nm)
                         persona_a, _ = Persona.objects.get_or_create(
@@ -1353,12 +1394,19 @@ class WizardRegistroView(View):
                         nuevo_aprendiz.full_clean()
                         nuevo_aprendiz.save(force_insert=True)
                         aprendices_guardados += 1
+                        aprendices_resumen.append({
+                            'tipo_doc': t or 'CC',
+                            'num_doc': nd or '',
+                            'nombre': nm or '',
+                            'correo': co or '',
+                            'telefono': tl or '',
+                        })
             except Exception as e_err:
                 messages.error(
                     request,
                     f'❌ NO SE PUDO GUARDAR EL PROYECTO (se deshizo todo): {e_err}'
                 )
-                return redirect('simple:wizard')
+                return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
             total_proyectos_ficha = 0
             if ficha_obj:
@@ -1366,21 +1414,53 @@ class WizardRegistroView(View):
                     evento=evento,
                     ficha=ficha_obj,
                 ).count()
+            # ===== Resumen para MODAL ÉXITO (auto-abierto al re-renderizar wizard) =====
+            try:
+                from datetime import datetime as _dt_wiz
+                try:
+                    from zoneinfo import ZoneInfo as _ZI
+                    _tz = _ZI('America/Bogota')
+                except Exception:
+                    try:
+                        import pytz as _pytz
+                        _tz = _pytz.timezone('America/Bogota')
+                    except Exception:
+                        _tz = None
+                _ahora = _dt_wz.now(tz=_tz) if _tz else _dt_wz.now()
+                _fhr = _ahora.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception:
+                _fhr = ''
+            resumen_exito = {
+                'ok': True,
+                'codigo_proyecto': (proyecto.codigo or '') if proyecto else '',
+                'numero_proyecto_ficha': total_proyectos_ficha if total_proyectos_ficha else 1,
+                'ficha_numero': str(ficha_obj.numero) if ficha_obj else (codigo_ficha or ''),
+                'nombre_proyecto': (proyecto.nombre or nombre_proyecto) if proyecto else (nombre_proyecto or ''),
+                'ie_nombre': (colegio.nombre or '') if colegio else nombre_ie,
+                'ie_municipio': (str(colegio.municipio.nombre) or '') if (colegio and colegio.municipio_id) else (municipio_ie or ''),
+                'programa_nombre': (programa.nombre or '') if programa else nombre_programa,
+                'instructor_nombre': nombre_instructor or '',
+                'instructor_cedula': cedula_instructor or '',
+                'cantidad_aprendices': aprendices_guardados or 0,
+                'aprendices': aprendices_resumen or [],
+                'fecha_hora_registro': _fhr,
+            }
             msg = (
-                f'✔ Ficha #{codigo_ficha} · Código Proyecto: "{proyecto.codigo}" · '
-                f'Proyecto #{total_proyectos_ficha if total_proyectos_ficha else 1} en esta ficha · '
-                f'Nombre: "{proyecto.nombre}" · {aprendices_guardados} aprendiz(es) · '
-                f'{colegio.nombre}'
+                f'✔ Ficha #{codigo_ficha} · Código Proyecto: "{resumen_exito["codigo_proyecto"]}" · '
+                f'Proyecto #{resumen_exito["numero_proyecto_ficha"]} en esta ficha · '
+                f'Nombre: "{resumen_exito["nombre_proyecto"]}" · {resumen_exito["cantidad_aprendices"]} aprendiz(es) · '
+                f'{resumen_exito["ie_nombre"]}'
             )
-            if colegio.municipio_id:
-                msg += f' ({colegio.municipio.nombre})'
+            if resumen_exito['ie_municipio']:
+                msg += f' ({resumen_exito["ie_municipio"]})'
             msg += '.'
             messages.success(request, msg)
-            return redirect('simple:home')
+            # ====== POST OK (302 NO más redirect): mismo wizard URL, FORMULARIO VACÍO + MODAL ÉXITO auto-abierto ======
+            return self._render_wizard(request, valores_previos=None, resumen_exito=resumen_exito)
 
         except Exception as e:
             messages.error(request, f'⚠ Hubo un error al guardar: {e}')
-            return redirect('simple:wizard')
+            return self._render_wizard(request, valores_previos=self._extract_valores_previos(request))
 
     @staticmethod
     def _separar_nombres_apellidos(texto):

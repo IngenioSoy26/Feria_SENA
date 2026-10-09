@@ -107,7 +107,165 @@
         <span class="btn-sub">→ Proyecto + Aprendices juntos</span>
       </button>
     </div>
+
+    {% comment %} Hidden flag = 1 SOLAMENTE cuando el usuario dio ✅ Confirmar en el modal de confirmación.
+         El listener del submit (2do envío) lo revisa para permitir pasar POST normalmente. {% endcomment %}
+    <input type="hidden" name="wizard_flag_confirmar_guardar" id="wizard-flag-confirmar" value="">
   </form>
+</div>
+
+{% comment %} ==========================================================
+ DATA HOLDERS: valores previos (para repintar form cuando hay error)
+ y resumen éxito (para abrir modal éxito auto)
+========================================================== {% endcomment %}
+<div id="valores-previos-data" style="display:none!important;">{{ valores_previos_json|default:'' }}</div>
+<div id="resumen-exito-data" style="display:none!important;">{{ resumen_exito_json|default:'' }}</div>
+
+{% comment %} ==========================================================
+ MODAL 1: CONFIRMACIÓN ANTES DE GUARDAR (muestra resumen a guardar,
+ 2 botones: ✏️ Modificar / ✅ Confirmar y Guardar)
+ ========================================================== {% endcomment %}
+<div class="modal fade" id="modalConfirmarWizard" data-bs-backdrop="static" data-bs-keyboard="false"
+     tabindex="-1" aria-labelledby="modalConfirmarWizardLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-sena text-white py-3 px-4">
+        <h5 class="modal-title fw-bold mb-0" id="modalConfirmarWizardLabel">
+          📋 Revisa los datos antes de guardar
+        </h5>
+        <span class="badge bg-white text-sena-dark ms-2 fs-6 fw-bold">Confirmación requerida</span>
+      </div>
+      <div class="modal-body p-4 bg-gray-50">
+        <div class="mb-4">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge-sena text-sena-dark">🏫 Datos del Proyecto</span>
+          </div>
+          <div class="card shadow-none border border-sena-light bg-white">
+            <div class="card-body p-0">
+              <table class="table table-borderless align-middle mb-0 resumen-table" id="resumen-proyecto-tbl">
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge-sena text-sena-dark">👨‍🎓 Aprendices del Proyecto</span>
+            <span class="badge bg-sena ms-1 fw-bold" id="resumen-num-aprendices-badge">0</span>
+          </div>
+          <div class="card shadow-none border border-sena-light bg-white">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="resumen-aprendices-tbl">
+                  <thead class="bg-sena-light text-sena-dark small">
+                    <tr>
+                      <th class="text-center">#</th>
+                      <th>Tipo Doc</th>
+                      <th>N° Documento</th>
+                      <th>Nombre Completo</th>
+                      <th>Correo Electrónico</th>
+                      <th>Teléfono</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning small mt-4 mb-0" role="alert">
+          <strong>💡 Consejo:</strong> si los datos no coinciden, haz clic en <strong>✏️ Modificar</strong> para volver al formulario y corregirlos.
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between bg-white border-top border-sena-light py-3">
+        <button type="button" class="btn-ghost" data-bs-dismiss="modal" id="wizard-btn-modificar">
+          ✏️ Modificar · Volver al formulario
+        </button>
+        <button type="button" class="btn-sena btn-big shadow" id="wizard-btn-confirmar-si">
+          ✅ Confirmar y Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %} ==========================================================
+ MODAL 2: ÉXITO — Constancia del registro completado (auto-abierto
+ por el JS cuando existe resumen_exito)
+ ========================================================== {% endcomment %}
+<div class="modal fade" id="modalExitoWizard" data-bs-backdrop="static" data-bs-keyboard="false"
+     tabindex="-1" aria-labelledby="modalExitoWizardLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-gradient-success text-white py-3 px-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="badge-check-xl bg-white text-sena-green rounded-circle d-flex align-items-center justify-content-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="modalExitoWizardLabel">
+              🎉 Registro Completado con Éxito
+            </h5>
+            <div class="small opacity-90">El proyecto y sus aprendices fueron guardados correctamente.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body p-4 bg-gray-50">
+        <div class="mb-4">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge bg-sena text-white fw-bold">📋 Constancia — Datos Guardados</span>
+            <span class="badge bg-success text-white ms-auto fw-bold" id="exito-codigo-proyecto">Cód: —</span>
+          </div>
+          <div class="card shadow-none border border-sena-light bg-white">
+            <div class="card-body p-0">
+              <table class="table table-borderless align-middle mb-0 resumen-table" id="exito-proyecto-tbl">
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge-sena text-sena-dark">👨‍🎓 Aprendices Registrados</span>
+            <span class="badge bg-sena ms-1 fw-bold" id="exito-num-aprendices-badge">0</span>
+          </div>
+          <div class="card shadow-none border border-sena-light bg-white">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="exito-aprendices-tbl">
+                  <thead class="bg-sena-light text-sena-dark small">
+                    <tr>
+                      <th class="text-center">#</th>
+                      <th>Tipo Doc</th>
+                      <th>N° Documento</th>
+                      <th>Nombre Completo</th>
+                      <th>Correo Electrónico</th>
+                      <th>Teléfono</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between bg-white border-top border-sena-light py-3 flex-wrap gap-2">
+        <button type="button" class="btn-ghost" id="wizard-btn-exito-cerrar" data-bs-dismiss="modal">
+          ✔️ Cerrar · Seguir trabajando
+        </button>
+        <button type="button" class="btn-sena btn-big shadow" id="wizard-btn-exito-siguiente">
+          ➕ Registrar el Siguiente Proyecto
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
@@ -586,6 +744,12 @@
   const form = document.getElementById('form-registro-ficha');
   if(form){
     form.addEventListener('submit', function(e){
+      // ✅ CASO 1: Submit ORIGEN = ✅ Confirmar botón modal → Flag ya vale "1", DEJAMOS PASAR normalmente (no interceptamos)
+      const flagConfirmar = document.getElementById('wizard-flag-confirmar');
+      if(flagConfirmar && String(flagConfirmar.value || '').trim() === '1'){
+        flagConfirmar.value = ''; // limpiar para siguiente proyecto
+        return true;
+      }
       const ieVal = (ieCombo? ieCombo.value : '').trim();
       const progVal = (progCombo? progCombo.value : '').trim();
       const fichaVal = (fichaCombo? fichaCombo.value : '').trim();
@@ -627,7 +791,30 @@
       document.querySelectorAll('#aprendices-container .apr-correo').forEach(inp => {
         if(inp && inp.value){ inp.value = inp.value.trim().toLowerCase(); }
       });
-      return true;
+
+      // ✅ CASO 2: Submit ORIGEN = click 💾 Guardar btn original → NO enviamos AÚN, mostramos MODAL CONFIRMACIÓN
+      e.preventDefault();
+      e.stopPropagation();
+      try{
+        if(typeof window.__WIZARD_ABRIR_MODAL_CONFIRMAR__ === 'function'){
+          window.__WIZARD_ABRIR_MODAL_CONFIRMAR__(form, {
+            municipio: (munCombo ? (munCombo.value || '').trim() : ''),
+            ie: ieVal,
+            programa: progVal,
+            ficha: fichaVal,
+            nombre_proyecto: (inpNombreProyecto? (inpNombreProyecto.value || '').trim() : ''),
+            instructor_nombre: (inpIns ? (inpIns.value || '').trim() : ''),
+            instructor_cedula: (inpDoc ? (inpDoc.value || '').trim() : ''),
+            filasAprendices: filasApr,
+          });
+        } else {
+          form.submit();
+        }
+      }catch(_errModal){
+        console.warn('Error modal confirmar:', _errModal);
+        form.submit();
+      }
+      return false;
     });
   }
   window.__REGISTRO_CASCADA_REFRESH__ = actualizarCascada;
@@ -758,6 +945,8 @@
   }
 
   btnAdd.addEventListener('click', () => agregarAprendiz(null, true));
+  window.__REGISTRO_AGREGAR_APRENDIZ__ = agregarAprendiz;
+  window.__REGISTRO_ACTUALIZAR_VACIO_APRENDICES__ = actualizarVacio;
 
   // Inicial: 1 fila vacía para que el usuario empiece a digitar, PERO SIN PONER FOCO (foco inicial en Municipio)
   if (container.querySelectorAll('.aprendiz-row').length === 0) {
@@ -883,6 +1072,386 @@
   if(btn) btn.addEventListener('click', ()=>buscarYCompletar(false));
   inp.addEventListener('blur', ()=>buscarYCompletar(true));
   inp.addEventListener('change', ()=>buscarYCompletar(true));
+})();
+
+{% comment %} ==========================================================
+  WIZARD v32 — NÚCLEO UX: MODAL confirmación / MODAL éxito,
+  AUTO-FILL repintado (cuando backend devolvió error POST),
+  HANDLERS botones modales.
+  Todo esto corre DESPUÉS de los 4 IIFE existentes para que ya
+  existan las window.__REGISTRO_* helpers.
+========================================================== {% endcomment %}
+<script>
+(function () {
+  'use strict';
+
+  // =====================================================
+  // HELPERS COMUNES PARA AMBOS MODALES (confirmar + éxito)
+  // =====================================================
+  function _filaEtiquetaValor(etiqueta, valor, valorMonospace) {
+    const clsValorMonospace = (valorMonospace === true) ? ' style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.03em;"' : '';
+    return (
+      '<tr>' +
+        '<th scope="row" style="width:26%;background:#f8fdf2;color:var(--sena-deep);border-bottom:1px dashed #d8eec2;padding:10px 14px;font-size:.85rem;">' + etiqueta + '</th>' +
+        '<td style="border-bottom:1px dashed #e8f3d6;padding:10px 14px;font-weight:600;' + (valorMonospace ? 'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.03em;' : '') + '">' +
+          (valor || '<span class="text-muted" style="font-weight:400;">—</span>') +
+        '</td>' +
+      '</tr>'
+    );
+  }
+
+  function _renderTablaProyecto(tbodySel, datos) {
+    const tbody = document.querySelector(tbodySel);
+    if (!tbody) return;
+    const filas = [
+      _filaEtiquetaValor('🏙️ Municipio', datos.municipio || ''),
+      _filaEtiquetaValor('🏫 Institución Educativa', datos.ie_nombre || datos.ie || ''),
+      _filaEtiquetaValor('📚 Programa Técnico', datos.programa_nombre || datos.programa || ''),
+      _filaEtiquetaValor('🧾 Código Ficha (7 dígitos)', datos.ficha_numero || datos.ficha || '', true),
+      _filaEtiquetaValor('💡 Nombre del Proyecto', datos.nombre_proyecto || ''),
+      _filaEtiquetaValor('👨‍🏫 Instructor Líder', datos.instructor_nombre || ''),
+      _filaEtiquetaValor('🆔 Documento Instructor', datos.instructor_cedula || '', true),
+    ];
+    if (datos.codigo_proyecto) {
+      filas.unshift(_filaEtiquetaValor('🗂️ Código Proyecto (generado)', '<span class="badge bg-sena text-white px-2 py-1 rounded-3" style="font-size:1rem;">' + String(datos.codigo_proyecto || '').toUpperCase() + '</span>'));
+    }
+    if (datos.numero_proyecto_ficha) {
+      filas.splice(3, 0, _filaEtiquetaValor('# Proyecto en la misma Ficha', 'Proyecto #' + String(datos.numero_proyecto_ficha || '1')));
+    }
+    if (datos.ie_municipio && datos.ie_municipio !== (datos.municipio || '')) {
+      filas.splice(2, 0, _filaEtiquetaValor('📍 Municipio IE (registro)', datos.ie_municipio || ''));
+    }
+    if (datos.cantidad_aprendices !== undefined && datos.cantidad_aprendices !== null) {
+      filas.push(_filaEtiquetaValor('👨‍🎓 Cantidad Aprendices', String(datos.cantidad_aprendices || 0)));
+    }
+    if (datos.fecha_hora_registro) {
+      filas.push(_filaEtiquetaValor('🕒 Fecha/Hora Registro (Bogotá)', String(datos.fecha_hora_registro || '')));
+    }
+    tbody.innerHTML = filas.join('');
+  }
+
+  function _renderTablaAprendices(tbodySel, badgeSel, lista) {
+    const tbody = document.querySelector(tbodySel);
+    const badge = badgeSel ? document.querySelector(badgeSel) : null;
+    const listaLimpia = Array.isArray(lista) ? lista.filter(a => a && (a.num_doc || a.nombre)) : [];
+    if (badge) badge.textContent = String(listaLimpia.length || 0);
+    if (!tbody) return;
+    if (listaLimpia.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-4">No hay aprendices registrados (0).</td></tr>';
+      return;
+    }
+    tbody.innerHTML = listaLimpia.map((a, i) => {
+      return (
+        '<tr>' +
+          '<td class="text-center small" style="font-weight:700;">' + String(i + 1) + '</td>' +
+          '<td><span class="badge bg-sena-light text-sena-dark" style="font-size:.8rem;">' + String(a.tipo_doc || 'CC') + '</span></td>' +
+          '<td style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.03em;font-weight:600;">' + String(a.num_doc || '—') + '</td>' +
+          '<td style="font-weight:600;">' + String(a.nombre || '—') + '</td>' +
+          '<td class="small">' + (a.correo ? String(a.correo).toLowerCase() : '<span class="text-muted">—</span>') + '</td>' +
+          '<td style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">' + (a.telefono || '<span class="text-muted">—</span>') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  // =====================================================
+  // MODAL 1: CONFIRMACIÓN previa a guardar
+  // =====================================================
+  function _extraerAprendicesDesdeFilasDOM(filasApr) {
+    const lista = [];
+    const filas = (filasApr && (filasApr instanceof NodeList || Array.isArray(filasApr))) ? Array.from(filasApr) :
+      Array.from(document.querySelectorAll('#aprendices-container .aprendiz-row'));
+    filas.forEach((row, _i) => {
+      const t = (row.querySelector('.apr-tipo')?.value || 'CC').toString().trim() || 'CC';
+      const nd = (row.querySelector('.apr-numdoc')?.value || '').toString().trim();
+      const nm = (row.querySelector('.apr-nombre')?.value || '').toString().trim();
+      const co = (row.querySelector('.apr-correo')?.value || '').toString().trim().toLowerCase();
+      const tl = (row.querySelector('.apr-tel')?.value || '').toString().trim();
+      if (!nd && !nm) return; // fila vacía
+      lista.push({ tipo_doc: t, num_doc: nd, nombre: nm, correo: co, telefono: tl });
+    });
+    return lista;
+  }
+
+  function abrirModalConfirmar(form, datos) {
+    const aprendices = (Array.isArray(datos.filasAprendices) && datos.filasAprendices.length)
+      ? _extraerAprendicesDesdeFilasDOM(datos.filasAprendices)
+      : _extraerAprendicesDesdeFilasDOM(null);
+    // Renderizamos en las tablas del modal
+    _renderTablaProyecto('#resumen-proyecto-tbl > tbody', {
+      municipio: datos.municipio || '',
+      ie_nombre: datos.ie || '',
+      programa_nombre: datos.programa || '',
+      ficha_numero: datos.ficha || '',
+      nombre_proyecto: datos.nombre_proyecto || '',
+      instructor_nombre: datos.instructor_nombre || '',
+      instructor_cedula: datos.instructor_cedula || '',
+      cantidad_aprendices: aprendices.length,
+    });
+    _renderTablaAprendices('#resumen-aprendices-tbl > tbody', '#resumen-num-aprendices-badge', aprendices);
+    // Mostrar modal backdrop:static
+    try {
+      const modalEl = document.getElementById('modalConfirmarWizard');
+      if (!modalEl) { form && form.submit(); return; }
+      const bsInst = (window.bootstrap && window.bootstrap.Modal)
+        ? window.bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: false })
+        : null;
+      if (bsInst) bsInst.show();
+      else if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.modal) {
+        jQuery(modalEl).modal({ backdrop: 'static', keyboard: false, show: true });
+      } else {
+        // Fallback extremo si no hay Bootstrap modal → preguntar
+        if (confirm('¿Confirma que desea guardar este Proyecto con ' + aprendices.length + ' aprendiz(es)?\n\nHaga clic en Aceptar para guardar, Cancelar para modificar.')) {
+          if (form) form.submit();
+        }
+      }
+    } catch (e_errModal) {
+      console.warn('Modal confirm fallback a submit:', e_errModal);
+      if (form) form.submit();
+    }
+  }
+  // Exponer globalmente para que el 1er IIFE (cascada submit) la invoque.
+  window.__WIZARD_ABRIR_MODAL_CONFIRMAR__ = abrirModalConfirmar;
+
+  // =====================================================
+  // HANDLERS BOTONES MODALES (confirmar + éxito)
+  // =====================================================
+  document.addEventListener('DOMContentLoaded', function () {
+    // ========== MODAL 1: confirmación ==========
+    const btnConfirmSi = document.getElementById('wizard-btn-confirmar-si');
+    if (btnConfirmSi) {
+      btnConfirmSi.addEventListener('click', function () {
+        const form = document.getElementById('form-registro-ficha');
+        const flag = document.getElementById('wizard-flag-confirmar');
+        if (flag) flag.value = '1';
+        // Ocultar modal ANTES de submit (evita doble modal transición)
+        try {
+          const mEl = document.getElementById('modalConfirmarWizard');
+          if (mEl && window.bootstrap && window.bootstrap.Modal) {
+            const inst = window.bootstrap.Modal.getInstance(mEl);
+            if (inst) inst.hide();
+          } else if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.modal && mEl) {
+            jQuery(mEl).modal('hide');
+          }
+        } catch (_eHide) { /* ignore */ }
+        // Asegurar que el flag exista EN EL FORM (ya está como input hidden dentro del form en L119)
+        if (form) form.submit();
+      });
+    }
+
+    // ========== MODAL 2: ÉXITO ==========
+    const btnExitoSiguiente = document.getElementById('wizard-btn-exito-siguiente');
+    if (btnExitoSiguiente) {
+      btnExitoSiguiente.addEventListener('click', function () {
+        // Cerrar modal y subir hasta el formulario para el SIGUIENTE proyecto (ya está limpio)
+        try {
+          const mEl = document.getElementById('modalExitoWizard');
+          if (mEl && window.bootstrap && window.bootstrap.Modal) {
+            const inst = window.bootstrap.Modal.getInstance(mEl);
+            if (inst) inst.hide();
+          } else if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.modal && mEl) {
+            jQuery(mEl).modal('hide');
+          }
+        } catch (_) { /* ignore */ }
+        try {
+          const f = document.getElementById('form-registro-ficha');
+          if (f) {
+            f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        } catch (_sc) { /* ignore */ }
+      });
+    }
+    const btnExitoCerrar = document.getElementById('wizard-btn-exito-cerrar');
+    if (btnExitoCerrar) {
+      btnExitoCerrar.addEventListener('click', function () {
+        // el data-bs-dismiss ya cierra el modal, pero adicional: subir al inicio.
+        try {
+          const f = document.getElementById('form-registro-ficha');
+          if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (_) { /* ignore */ }
+      });
+    }
+  });
+
+  // =====================================================
+  // AUTO-FILL FORMULARIO cuando hubo ERROR en POST (backend devolvió valores_previos).
+  // Repinta: combos cascada (municipio → IE → programa → ficha), nombre proyecto,
+  // instructor (readonly), y MÚLTIPLES filas de aprendices (no solo 1 vacía).
+  // =====================================================
+  function _aplicarValoresPreviosAlForm(valoresPrev) {
+    if (!valoresPrev || typeof valoresPrev !== 'object') return;
+    const aprendices = Array.isArray(valoresPrev.aprendices) ? valoresPrev.aprendices : [];
+    // Paso 1: combos cascada. Usar los helpers globales que expuso el IIFE de cascada.
+    const munId = 'inp-municipio-sel';
+    const ieId = 'inp-nombre-ie';
+    const progId = 'inp-nombre-programa';
+    const fichaId = 'inp-codigo-ficha';
+    const nomProySel = 'input[name="nombre_proyecto"], #inp-nombre-proyecto';
+    const inpInsNm = 'input[name="instructor_nombre"], #inp-ins-nombre';
+    const inpInsDc = 'input[name="instructor_cedula"], #inp-ins-doc';
+    function _establecerCombo(id, valor) {
+      if (!id || !valor) return null;
+      const el = document.getElementById(id);
+      if (!el) return null;
+      // Intentar match exacto
+      let matched = false;
+      const valUp = String(valor || '').toUpperCase().trim();
+      for (const opt of Array.from(el.options || [])) {
+        const v1 = String(opt.value || '').toUpperCase().trim();
+        const t1 = String(opt.textContent || '').toUpperCase().trim();
+        if (v1 === valUp || t1 === valUp) { el.value = opt.value; matched = true; break; }
+      }
+      if (!matched && String(el.tagName || '').toUpperCase() === 'SELECT') {
+        // Si el valor no está en options (puede ser que el catálogo no lo cargara aún), agregar opción temporal.
+        try {
+          const newOpt = document.createElement('option');
+          newOpt.value = String(valor);
+          newOpt.textContent = String(valor);
+          el.appendChild(newOpt);
+          el.value = String(valor);
+        } catch (_eopt) { /* ignore */ }
+      } else if (!matched && String(el.tagName || '').toUpperCase() === 'INPUT') {
+        el.value = String(valor);
+      }
+      // Disparar change/input events
+      try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+      try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+      return el;
+    }
+    function _establecerInputCSSel(selCSS, valor) {
+      if (!valor) return;
+      const el = document.querySelector(selCSS);
+      if (!el) return;
+      el.value = String(valor);
+      try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (_) {}
+      try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch (_) {}
+    }
+    // Los helpers globales de cascada: window.__REGISTRO_CASCADA_REFRESH__ / window.__REGISTRO_COMPLETAR_FICHA__
+    // Si existen, llamar a actualizarCascada tras cada cambio. Si no, los eventos change disparan los listeners que ya agregó la cascada.
+    const pasos = [];
+    if (valoresPrev.municipio) pasos.push(() => _establecerCombo(munId, valoresPrev.municipio));
+    if (valoresPrev.nombre_ie) pasos.push(() => _establecerCombo(ieId, valoresPrev.nombre_ie));
+    if (valoresPrev.nombre_programa) pasos.push(() => _establecerCombo(progId, valoresPrev.nombre_programa));
+    if (valoresPrev.codigo_ficha) pasos.push(() => _establecerCombo(fichaId, valoresPrev.codigo_ficha));
+    if (valoresPrev.nombre_proyecto) pasos.push(() => _establecerInputCSSel(nomProySel, valoresPrev.nombre_proyecto));
+    if (valoresPrev.instructor_nombre) pasos.push(() => _establecerInputCSSel(inpInsNm, valoresPrev.instructor_nombre));
+    if (valoresPrev.instructor_cedula) pasos.push(() => _establecerInputCSSel(inpInsDc, valoresPrev.instructor_cedula));
+    // Completar desde ficha (auto-llenar instructor / ie / programa si coincide catálogo), al final
+    if (valoresPrev.codigo_ficha && typeof window.__REGISTRO_COMPLETAR_FICHA__ === 'function') {
+      pasos.push(() => window.__REGISTRO_COMPLETAR_FICHA__(String(valoresPrev.codigo_ficha || ''), true));
+    }
+    // ==== FILAS APRENDICES: limpiar y repintar ====
+    pasos.push(() => {
+      const container = document.getElementById('aprendices-container');
+      if (!container) return;
+      // Quitar filas actuales
+      const rows = container.querySelectorAll('.aprendiz-row');
+      rows.forEach(r => { try { r.remove(); } catch (_) {} });
+      // Agregar las nuevas
+      if (aprendices.length === 0) {
+        if (typeof window.__REGISTRO_AGREGAR_APRENDIZ__ === 'function') {
+          window.__REGISTRO_AGREGAR_APRENDIZ__(null, false);
+        }
+      } else {
+        aprendices.forEach((a) => {
+          if (typeof window.__REGISTRO_AGREGAR_APRENDIZ__ === 'function') {
+            const prefill = {
+              tipo: a.tipo_doc || 'CC',
+              num_doc: a.num_doc || '',
+              nombre: a.nombre || '',
+              correo: a.correo || '',
+              telefono: a.telefono || '',
+            };
+            window.__REGISTRO_AGREGAR_APRENDIZ__(prefill, false);
+          }
+        });
+      }
+      if (typeof window.__REGISTRO_ACTUALIZAR_VACIO_APRENDICES__ === 'function') {
+        window.__REGISTRO_ACTUALIZAR_VACIO_APRENDICES__();
+      }
+    });
+    // Ejecutar pasos secuencialmente con setTimeout 35ms entre cada uno, para que la cascada (async change events)
+    // tenga tiempo de re-llenar las options de los siguientes combos ANTES de establecer el valor.
+    let idx = 0;
+    function _correrSiguiente() {
+      if (idx >= pasos.length) return;
+      const fn = pasos[idx++];
+      try { if (typeof fn === 'function') fn(); } catch (_eStep) { console.warn('paso repintado falló:', _eStep); }
+      setTimeout(_correrSiguiente, 35);
+    }
+    setTimeout(_correrSiguiente, 15);
+  }
+
+  // =====================================================
+  // ABRIR MODAL ÉXITO si el backend envió resumen_exito_json
+  // =====================================================
+  function _abrirModalExitoConResumen(resumenObj) {
+    if (!resumenObj || typeof resumenObj !== 'object') return;
+    const codProyBadge = document.getElementById('exito-codigo-proyecto');
+    if (codProyBadge) codProyBadge.textContent = 'Cód: ' + String(resumenObj.codigo_proyecto || '—').toUpperCase();
+    _renderTablaProyecto('#exito-proyecto-tbl > tbody', resumenObj);
+    _renderTablaAprendices('#exito-aprendices-tbl > tbody', '#exito-num-aprendices-badge', resumenObj.aprendices || []);
+    setTimeout(function () {
+      try {
+        const mEl = document.getElementById('modalExitoWizard');
+        if (!mEl) return;
+        const bsInst = (window.bootstrap && window.bootstrap.Modal)
+          ? window.bootstrap.Modal.getOrCreateInstance(mEl, { backdrop: 'static', keyboard: false })
+          : null;
+        if (bsInst) bsInst.show();
+        else if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.modal) {
+          jQuery(mEl).modal({ backdrop: 'static', keyboard: false, show: true });
+        } else {
+          // Fallback: alert
+          alert('✅ Registro completado con éxito.\n\nProyecto: ' + String(resumenObj.nombre_proyecto || '') +
+                '\nCódigo: ' + String(resumenObj.codigo_proyecto || '') +
+                '\nAprendices: ' + String(resumenObj.cantidad_aprendices || 0));
+        }
+      } catch (_errEx) { console.warn('Modal éxito fallback:', _errEx); }
+    }, 250);
+  }
+
+  // =====================================================
+  // ENTRY POINT: después de que cargue todo el DOM
+  // (espera a los scripts inline que exponen los helpers globales)
+  // =====================================================
+  function _initWizardPostBoot() {
+    // (A) Valores previos (hubo error → repintar)
+    try {
+      const hPrev = document.getElementById('valores-previos-data');
+      if (hPrev) {
+        const txt = String(hPrev.textContent || hPrev.innerText || '').trim();
+        if (txt) {
+          const parsed = JSON.parse(txt);
+          if (parsed && typeof parsed === 'object') {
+            _aplicarValoresPreviosAlForm(parsed);
+          }
+        }
+      }
+    } catch (_ePrev) { console.warn('Error parseando valores previos:', _ePrev); }
+
+    // (B) Resumen éxito (post OK → abrir modal éxito)
+    try {
+      const hExito = document.getElementById('resumen-exito-data');
+      if (hExito) {
+        const txt = String(hExito.textContent || hExito.innerText || '').trim();
+        if (txt) {
+          const parsed = JSON.parse(txt);
+          if (parsed && typeof parsed === 'object' && parsed.ok !== false) {
+            _abrirModalExitoConResumen(parsed);
+          }
+        }
+      }
+    } catch (_eExito) { console.warn('Error parseando resumen éxito:', _eExito); }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initWizardPostBoot);
+  } else {
+    // DOM ya cargado (scripts al final del body) → correr inmediatamente
+    setTimeout(_initWizardPostBoot, 50);
+  }
 })();
 </script>
 {% endblock %}
