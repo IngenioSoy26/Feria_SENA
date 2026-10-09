@@ -3,6 +3,9 @@
 {% block titulo %}Dashboard Gerencial · {{ evento.nombre|default:"Evento" }}{% endblock %}
 {% block contenido_extra_head %}
 <meta http-equiv="refresh" content="5">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <style>
   body{background-color:#f8fafc;color:#0f172a;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
   .card{border:none;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);}
@@ -480,6 +483,32 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
+  (function(){
+    // MECANISMO 1 (fallback): <meta refresh="5"> declarado en el head.
+    // MECANISMO 2 (activo, bypass cache): setTimeout + window.location.reload(true).
+    // Este segundomecanismo NO depende de heurísticas del navegador
+    // y funciona incluso si la pestaña estaba en segundo plano.
+    var _REFRESH_MS = 5000;
+    function _recargarEnTiempoReal(){
+      try{
+        var _sep = (window.location.search.indexOf('?') >= 0) ? '&' : '?';
+        var _nocache = '_t=' + Date.now();
+        // reload(true) = forzar desde el servidor, NO usar disco/memoria caché.
+        // Aun así agregamos query param aleatorio como capa extra anti-caché Railway/CDN.
+        // Sin embargo: NO redirigir con location.href porque haría scroll arriba
+        // cada 5s molesto en modo gerencial presentando. En su lugar usar reload(true).
+        window.location.reload(true);
+      }catch(_e){
+        // Si reload() falla (extensiones), forzar con hash-less redirect.
+        var _sep = (window.location.href.indexOf('?') >= 0) ? '&' : '?';
+        window.location.href = window.location.href.split('#')[0] + _sep + '_t=' + Date.now();
+      }
+    }
+    // setTimeout SIEMPRE corre 1 vez; la página al recargar volvera a setearlo = loop infinito 5s.
+    window.setTimeout(_recargarEnTiempoReal, _REFRESH_MS);
+    // Señal visible para auditoria (no obligatorio, debug friendly):
+    window.__dashboardAutorefreshAt = new Date().toISOString();
+  })();
   function esperarChart(cb,i){i=i||0;if(typeof window.Chart==='function')return cb();if(i>120)return;setTimeout(()=>esperarChart(cb,i+1),80);}
   esperarChart(()=>{
     Chart.defaults.color = '#334155';
