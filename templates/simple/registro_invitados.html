@@ -3,6 +3,18 @@
 {% block titulo %}Registro de Invitados · Feria SENA{% endblock %}
 {% block contenido %}
 
+<style>
+  #form-registro-invitados input.form-control:invalid:not(:placeholder-shown),
+  #form-registro-invitados input.form-control:user-invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 .15rem rgba(220,38,38,.12);
+  }
+  #form-registro-invitados .badge.bg-danger {
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+</style>
+
 <div class="glass-card" style="max-width:780px;margin:0 auto;">
   <div class="d-flex align-items-start gap-3 mb-4">
     <div class="ico-big d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);border:2px solid #1e40af;color:white;">
@@ -115,6 +127,14 @@
 {% block extra_js %}
 <script>
 (function(){
+  function _mantenerPosicion(input, fnTransformar){
+    const s = input.selectionStart;
+    const e = input.selectionEnd;
+    const antes = input.value.length;
+    input.value = fnTransformar(input.value || '');
+    const d = (input.value.length || 0) - antes;
+    try { input.setSelectionRange(Math.max(0, s + d), Math.max(0, e + d)); } catch(_) {}
+  }
   const inputs = document.querySelectorAll('#form-registro-invitados input, #form-registro-invitados select:not([disabled])');
   for (const el of inputs) {
     if (!el.value && el.type !== 'hidden') {
@@ -124,27 +144,57 @@
   const doc = document.querySelector('[name="numero_identificacion"]');
   if (doc) {
     doc.addEventListener('input', function(){
-      let v = (this.value || '').toString();
-      v = v.replace(/[\s\.\,\-\_]/g, '');
-      if (!/^\d*$/.test(v)) v = v.replace(/[^\d]/g, '');
-      this.value = v;
+      _mantenerPosicion(this, function(v){ return (v || '').toString().replace(/[^0-9]/g, '').slice(0, 30); });
     });
+    doc.addEventListener('paste', function(){ setTimeout(() => doc.dispatchEvent(new Event('input')), 10); });
   }
   const tel = document.querySelector('[name="telefono"]');
   if (tel) {
     tel.addEventListener('input', function(){
-      let v = (this.value || '').toString();
-      v = v.replace(/[\s\.\,\-\_\(\)\+]/g, '');
-      if (!/^\d*$/.test(v)) v = v.replace(/[^\d]/g, '');
-      this.value = v;
+      _mantenerPosicion(this, function(v){ return (v || '').toString().replace(/[^0-9]/g, '').slice(0, 30); });
     });
+    tel.addEventListener('paste', function(){ setTimeout(() => tel.dispatchEvent(new Event('input')), 10); });
   }
   const nc = document.querySelector('[name="nombre_completo"]');
   if (nc) {
-    nc.addEventListener('change', function(){
-      let v = (this.value || '').toString().trim();
-      v = v.replace(/\s+/g,' ');
-      this.value = v;
+    nc.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){
+        let s = (v || '').toString();
+        s = s.replace(/\s+/g, ' ');
+        return s.toUpperCase();
+      });
+    });
+    nc.addEventListener('paste', function(){ setTimeout(() => nc.dispatchEvent(new Event('input')), 10); });
+  }
+  const ent = document.querySelector('[name="entidad"]');
+  if (ent) {
+    ent.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){
+        let s = (v || '').toString();
+        s = s.replace(/\s+/g, ' ');
+        return s.toUpperCase();
+      });
+    });
+    ent.addEventListener('paste', function(){ setTimeout(() => ent.dispatchEvent(new Event('input')), 10); });
+  }
+  const car = document.querySelector('[name="cargo"]');
+  if (car) {
+    car.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){
+        let s = (v || '').toString();
+        s = s.replace(/\s+/g, ' ');
+        return s.toUpperCase();
+      });
+    });
+    car.addEventListener('paste', function(){ setTimeout(() => car.dispatchEvent(new Event('input')), 10); });
+  }
+  const corr = document.querySelector('[name="correo"]');
+  if (corr) {
+    corr.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){ return (v || '').toString().replace(/\s+/g, '').toLowerCase(); });
+    });
+    corr.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().toLowerCase();
     });
   }
 })();

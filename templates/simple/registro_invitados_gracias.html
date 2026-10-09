@@ -3,6 +3,28 @@
 {% block titulo %}Invitado Registrado · Feria SENA{% endblock %}
 {% block contenido %}
 
+{% if no_encontrado %}
+<div class="glass-card" style="max-width:640px;margin:0 auto;text-align:center;">
+  <div class="pt-2 pb-4">
+    <div style="width:96px;height:96px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(245,158,11,0.25);">
+      <span style="font-size:44px;">⚠️</span>
+    </div>
+  </div>
+  <h3 class="card-title mb-1">Registro no encontrado</h3>
+  <p class="muted-small mb-4">
+    No se pudo localizar el registro de invitado solicitado. Es posible que el enlace esté incompleto
+    o que el registro no exista.
+  </p>
+  <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
+    <a href="{{ url_form }}" class="btn-sena btn-big" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);">
+      ＋ Volver al formulario de invitados
+    </a>
+    <a href="{% url 'simple:home' %}" class="btn-ghost">
+      ⌂ Ir al inicio
+    </a>
+  </div>
+</div>
+{% else %}
 <div class="glass-card" style="max-width:640px;margin:0 auto;text-align:center;">
   <div class="pt-2 pb-4">
     <div style="width:96px;height:96px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(29,78,216,0.25);">
@@ -24,18 +46,18 @@
         <div class="muted-small">
           <i class="bi bi-person-vcard me-1"></i>{{ persona.tipo_identificacion }} · <span class="mono">{{ persona.numero_identificacion }}</span>
         </div>
-        {% with persona.entidad_canonica as ent_can %}
-        {% if ent_can %}
-        <div class="muted-small"><i class="bi bi-building me-1"></i>🏛️ Entidad: <b>{{ ent_can }}</b></div>
+        {% if entidad_mostrar %}
+        <div class="muted-small"><i class="bi bi-building me-1"></i>🏛️ Entidad: <b>{{ entidad_mostrar }}</b></div>
         {% endif %}
-        {% endwith %}
-        {% with persona.cargo_canonico as car_can %}
-        {% if car_can %}
-        <div class="muted-small"><i class="bi bi-person-badge me-1"></i>🎖️ Cargo: <b>{{ car_can }}</b></div>
+        {% if cargo_mostrar %}
+        <div class="muted-small"><i class="bi bi-person-badge me-1"></i>🎖️ Cargo: <b>{{ cargo_mostrar }}</b></div>
         {% endif %}
-        {% endwith %}
+        {% if persona.correo %}
         <div class="muted-small"><i class="bi bi-envelope me-1"></i><b>{{ persona.correo }}</b></div>
+        {% endif %}
+        {% if persona.telefono %}
         <div class="muted-small"><i class="bi bi-telephone me-1"></i><span class="mono"><b>{{ persona.telefono }}</b></span></div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -66,11 +88,12 @@
     </a>
   </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
 {% block extra_js %}
-{% if url_escarapela %}
+{% if not no_encontrado and url_escarapela %}
 <script>
   setTimeout(function(){
     try {

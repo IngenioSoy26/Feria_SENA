@@ -202,7 +202,9 @@ class RegistroInvitadosPublicoForm(_forms.Form):
             'class':'form-control form-control-lg',
             'placeholder':'Solo dígitos · sin puntos ni comas',
             'autocomplete':'off',
-            'inputmode':'numeric'}),
+            'inputmode':'numeric',
+            'pattern':'[0-9]{5,30}',
+            'title':'Solo dígitos · mínimo 5'}),
         required=True,
     )
     nombre_completo = _forms.CharField(
@@ -212,7 +214,9 @@ class RegistroInvitadosPublicoForm(_forms.Form):
             'class':'form-control form-control-lg',
             'placeholder':'Primer nombre · Segundo nombre · Primer apellido · Segundo apellido',
             'autocomplete':'name',
-            'autocapitalize':'words'}),
+            'autocapitalize':'characters',
+            'pattern':r'.*\S.*\S.*',
+            'title':'Nombre(s) y apellido(s) · mínimo 2 palabras'}),
         required=True,
     )
     tipo_rol = _forms.ChoiceField(
@@ -233,7 +237,9 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
             'placeholder':'',
-            'autocomplete':'organization'}),
+            'autocomplete':'organization',
+            'pattern':r'\S.{1,199}',
+            'title':'Entidad · mínimo 2 caracteres'}),
     )
     cargo = _forms.CharField(
         label='Cargo ⚑ OBLIGATORIO · Función / Rol en la entidad',
@@ -243,7 +249,9 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
             'placeholder':'',
-            'autocomplete':'organization-title'}),
+            'autocomplete':'organization-title',
+            'pattern':r'\S.{1,149}',
+            'title':'Cargo · mínimo 2 caracteres'}),
     )
     correo = _forms.EmailField(
         label='Correo electrónico ⚑ OBLIGATORIO',
@@ -252,7 +260,9 @@ class RegistroInvitadosPublicoForm(_forms.Form):
             'class':'form-control form-control-lg',
             'placeholder':'correo@ejemplo.com · OBLIGATORIO',
             'autocomplete':'email',
-            'inputmode':'email'}),
+            'inputmode':'email',
+            'pattern':r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}',
+            'title':'Formato: usuario@dominio.com'}),
     )
     telefono = _forms.CharField(
         label='Teléfono / Celular ⚑ OBLIGATORIO',
@@ -262,7 +272,9 @@ class RegistroInvitadosPublicoForm(_forms.Form):
             'class':'form-control form-control-lg',
             'placeholder':'',
             'autocomplete':'tel',
-            'inputmode':'tel'}),
+            'inputmode':'tel',
+            'pattern':'[0-9]{7,30}',
+            'title':'Solo dígitos · mínimo 7'}),
     )
 
     def clean_tipo_identificacion(self):
@@ -290,7 +302,21 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         palabras = [p for p in limpio.split(' ') if p]
         if len(palabras) < 2:
             raise _forms.ValidationError('❌ Escribe nombre(s) y apellido(s). Mínimo 2 palabras.')
-        return limpio
+        return limpio.upper()
+
+    def clean_entidad(self):
+        raw = (self.cleaned_data.get('entidad') or '').strip()
+        if not raw or len(raw) < 2:
+            raise _forms.ValidationError('❌ Escribe la Entidad / Institución (mínimo 2 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        return limpio.upper()
+
+    def clean_cargo(self):
+        raw = (self.cleaned_data.get('cargo') or '').strip()
+        if not raw or len(raw) < 2:
+            raise _forms.ValidationError('❌ Escribe el Cargo / Función (mínimo 2 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        return limpio.upper()
 
     def clean_correo(self):
         v = (self.cleaned_data.get('correo') or '').strip().lower()
@@ -339,7 +365,7 @@ def guardar_persona_publica(datos, creado_por=None):
     entidad_raw = (datos.get('entidad') or '').strip()
     cargo_raw = (datos.get('cargo') or '').strip()
     entidad_up = entidad_raw.upper() if entidad_raw else None
-    cargo_cap = cargo_raw.title() if cargo_raw else None
+    cargo_cap = cargo_raw.upper() if cargo_raw else None
     if rol == 'INSTRUCTOR':
         entidad_up = entidad_up or 'SENA'
         cargo_cap = cargo_cap or 'Instructor'
@@ -381,11 +407,6 @@ def guardar_persona_publica(datos, creado_por=None):
             defaults=defaults,
         )
     except (_PE, Exception) as _err_pe:
-        try: _conn_db_global.rollback()
-        except Exception: pass
-        try: _conn_db_global.close()
-        except Exception: pass
-        # Reintentar SIN los campos entidad/cargo si falló por ellos
         _safe_defaults = {k: v for k, v in defaults.items() if k not in ('entidad', 'cargo')}
         persona, created = Persona.objects.update_or_create(
             tipo_identificacion=ti,
@@ -402,8 +423,7 @@ def guardar_persona_publica(datos, creado_por=None):
                     persona.save(update_fields=['qr_token'])
                     break
     except Exception:
-        try: _conn_db_global.rollback()
-        except Exception: pass
+        pass
 
     if rol == 'INVITADO':
         try:
@@ -424,10 +444,6 @@ def guardar_persona_publica(datos, creado_por=None):
                 except Exception:
                     pass
         except (_PE, Exception) as _err:
-            try: _conn_db_global.rollback()
-            except Exception: pass
-            try: _conn_db_global.close()
-            except Exception: pass
             warns.append(f'⚠ Perfil Invitado: error (migración pendiente?). Detalle: {_err}')
     elif rol == 'INSTRUCTOR':
         try:
@@ -461,10 +477,6 @@ def guardar_persona_publica(datos, creado_por=None):
                 except Exception:
                     pass
         except (_PE, Exception) as _err:
-            try: _conn_db_global.rollback()
-            except Exception: pass
-            try: _conn_db_global.close()
-            except Exception: pass
             warns.append(f'⚠ Perfil Instructor: error (migración pendiente?). Detalle: {_err}')
     elif rol == 'ORGANIZADOR':
         try:
@@ -485,10 +497,6 @@ def guardar_persona_publica(datos, creado_por=None):
                     cargo=cargo_cap or None,
                 )
         except Exception as _err:
-            try: _conn_db_global.rollback()
-            except Exception: pass
-            try: _conn_db_global.close()
-            except Exception: pass
             warns.append(
                 '⚠ Perfil Organizador: no se pudo crear (¿migración organizadores.0001 pendiente?). '
                 f'Detalle: {_err}'
@@ -2323,8 +2331,28 @@ class RegistroInvitadosGraciasView(View):
 
     def get(self, request, pk, **kwargs):
         evento = _evento_activo()
-        persona = get_object_or_404(Persona, pk=pk)
         t_r = kwargs.get('token_registro') or settings.TOKEN_REGISTRO_PUBLICO or ''
+        try:
+            persona = Persona.objects.get(pk=pk)
+        except (Persona.DoesNotExist, ValueError, TypeError):
+            persona = None
+            no_encontrado = True
+        else:
+            no_encontrado = False
+        if persona is not None and persona.tipo_persona != 'INVITADO':
+            no_encontrado = True
+        if no_encontrado:
+            if t_r:
+                url_form = reverse('simple:public_registro_invitados', kwargs={'token_registro': t_r})
+            else:
+                url_form = reverse('simple:registro_invitados')
+            return render(request, 'simple/registro_invitados_gracias.html', {
+                'evento': evento,
+                'persona': None,
+                'no_encontrado': True,
+                'url_form': url_form,
+                'token_registro': t_r,
+            })
         if t_r:
             url_escarapela = reverse(
                 'simple:public_escarapela',
@@ -2341,7 +2369,42 @@ class RegistroInvitadosGraciasView(View):
             'INVITADO': 'bg-azul-o text-white',
             'ORGANIZADOR': 'bg-azul text-white',
         }.get(persona.tipo_persona, 'bg-gray-600 text-white')
-        return render(request, self.template_name, {
+        entidad_mostrar = None
+        cargo_mostrar = None
+        try:
+            perfil_inv = persona.perfil_invitado
+            if perfil_inv:
+                if getattr(perfil_inv, 'entidad', None):
+                    entidad_mostrar = str(perfil_inv.entidad).strip() or None
+                if getattr(perfil_inv, 'cargo', None):
+                    cargo_mostrar = str(perfil_inv.cargo).strip() or None
+        except Exception:
+            pass
+        if not entidad_mostrar:
+            try:
+                v = getattr(persona, 'entidad_canonica', None)
+                if v: entidad_mostrar = v
+            except Exception:
+                pass
+        if not cargo_mostrar:
+            try:
+                v = getattr(persona, 'cargo_canonico', None)
+                if v: cargo_mostrar = v
+            except Exception:
+                pass
+        if not entidad_mostrar:
+            try:
+                v = getattr(persona, 'entidad', None)
+                if v: entidad_mostrar = v
+            except Exception:
+                pass
+        if not cargo_mostrar:
+            try:
+                v = getattr(persona, 'cargo', None)
+                if v: cargo_mostrar = v
+            except Exception:
+                pass
+        return render(request, 'simple/registro_invitados_gracias.html', {
             'evento': evento,
             'persona': persona,
             'rol_display': rol_display,
@@ -2349,6 +2412,9 @@ class RegistroInvitadosGraciasView(View):
             'url_escarapela': url_escarapela,
             'url_form': url_form,
             'token_registro': t_r,
+            'no_encontrado': False,
+            'entidad_mostrar': entidad_mostrar,
+            'cargo_mostrar': cargo_mostrar,
         })
 
 
