@@ -1921,9 +1921,9 @@ class DashboardSimpleView(LoginRequiredMixin, View):
 
         actividad = []
         qs_actividad = (
-            (qs_asistencia.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombre_completo','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='ASISTENCIA').order_by('-entrega')[:5]) |
-            (qs_refrigerios.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombre_completo','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='REFRIGERIO').order_by('-entrega')[:5]) |
-            (qs_certificados.annotate(entrega=F('fecha_hora_entrega')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombre_completo','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='CERTIFICADO').order_by('-entrega')[:5])
+            (qs_asistencia.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombres','persona__apellidos','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='ASISTENCIA').order_by('-entrega')[:5]) |
+            (qs_refrigerios.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombres','persona__apellidos','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='REFRIGERIO').order_by('-entrega')[:5]) |
+            (qs_certificados.annotate(entrega=F('fecha_hora_entrega')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombres','persona__apellidos','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='CERTIFICADO').order_by('-entrega')[:5])
         )
         try:
             actividad = sorted(list(qs_actividad), key=lambda r: (r.get('entrega') or r.get('fecha_hora_entrega') or r.get('fecha_hora')), reverse=True)[:15]
@@ -1945,7 +1945,8 @@ class DashboardSimpleView(LoginRequiredMixin, View):
                 return f"{n} · [{r}]"
             return n
         def _nombre(reg):
-            return (reg.get('persona__nombre_completo') or '').strip() or '—'
+            n = f"{reg.get('persona__nombres') or ''} {reg.get('persona__apellidos') or ''}".strip()
+            return n or '—'
         def _doc(reg):
             return (reg.get('persona__numero_identificacion') or '').strip() or '—'
         def _rol(reg):
