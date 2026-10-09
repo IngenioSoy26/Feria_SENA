@@ -1,6 +1,9 @@
 {% extends "simple/base_simple.html" %}
 {% load static %}
 {% block titulo %}Invitado Registrado · Feria SENA{% endblock %}
+
+{% block navegacion %}{% endblock %}
+
 {% block contenido %}
 
 {% if no_encontrado %}
@@ -18,9 +21,6 @@
   <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
     <a href="{{ url_form }}" class="btn-sena btn-big" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);">
       ＋ Volver al formulario de invitados
-    </a>
-    <a href="{% url 'simple:home' %}" class="btn-ghost">
-      ⌂ Ir al inicio
     </a>
   </div>
 </div>
@@ -65,9 +65,6 @@
   <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
     <a href="{{ url_form }}" class="btn-outline-sena">
       ＋ Registrar otro invitado
-    </a>
-    <a href="{% url 'simple:home' %}" class="btn-ghost">
-      ⌂ Ir al inicio
     </a>
   </div>
 </div>

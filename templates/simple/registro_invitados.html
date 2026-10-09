@@ -1,6 +1,9 @@
 {% extends "simple/base_simple.html" %}
 {% load static %}
 {% block titulo %}Registro de Invitados · Feria SENA{% endblock %}
+
+{% block navegacion %}{% endblock %}
+
 {% block contenido %}
 
 <style>
@@ -112,11 +115,9 @@
       </div>
     </div>
 
-    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-between align-items-center">
-      <a href="{% url 'simple:home' %}" class="btn-ghost">← Volver al inicio</a>
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center align-items-center">
       <button class="btn-sena btn-big" type="submit" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);">
         💾 Registrar Invitado
-        <span class="btn-sub">→ 1 paso · Genera escarapela PDF</span>
       </button>
     </div>
   </form>
