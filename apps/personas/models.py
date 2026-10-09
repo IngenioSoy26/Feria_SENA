@@ -65,8 +65,13 @@ class Persona(models.Model):
 
     @property
     def entidad_canonica(self):
-        if self.entidad:
-            return self.entidad
+        _ent = None
+        try:
+            _ent = self.entidad
+        except AttributeError:
+            _ent = None
+        if _ent:
+            return _ent
         try:
             if self.tipo_persona == 'INVITADO':
                 return (getattr(self.perfil_invitado, 'entidad', None) or '').strip().upper() or None
@@ -90,8 +95,13 @@ class Persona(models.Model):
 
     @property
     def cargo_canonico(self):
-        if self.cargo:
-            return self.cargo
+        _car = None
+        try:
+            _car = self.cargo
+        except AttributeError:
+            _car = None
+        if _car:
+            return _car
         try:
             if self.tipo_persona == 'INVITADO':
                 _car = (getattr(self.perfil_invitado, 'cargo', None) or '').strip()
@@ -119,12 +129,18 @@ class Persona(models.Model):
             self.correo_sena = (self.correo_sena or '').strip().lower()
         if self.correo_personal:
             self.correo_personal = (self.correo_personal or '').strip().lower()
-        if self.entidad is not None:
-            _ent = (self.entidad or '').strip()
-            self.entidad = _ent.upper() if _ent else None
-        if self.cargo is not None:
-            _car = (self.cargo or '').strip()
-            self.cargo = _car.title() if _car else None
+        try:
+            if self.entidad is not None:
+                _ent = (self.entidad or '').strip()
+                self.entidad = _ent.upper() if _ent else None
+        except AttributeError:
+            pass
+        try:
+            if self.cargo is not None:
+                _car = (self.cargo or '').strip()
+                self.cargo = _car.title() if _car else None
+        except AttributeError:
+            pass
         if self._state.adding:
             while True:
                 token = uuid.uuid4()

@@ -353,58 +353,119 @@ def guardar_persona_publica(datos, creado_por=None):
         'activo': True,
         'creado_por': creado_por,
     }
+    # === PROTECCIÓN v29: columnas Persona.entidad / Persona.cargo no migradas aún ===
+    try:
+        from django.db.utils import ProgrammingError as _PE
+    except Exception:
+        _PE = Exception
+    _ok_entidad_persona = True
     if entidad_up is not None:
-        defaults['entidad'] = entidad_up
+        try:
+            # Prueba rápida: forzar columna exista antes de meter al dict
+            Persona._meta.get_field('entidad')
+            defaults['entidad'] = entidad_up
+        except Exception:
+            _ok_entidad_persona = False
+    _ok_cargo_persona = True
     if cargo_cap is not None:
-        defaults['cargo'] = cargo_cap
+        try:
+            Persona._meta.get_field('cargo')
+            defaults['cargo'] = cargo_cap
+        except Exception:
+            _ok_cargo_persona = False
 
-    persona, created = Persona.objects.update_or_create(
-        tipo_identificacion=ti,
-        numero_identificacion=nd,
-        defaults=defaults,
-    )
-    if not getattr(persona, 'qr_token', None):
-        while True:
-            tok = _uuid.uuid4()
-            if not Persona.objects.filter(qr_token=tok).exists():
-                persona.qr_token = tok
-                persona.save(update_fields=['qr_token'])
-                break
+    try:
+        persona, created = Persona.objects.update_or_create(
+            tipo_identificacion=ti,
+            numero_identificacion=nd,
+            defaults=defaults,
+        )
+    except (_PE, Exception) as _err_pe:
+        try: _conn_db_global.rollback()
+        except Exception: pass
+        try: _conn_db_global.close()
+        except Exception: pass
+        # Reintentar SIN los campos entidad/cargo si falló por ellos
+        _safe_defaults = {k: v for k, v in defaults.items() if k not in ('entidad', 'cargo')}
+        persona, created = Persona.objects.update_or_create(
+            tipo_identificacion=ti,
+            numero_identificacion=nd,
+            defaults=_safe_defaults,
+        )
+        warns.append('⚠ Persona.entidad/cargo: columna no migrada aún. Se guardó sin esos campos.')
+    try:
+        if not getattr(persona, 'qr_token', None):
+            while True:
+                tok = _uuid.uuid4()
+                if not Persona.objects.filter(qr_token=tok).exists():
+                    persona.qr_token = tok
+                    persona.save(update_fields=['qr_token'])
+                    break
+    except Exception:
+        try: _conn_db_global.rollback()
+        except Exception: pass
 
     if rol == 'INVITADO':
-        _, creado_inv = Invitado.objects.get_or_create(
-            persona=persona,
-            defaults={
-                'activo': True,
-                'entidad': entidad_up or '',
-                'cargo': cargo_cap or '',
-            },
-        )
-        if not creado_inv and (entidad_up or cargo_cap):
-            try:
-                Invitado.objects.filter(pk=persona.perfil_invitado.pk).update(
-                    entidad=entidad_up or '',
-                    cargo=cargo_cap or '',
-                )
-            except Exception:
-                pass
+        try:
+            _, creado_inv = Invitado.objects.get_or_create(
+                persona=persona,
+                defaults={
+                    'activo': True,
+                    'entidad': entidad_up or '',
+                    'cargo': cargo_cap or '',
+                },
+            )
+            if not creado_inv and (entidad_up or cargo_cap):
+                try:
+                    Invitado.objects.filter(pk=persona.perfil_invitado.pk).update(
+                        entidad=entidad_up or '',
+                        cargo=cargo_cap or '',
+                    )
+                except Exception:
+                    pass
+        except (_PE, Exception) as _err:
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            warns.append(f'⚠ Perfil Invitado: error (migración pendiente?). Detalle: {_err}')
     elif rol == 'INSTRUCTOR':
-        _, creado_inst = Instructor.objects.get_or_create(
-            persona=persona,
-            defaults={
-                'activo': True,
-                'entidad': entidad_up or 'SENA',
-                'cargo': cargo_cap or 'Instructor',
-            },
-        )
-        if not creado_inst:
+        try:
+            # === Protección columna Instructor.entidad / cargo no migrada ===
             try:
-                Instructor.objects.filter(pk=persona.perfil_instructor.pk).update(
-                    entidad=entidad_up or 'SENA',
-                    cargo=cargo_cap or 'Instructor',
-                )
+                Instructor._meta.get_field('entidad')
+                Instructor._meta.get_field('cargo')
+                _inst_defaults = {
+                    'activo': True,
+                    'entidad': entidad_up or 'SENA',
+                    'cargo': cargo_cap or 'Instructor',
+                }
             except Exception:
-                pass
+                _inst_defaults = {'activo': True}
+            _, creado_inst = Instructor.objects.get_or_create(
+                persona=persona,
+                defaults=_inst_defaults,
+            )
+            if not creado_inst:
+                try:
+                    _up_kwargs = {}
+                    try:
+                        Instructor._meta.get_field('entidad')
+                        Instructor._meta.get_field('cargo')
+                        _up_kwargs['entidad'] = entidad_up or 'SENA'
+                        _up_kwargs['cargo'] = cargo_cap or 'Instructor'
+                    except Exception:
+                        pass
+                    if _up_kwargs:
+                        Instructor.objects.filter(pk=persona.perfil_instructor.pk).update(**_up_kwargs)
+                except Exception:
+                    pass
+        except (_PE, Exception) as _err:
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            warns.append(f'⚠ Perfil Instructor: error (migración pendiente?). Detalle: {_err}')
     elif rol == 'ORGANIZADOR':
         try:
             _org_cls = _Organizador
@@ -728,15 +789,48 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
         c['instituciones_activas'] = InstitucionEducativa.objects.filter(activo=True).count()
         c['programas'] = ProgramaTecnico.objects.count()
         c['programas_activos'] = ProgramaTecnico.objects.filter(activo=True).count()
-        c['instructores'] = Instructor.objects.count()
+        try:
+            from django.db.utils import ProgrammingError as _PE_COUNT
+            c['instructores'] = Instructor.objects.count()
+        except (_PE_COUNT, Exception):
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            try:
+                c['instructores'] = Instructor.objects.values('id').count()
+            except Exception:
+                c['instructores'] = 0
+        try:
+            from django.db.utils import ProgrammingError as _PE_PERS
+            c['personas'] = Persona.objects.count()
+        except (_PE_PERS, Exception):
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            try:
+                c['personas'] = Persona.objects.values('id').count()
+            except Exception:
+                c['personas'] = 0
+        try:
+            from django.db.utils import ProgrammingError as _PE_APR
+            c['aprendices'] = Aprendiz.objects.count()
+        except (_PE_APR, Exception):
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            try:
+                c['aprendices'] = Aprendiz.objects.values('id').count()
+            except Exception:
+                c['aprendices'] = 0
         c['organizadores'] = _organizadores_count_safe()
         c['invitados'] = Invitado.objects.count()
         c['fichas'] = Ficha.objects.count()
         c['fichas_activas'] = Ficha.objects.filter(activo=True).count()
         c['proyectos'] = Proyecto.objects.count()
         c['proyectos_aprobados'] = Proyecto.objects.filter(estado='APROBADO').count()
-        c['personas'] = Persona.objects.count()
-        c['aprendices'] = Aprendiz.objects.count()
         c['asistencias'] = 0
         c['refrigerios'] = 0
         c['certificados'] = 0
@@ -826,15 +920,57 @@ class WizardRegistroView(View):
             ProgramaTecnico.objects.filter(activo=True).order_by('nombre').values('nombre', 'codigo')
         )
         instructores_list = []
-        for ins in Instructor.objects.select_related('persona').prefetch_related('programas').all():
-            p = getattr(ins, 'persona', None)
-            if not p:
-                continue
-            instructores_list.append({
-                'nombre_completo': p.nombre_completo,
-                'numero_identificacion': p.numero_identificacion,
-                'programas': [prog.nombre for prog in ins.programas.all()],
-            })
+        # === PROTECCIÓN v29: Instructor.entidad / cargo aún no migrados en PostgreSQL ===
+        try:
+            from django.db.utils import ProgrammingError as _PE_WZ
+        except Exception:
+            _PE_WZ = Exception
+        _instructor_qs = None
+        try:
+            # Intentar pedir solo las columnas que SEGURAMENTE existen (id, persona_id)
+            # para evitar el ProgrammingError al pedir entidad/cargo.
+            _instructor_qs = list(
+                Instructor.objects.select_related('persona').prefetch_related('programas').all()
+            )
+        except (_PE_WZ, Exception) as _err_wz_pe:
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            # Reintento con .values() de solo campos seguros, si falla → []
+            try:
+                _instructor_qs = list(
+                    Instructor.objects.select_related('persona').prefetch_related('programas')
+                    .values('id', 'persona_id', 'persona__nombres', 'persona__apellidos', 'persona__numero_identificacion')
+                )
+            except Exception:
+                _instructor_qs = []
+        if _instructor_qs:
+            for ins in _instructor_qs:
+                try:
+                    if isinstance(ins, dict):
+                        num_id = ins.get('persona__numero_identificacion') or ''
+                        nombres = ins.get('persona__nombres') or ''
+                        apellidos = ins.get('persona__apellidos') or ''
+                        nc = ' '.join([x for x in [nombres, apellidos] if x]).strip()
+                        if not nc: continue
+                        instructores_list.append({
+                            'nombre_completo': nc,
+                            'numero_identificacion': num_id,
+                            'programas': [],
+                        })
+                    else:
+                        p = getattr(ins, 'persona', None)
+                        if not p: continue
+                        instructores_list.append({
+                            'nombre_completo': p.nombre_completo,
+                            'numero_identificacion': p.numero_identificacion,
+                            'programas': [prog.nombre for prog in ins.programas.all()],
+                        })
+                except Exception:
+                    try: _conn_db_global.rollback()
+                    except Exception: pass
+                    continue
         catalogo = {
             'fichas': catalogo_fichas,
             'instituciones': ies_list,

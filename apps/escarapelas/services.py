@@ -211,8 +211,52 @@ class EscarapelaPDFService:
 
         # Campos de Persona raíz (ahora contienen entidad/cargo para TODOS los roles)
         # Prioridad: entidad y cargo de Persona (nuevos campos), fallback al perfil específico
-        _p_ent = (getattr(persona, "entidad", None) or "").strip()
-        _p_car = (getattr(persona, "cargo", None) or "").strip()
+        # === PROTECCIÓN v29: columnas Persona.entidad / Persona.cargo / Instructor.entidad NO migradas aún ===
+        _p_ent = ""
+        _p_car = ""
+        try:
+            from django.db.utils import ProgrammingError as _PE_SVC
+        except Exception:
+            _PE_SVC = Exception
+        try:
+            _p_ent = (getattr(persona, "entidad", None) or "").strip()
+        except (_PE_SVC, AttributeError, Exception):
+            try:
+                from django.db import connection as _conn_svc
+                try: _conn_svc.rollback()
+                except Exception: pass
+                try: _conn_svc.close()
+                except Exception: pass
+            except Exception:
+                pass
+            _p_ent = ""
+        try:
+            _p_car = (getattr(persona, "cargo", None) or "").strip()
+        except (_PE_SVC, AttributeError, Exception):
+            try:
+                from django.db import connection as _conn_svc2
+                try: _conn_svc2.rollback()
+                except Exception: pass
+                try: _conn_svc2.close()
+                except Exception: pass
+            except Exception:
+                pass
+            _p_car = ""
+
+        def _safe_attr(obj, attr, default=""):
+            try:
+                v = getattr(obj, attr, default)
+                return (v or "").strip() if not isinstance(v, (int, float)) else (v or default)
+            except Exception:
+                try:
+                    from django.db import connection as _conn_safe
+                    try: _conn_safe.rollback()
+                    except Exception: pass
+                    try: _conn_safe.close()
+                    except Exception: pass
+                except Exception:
+                    pass
+                return default
 
         if persona.tipo_persona == "APRENDIZ":
             perfil = getattr(persona, "perfil_aprendiz", None)
@@ -253,23 +297,23 @@ class EscarapelaPDFService:
                         p.nombre for p in programas
                     )
 
-            info["institucion"] = _p_ent or (getattr(perfil, "entidad", None) if perfil else None) or "SENA"
-            info["extra"] = _p_car or (getattr(perfil, "cargo", None) if perfil else None) or "INSTRUCTOR SENA"
+            info["institucion"] = _p_ent or (_safe_attr(perfil, "entidad") if perfil else "") or "SENA"
+            info["extra"] = _p_car or (_safe_attr(perfil, "cargo") if perfil else "") or "INSTRUCTOR SENA"
 
         elif persona.tipo_persona == "INVITADO":
             perfil = getattr(persona, "perfil_invitado", None)
 
             if perfil:
-                info["institucion"] = _p_ent or perfil.entidad or info.get("institucion") or None
-                info["extra"] = _p_car or perfil.cargo or info.get("extra") or None
+                info["institucion"] = _p_ent or _safe_attr(perfil, "entidad") or info.get("institucion") or None
+                info["extra"] = _p_car or _safe_attr(perfil, "cargo") or info.get("extra") or None
             else:
                 info["institucion"] = _p_ent or info.get("institucion") or None
                 info["extra"] = _p_car or info.get("extra") or None
 
         elif persona.tipo_persona == "ORGANIZADOR":
             perfil = getattr(persona, "perfil_organizador", None)
-            info["institucion"] = _p_ent or (getattr(perfil, "entidad", None) if perfil else None) or None
-            info["extra"] = _p_car or (getattr(perfil, "cargo", None) if perfil else None) or "ORGANIZADOR"
+            info["institucion"] = _p_ent or (_safe_attr(perfil, "entidad") if perfil else "") or None
+            info["extra"] = _p_car or (_safe_attr(perfil, "cargo") if perfil else "") or "ORGANIZADOR"
 
         return info
 
