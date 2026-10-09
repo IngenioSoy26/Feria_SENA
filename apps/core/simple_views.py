@@ -1840,33 +1840,134 @@ class RegistrarOperadorAjax(View):
 
 
 # ============================================================
-# DASHBOARD SIMPLIFICADO - 3 KPIs + 3 GRÁFICOS
+# DASHBOARD GERENCIAL PROFESIONAL - TIEMPO REAL
 # ============================================================
 class DashboardSimpleView(LoginRequiredMixin, View):
     def get(self, request, **_ignorado):
+        from django.db.models import Count, Q, F, DateTimeField
+        from django.db.models.functions import TruncHour, ExtractHour
+        from django.utils import timezone
+
         evento = _evento_activo()
         if not evento:
             return render(request, 'simple/dashboard.html', {'evento': None})
-        total_personas = Persona.objects.count()
-        total_aprendices = Persona.objects.filter(tipo_persona='APRENDIZ').count()
-        total_instructores = Persona.objects.filter(tipo_persona='INSTRUCTOR').count()
-        total_invitados = Persona.objects.filter(tipo_persona='INVITADO').count()
-        total_organizadores = Persona.objects.filter(tipo_persona='ORGANIZADOR').count()
-        total_proyectos = Proyecto.objects.filter(evento=evento).count()
-        total_colegios = InstitucionEducativa.objects.count()
 
-        asistentes = AsistenciaEvento.objects.filter(evento=evento).count()
-        ausentes = max(total_personas - asistentes, 0)
+        qs_personas = Persona.objects.all()
+        total_personas = qs_personas.count()
+        total_por_rol = dict(qs_personas.values_list('tipo_persona').annotate(c=Count('id')))
+        total_aprendices = total_por_rol.get('APRENDIZ', 0)
+        total_instructores = total_por_rol.get('INSTRUCTOR', 0)
+        total_invitados = total_por_rol.get('INVITADO', 0)
+        total_organizadores = total_por_rol.get('ORGANIZADOR', 0)
+
+        qs_asistencia = AsistenciaEvento.objects.filter(evento=evento).select_related('persona', 'operador')
+        asistentes_total = qs_asistencia.count()
+        asistentes_por_rol = dict(qs_asistencia.values_list('persona__tipo_persona').annotate(c=Count('id')))
+        asistentes_aprendices = asistentes_por_rol.get('APRENDIZ', 0)
+        asistentes_instructores = asistentes_por_rol.get('INSTRUCTOR', 0)
+        asistentes_invitados = asistentes_por_rol.get('INVITADO', 0)
+        asistentes_organizadores = asistentes_por_rol.get('ORGANIZADOR', 0)
+
+        asist_qr = qs_asistencia.filter(medio='QR').count()
+        asist_manual = qs_asistencia.filter(medio='MANUAL').count()
+
+        ausentes = max(total_personas - asistentes_total, 0)
+        pct_asistencia = (asistentes_total * 100 // total_personas) if total_personas else 0
 
         servicio = _servicio_almuerzo(evento)
-        refrigerios_entregados = EntregaServicio.objects.filter(evento=evento, tipo_servicio=servicio).count() if servicio else 0
-        refrigerios_pendientes = max(asistentes - refrigerios_entregados, 0)
+        qs_refrigerios = EntregaServicio.objects.filter(evento=evento, tipo_servicio=servicio).select_related('persona', 'operador') if servicio else EntregaServicio.objects.none()
+        refrigerios_entregados = qs_refrigerios.count()
+        refri_por_rol = dict(qs_refrigerios.values_list('persona__tipo_persona').annotate(c=Count('id')))
+        refri_aprendices = refri_por_rol.get('APRENDIZ', 0)
+        refri_instructores = refri_por_rol.get('INSTRUCTOR', 0)
+        refri_invitados = refri_por_rol.get('INVITADO', 0)
+        refri_organizadores = refri_por_rol.get('ORGANIZADOR', 0)
+        refri_qr = qs_refrigerios.filter(medio='QR').count()
+        refri_manual = qs_refrigerios.filter(medio='MANUAL').count()
+        refrigerios_pendientes = max(asistentes_total - refrigerios_entregados, 0)
+        pct_refrigerios = (refrigerios_entregados * 100 // asistentes_total) if asistentes_total else 0
 
-        certificados_entregados = Certificado.objects.filter(evento=evento).count()
-        certificados_pendientes = max(asistentes - certificados_entregados, 0)
+        qs_certificados = Certificado.objects.filter(evento=evento).select_related('persona', 'operador')
+        certificados_entregados = qs_certificados.count()
+        cert_por_rol = dict(qs_certificados.values_list('persona__tipo_persona').annotate(c=Count('id')))
+        cert_aprendices = cert_por_rol.get('APRENDIZ', 0)
+        cert_instructores = cert_por_rol.get('INSTRUCTOR', 0)
+        cert_invitados = cert_por_rol.get('INVITADO', 0)
+        cert_organizadores = cert_por_rol.get('ORGANIZADOR', 0)
+        cert_qr = qs_certificados.filter(medio='QR').count()
+        cert_manual = qs_certificados.filter(medio='MANUAL').count()
+        certificados_pendientes = max(asistentes_total - certificados_entregados, 0)
+        pct_certificados = (certificados_entregados * 100 // asistentes_total) if asistentes_total else 0
+
+        total_proyectos = Proyecto.objects.filter(evento=evento).count()
+        total_colegios = InstitucionEducativa.objects.count()
+        total_fichas = Ficha.objects.filter(institucion__in=InstitucionEducativa.objects.all()).count()
+        total_programas = Ficha.objects.values_list('programa', flat=True).distinct().count()
+
+        ahora = timezone.localtime(timezone.now()) if timezone.is_aware(timezone.now()) else timezone.now()
+        fi = evento.fecha_inicio
+        ff = evento.fecha_fin
+        estado_evento = 'NO_INICIADO'
+        if fi and ff:
+            if hasattr(fi, 'year') and not hasattr(fi, 'hour'):
+                hoy = ahora.date()
+                if hoy < fi: estado_evento = 'NO_INICIADO'
+                elif hoy > ff: estado_evento = 'FINALIZADO'
+                else: estado_evento = 'EN_CURSO'
+            else:
+                if ahora < fi: estado_evento = 'NO_INICIADO'
+                elif ahora > ff: estado_evento = 'FINALIZADO'
+                else: estado_evento = 'EN_CURSO'
+
+        actividad = []
+        qs_actividad = (
+            (qs_asistencia.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombre_completo','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='ASISTENCIA').order_by('-entrega')[:5]) |
+            (qs_refrigerios.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombre_completo','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='REFRIGERIO').order_by('-entrega')[:5]) |
+            (qs_certificados.annotate(entrega=F('fecha_hora_entrega')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombre_completo','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='CERTIFICADO').order_by('-entrega')[:5])
+        )
+        try:
+            actividad = sorted(list(qs_actividad), key=lambda r: (r.get('entrega') or r.get('fecha_hora_entrega') or r.get('fecha_hora')), reverse=True)[:15]
+        except Exception:
+            actividad = []
+
+        def _hora(reg):
+            f = reg.get('entrega') or reg.get('fecha_hora_entrega') or reg.get('fecha_hora')
+            if not f: return '—'
+            try:
+                return timezone.localtime(f).strftime('%H:%M')
+            except Exception:
+                return str(f)[11:16]
+        def _oper(reg):
+            n = (reg.get('operador__first_name') or '') + ' ' + (reg.get('operador__last_name') or '')
+            n = n.strip() or '—'
+            r = (reg.get('operador__rol_sistema') or '').strip()
+            if r:
+                return f"{n} · [{r}]"
+            return n
+        def _nombre(reg):
+            return (reg.get('persona__nombre_completo') or '').strip() or '—'
+        def _doc(reg):
+            return (reg.get('persona__numero_identificacion') or '').strip() or '—'
+        def _rol(reg):
+            return (reg.get('persona__tipo_persona') or '').strip() or '—'
+        def _medio(reg):
+            return (reg.get('medio') or '').strip() or '—'
+        actividad_formateada = []
+        for r in actividad:
+            actividad_formateada.append({
+                'tipo': (r.get('tipo_registro') or '').strip() or '—',
+                'hora': _hora(r),
+                'doc': _doc(r),
+                'nombre': _nombre(r),
+                'rol': _rol(r),
+                'medio': _medio(r),
+                'operador': _oper(r),
+            })
 
         return render(request, 'simple/dashboard.html', {
             'evento': evento,
+            'estado_evento': estado_evento,
+            'hora_actual': ahora.strftime('%H:%M'),
             'total_personas': total_personas,
             'total_aprendices': total_aprendices,
             'total_instructores': total_instructores,
@@ -1874,12 +1975,40 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             'total_organizadores': total_organizadores,
             'total_proyectos': total_proyectos,
             'total_colegios': total_colegios,
-            'asistentes': asistentes,
+            'total_fichas': total_fichas,
+            'total_programas': total_programas,
+
+            'asistentes': asistentes_total,
             'ausentes': ausentes,
+            'pct_asistencia': pct_asistencia,
+            'asistentes_aprendices': asistentes_aprendices,
+            'asistentes_instructores': asistentes_instructores,
+            'asistentes_invitados': asistentes_invitados,
+            'asistentes_organizadores': asistentes_organizadores,
+            'asist_qr': asist_qr,
+            'asist_manual': asist_manual,
+
             'refrigerios_entregados': refrigerios_entregados,
             'refrigerios_pendientes': refrigerios_pendientes,
+            'pct_refrigerios': pct_refrigerios,
+            'refri_aprendices': refri_aprendices,
+            'refri_instructores': refri_instructores,
+            'refri_invitados': refri_invitados,
+            'refri_organizadores': refri_organizadores,
+            'refri_qr': refri_qr,
+            'refri_manual': refri_manual,
+
             'certificados_entregados': certificados_entregados,
             'certificados_pendientes': certificados_pendientes,
+            'pct_certificados': pct_certificados,
+            'cert_aprendices': cert_aprendices,
+            'cert_instructores': cert_instructores,
+            'cert_invitados': cert_invitados,
+            'cert_organizadores': cert_organizadores,
+            'cert_qr': cert_qr,
+            'cert_manual': cert_manual,
+
+            'actividad': actividad_formateada,
         })
 
 

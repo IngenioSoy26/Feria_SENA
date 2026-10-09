@@ -1,87 +1,322 @@
 {% extends "simple/base_simple.html" %}
-{% block titulo %}📊 Panel · Feria SENA{% endblock %}
-{% block contenido %}
-<h2 class="text-sena mb-3">📊 Informe del evento</h2>
-
-{% if not evento %}
-  <div class="alert alert-warning">⚠ No hay evento ACTIVO configurado.</div>
-{% else %}
-  <div class="card p-4 mb-4">
-    <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
-      <div>
-        <div class="h4 text-sena mb-1">{{ evento.nombre }}</div>
-        <div class="text-muted small">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'asistentes' %}">🎫 Escarapelas asistentes</a>
-        <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'asistentes' %}">📜 Certificados asistencia</a>
-        <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">🏆 Certificados participación</a>
-      </div>
-    </div>
-  </div>
-
-  <h3 class="mb-3">🎯 3 números clave</h3>
-  <div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="card p-4"><div class="kpi-label">Inscritos vs Asistentes</div>
-      <div class="kpi-num text-sena my-2">{{ asistentes }} / {{ total_personas }}</div>
-      <div class="progress" style="height:10px;"><div class="progress-bar bg-sena" role="progressbar" style="width:{% if total_personas %}{{ asistentes|floatformat:0 }}{% else %}0{% endif %}%;background:#39A900;"></div></div>
-      <div class="small mt-2">Ausentes: <b>{{ ausentes }}</b> · Asistencia: <b>{% if total_personas %}{% widthratio asistentes total_personas 100 %}%{% else %}0%{% endif %}</b></div>
-    </div></div>
-    <div class="col-md-4"><div class="card p-4"><div class="kpi-label">🍱 Refrigerios (Almuerzo)</div>
-      <div class="kpi-num my-2" style="color:#F57C00;">{{ refrigerios_entregados }} / {{ asistentes }}</div>
-      <div class="progress" style="height:10px;"><div class="progress-bar" role="progressbar" style="width:{% if asistentes %}{% widthratio refrigerios_entregados asistentes 100 %}{% else %}0{% endif %}%;background:#F57C00;"></div></div>
-      <div class="small mt-2">Pendientes por entregar: <b>{{ refrigerios_pendientes }}</b> · Cumplimiento: <b>{% if asistentes %}{% widthratio refrigerios_entregados asistentes 100 %}%{% else %}0%{% endif %}</b></div>
-    </div></div>
-    <div class="col-md-4"><div class="card p-4"><div class="kpi-label">📜 Certificados entregados</div>
-      <div class="kpi-num my-2" style="color:#0067B1;">{{ certificados_entregados }} / {{ asistentes }}</div>
-      <div class="progress" style="height:10px;"><div class="progress-bar" role="progressbar" style="width:{% if asistentes %}{% widthratio certificados_entregados asistentes 100 %}{% else %}0{% endif %}%;background:#0067B1;"></div></div>
-      <div class="small mt-2">Pendientes: <b>{{ certificados_pendientes }}</b> · Avance: <b>{% if asistentes %}{% widthratio certificados_entregados asistentes 100 %}%{% else %}0%{% endif %}</b></div>
-    </div></div>
-  </div>
-
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🎓 Aprendices</div><div class="kpi-num text-sena">{{ total_aprendices }}</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">👨‍🏫 Instructores</div><div class="kpi-num" style="color:#71277A;">{{ total_instructores }}</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🎟️ Invitados</div><div class="kpi-num" style="color:#FDC300;">{{ total_invitados }}</div></div></div>
-    <div class="col-6 col-md-3"><div class="card p-3"><div class="kpi-label">🛡️ Organizadores</div><div class="kpi-num" style="color:#003049;">{{ total_organizadores|default:0 }}</div></div></div>
-    <div class="col-12 col-md-6 offset-md-3 mt-2"><div class="card p-3"><div class="kpi-label">🎯 Proyectos / Colegios</div><div class="kpi-num" style="color:#6f42c1;">{{ total_proyectos }} / {{ total_colegios }}</div></div></div>
-  </div>
-
-  <div class="card p-4 mb-4">
-    <h4 class="text-sena mb-3">📈 Avance logístico (3 gráficos simples)</h4>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <div class="h6 mb-2 small text-muted">Asistencia general</div>
-        <canvas id="chart-1" height="190"></canvas>
-      </div>
-      <div class="col-md-4">
-        <div class="h6 mb-2 small text-muted">Logística Refrigerios</div>
-        <canvas id="chart-2" height="190"></canvas>
-      </div>
-      <div class="col-md-4">
-        <div class="h6 mb-2 small text-muted">Entrega Certificados</div>
-        <canvas id="chart-3" height="190"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <div class="card p-4">
-    <h4 class="text-sena mb-3">🎓 Totales por tipo persona</h4>
-    <canvas id="chart-4" height="100"></canvas>
-  </div>
-{% endif %}
+{% load static %}
+{% block titulo %}📊 Dashboard Gerencial · Feria SENA{% endblock %}
+{% block contenido_extra_head %}
+<meta http-equiv="refresh" content="30">
+<style>
+  body{background:radial-gradient(1200px 600px at 10% -10%, #111827 0%, #0b1220 45%, #050912 100%);color:#e5e7eb;}
+  .glass-card{background:linear-gradient(180deg, rgba(31,41,55,.82), rgba(17,24,39,.78));backdrop-filter:blur(14px);border:1px solid rgba(148,163,184,.12);border-radius:22px;box-shadow:0 20px 45px rgba(0,0,0,.35);}
+  .kpi-card{background:linear-gradient(180deg, rgba(31,41,55,.9), rgba(17,24,39,.88));border:1px solid rgba(148,163,184,.10);border-radius:20px;backdrop-filter:blur(10px);}
+  .kpi-num{font-weight:800;letter-spacing:-.02em;font-size:clamp(1.6rem,3.4vw,2.2rem);}
+  .kpi-label{font-size:.78rem;color:#94a3b8;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.04em;}
+  .tabla-fila:hover{background:rgba(148,163,184,.07);}
+  .sep{border-top:1px dashed rgba(148,163,184,.15);margin:12px 0;}
+  .ring-dot{width:10px;height:10px;border-radius:999px;display:inline-block;box-shadow:0 0 0 3px rgba(0,0,0,.15);}
+  .chip{padding:3px 9px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em;}
+  .barra{height:8px;border-radius:999px;background:rgba(148,163,184,.12);overflow:hidden;}
+  .barra > span{display:block;height:100%;border-radius:999px;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .mini-label{font-size:.7rem;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+  .sec-title{font-weight:800;letter-spacing:-.01em;font-size:1.02rem;color:#f8fafc;}
+  .sec-sub{font-size:.78rem;color:#94a3b8;margin-bottom:14px;}
+  .header-grad{background:linear-gradient(135deg, rgba(57,169,0,.15), rgba(59,130,246,.10));border:1px solid rgba(57,169,0,.18);border-radius:22px;}
+  @media (max-width: 992px){.grid-3{grid-template-columns:1fr;}.grid-2{grid-template-columns:1fr;}}
+</style>
 {% endblock %}
+
+{% block contenido %}
+
+<div class="glass-card p-4 p-md-5 mb-4 header-grad">
+  <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+    <div class="flex-grow-1 min-0">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        {% if estado_evento == 'EN_CURSO' %}
+          <span class="pill" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.35);"><span class="ring-dot" style="background:#22c55e;animation:pulse 1.4s infinite;"></span> EN CURSO · Tiempo real</span>
+        {% elif estado_evento == 'FINALIZADO' %}
+          <span class="pill" style="background:rgba(100,116,139,.2);color:#cbd5e1;border:1px solid rgba(100,116,139,.35);"><span class="ring-dot" style="background:#64748b;"></span> FINALIZADO</span>
+        {% else %}
+          <span class="pill" style="background:rgba(59,130,246,.18);color:#93c5fd;border:1px solid rgba(59,130,246,.35);"><span class="ring-dot" style="background:#3b82f6;"></span> NO INICIADO</span>
+        {% endif %}
+        <span class="pill" style="background:rgba(148,163,184,.12);color:#cbd5e1;border:1px solid rgba(148,163,184,.18);">🕒 Actualizado: {{ hora_actual }}</span>
+        <span class="pill" style="background:rgba(15,23,42,.35);color:#94a3b8;border:1px solid rgba(148,163,184,.15);">🔄 Auto-refresh cada 30s</span>
+      </div>
+      <h2 class="mb-1" style="color:#f8fafc;font-size:clamp(1.2rem,2.6vw,1.75rem);font-weight:800;">📊 {{ evento.nombre|default:"Dashboard Gerencial" }}</h2>
+      <div class="muted-small" style="color:#cbd5e1;">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-sm" style="background:rgba(31,41,55,.9);color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:14px;" href="{% url 'simple:listados' 'asistencia' %}">📋 Asistencias</a>
+      <a class="btn btn-sm" style="background:rgba(31,41,55,.9);color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:14px;" href="{% url 'simple:listados' 'refrigerios' %}">🍱 Refrigerios</a>
+      <a class="btn btn-sm" style="background:rgba(31,41,55,.9);color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:14px;" href="{% url 'simple:listados' 'certificados' %}">🏆 Certificados</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="kpi-card p-4">
+      <div class="kpi-label">🎯 Asistencia</div>
+      <div class="d-flex align-items-end gap-2 mt-2">
+        <div class="kpi-num" style="color:#4ade80;">{{ asistentes }}</div>
+        <div class="mb-2"><span class="pill" style="background:rgba(34,197,94,.18);color:#4ade80;">{{ pct_asistencia }}%</span></div>
+      </div>
+      <div class="barra mt-2"><span style="background:linear-gradient(90deg,#4ade80,#16a34a);width:{{ pct_asistencia }}%;"></span></div>
+      <div class="mini-label mt-2">Inscritos: <b style="color:#e5e7eb;">{{ total_personas }}</b> · Ausentes: <b style="color:#fca5a5;">{{ ausentes }}</b></div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="kpi-card p-4">
+      <div class="kpi-label">🍱 Refrigerios entregados</div>
+      <div class="d-flex align-items-end gap-2 mt-2">
+        <div class="kpi-num" style="color:#fb923c;">{{ refrigerios_entregados }}</div>
+        <div class="mb-2"><span class="pill" style="background:rgba(249,115,22,.18);color:#fdba74;">{{ pct_refrigerios }}%</span></div>
+      </div>
+      <div class="barra mt-2"><span style="background:linear-gradient(90deg,#fb923c,#ea580c);width:{{ pct_refrigerios }}%;"></span></div>
+      <div class="mini-label mt-2">Sobre asistentes: <b style="color:#e5e7eb;">{{ asistentes }}</b> · Falta entregar: <b style="color:#fcd34d;">{{ refrigerios_pendientes }}</b></div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="kpi-card p-4">
+      <div class="kpi-label">🏆 Certificados entregados</div>
+      <div class="d-flex align-items-end gap-2 mt-2">
+        <div class="kpi-num" style="color:#a78bfa;">{{ certificados_entregados }}</div>
+        <div class="mb-2"><span class="pill" style="background:rgba(139,92,246,.2);color:#c4b5fd;">{{ pct_certificados }}%</span></div>
+      </div>
+      <div class="barra mt-2"><span style="background:linear-gradient(90deg,#a78bfa,#7c3aed);width:{{ pct_certificados }}%;"></span></div>
+      <div class="mini-label mt-2">Sobre asistentes: <b style="color:#e5e7eb;">{{ asistentes }}</b> · Pendientes: <b style="color:#fcd34d;">{{ certificados_pendientes }}</b></div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="kpi-card p-4">
+      <div class="kpi-label">🏛️ Estructura del evento</div>
+      <div class="kpi-num mt-2" style="color:#60a5fa;">{{ total_proyectos }} proyectos</div>
+      <div class="sep"></div>
+      <div class="grid-2" style="font-size:.84rem;">
+        <div><div class="mini-label">Instituciones</div><div style="color:#e5e7eb;font-weight:700;">{{ total_colegios }}</div></div>
+        <div><div class="mini-label">Programas</div><div style="color:#e5e7eb;font-weight:700;">{{ total_programas }}</div></div>
+        <div><div class="mini-label">Fichas</div><div style="color:#e5e7eb;font-weight:700;">{{ total_fichas }}</div></div>
+        <div><div class="mini-label">Personas</div><div style="color:#e5e7eb;font-weight:700;">{{ total_personas }}</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-xl-6">
+    <div class="glass-card p-4">
+      <div class="sec-title">👥 Distribución por rol · Inscritos vs Asistentes</div>
+      <div class="sec-sub">Cuántos entraron de cada perfil frente a los que estaban registrados.</div>
+      <div class="grid-2">
+        <div class="p-3" style="background:rgba(22,163,74,.08);border:1px solid rgba(74,222,128,.2);border-radius:16px;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(22,163,74,.2);color:#4ade80;">APRENDIZ</span><span style="font-weight:800;color:#4ade80;">{{ asistentes_aprendices }}/{{ total_aprendices }}</span></div>
+          <div class="barra"><span style="background:linear-gradient(90deg,#4ade80,#16a34a);width:{% widthratio asistentes_aprendices total_aprendices|default:1 100 %}%;"></span></div>
+          <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{% widthratio total_aprendices|default:0 1 total_aprendices %}{% if total_aprendices %}{% else %}0{% endif %} → {{ total_aprendices|default:0 }}</b></div>
+        </div>
+        <div class="p-3" style="background:rgba(14,165,233,.08);border:1px solid rgba(56,189,248,.2);border-radius:16px;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(14,165,233,.2);color:#38bdf8;">INSTRUCTOR</span><span style="font-weight:800;color:#38bdf8;">{{ asistentes_instructores }}/{{ total_instructores }}</span></div>
+          <div class="barra"><span style="background:linear-gradient(90deg,#38bdf8,#0ea5e9);width:{% widthratio asistentes_instructores total_instructores|default:1 100 %}%;"></span></div>
+          <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{{ total_instructores|default:0 }}</b></div>
+        </div>
+        <div class="p-3" style="background:rgba(168,85,247,.08);border:1px solid rgba(192,132,252,.2);border-radius:16px;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(168,85,247,.2);color:#c084fc;">INVITADO</span><span style="font-weight:800;color:#c084fc;">{{ asistentes_invitados }}/{{ total_invitados }}</span></div>
+          <div class="barra"><span style="background:linear-gradient(90deg,#c084fc,#a855f7);width:{% widthratio asistentes_invitados total_invitados|default:1 100 %}%;"></span></div>
+          <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{{ total_invitados|default:0 }}</b></div>
+        </div>
+        <div class="p-3" style="background:rgba(251,191,36,.08);border:1px solid rgba(253,224,71,.2);border-radius:16px; color:#111;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(251,191,36,.25);color:#713f12;">ORGANIZADOR</span><span style="font-weight:800;color:#713f12;">{{ asistentes_organizadores }}/{{ total_organizadores|default:0 }}</span></div>
+          <div class="barra"><span style="background:linear-gradient(90deg,#fbbf24,#f59e0b);width:{% widthratio asistentes_organizadores total_organizadores|default:1 100 %}%;"></span></div>
+          <div class="mini-label mt-2">Ausentes: <b style="color:#7f1d1d;">{{ total_organizadores|default:0 }}</b></div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="grid-3" style="gap:12px;">
+        <canvas id="chart-1" height="170"></canvas>
+        <canvas id="chart-2" height="170"></canvas>
+        <canvas id="chart-4" height="170"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-6">
+    <div class="glass-card p-4 mb-3">
+      <div class="sec-title">🔍 Auditoría · Medio de marcación (QR vs Manual)</div>
+      <div class="sec-sub">Integridad del flujo operativo · % de registros QR escaneados (fiable) vs tipeados MANUALMENTE (riesgo de error).</div>
+      <div class="grid-3">
+        <div class="p-3" style="border:1px solid rgba(74,222,128,.15);border-radius:14px;">
+          <div class="mini-label">📋 Asistencia</div>
+          <div class="d-flex gap-3 mt-2">
+            <div style="flex:1;">
+              <div class="mini-label">QR</div><div style="font-weight:800;color:#4ade80;">{{ asist_qr }}</div>
+            </div>
+            <div style="flex:1;">
+              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;">{{ asist_manual }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-3" style="border:1px solid rgba(251,146,60,.15);border-radius:14px;">
+          <div class="mini-label">🍱 Refrigerios</div>
+          <div class="d-flex gap-3 mt-2">
+            <div style="flex:1;">
+              <div class="mini-label">QR</div><div style="font-weight:800;color:#fb923c;">{{ refri_qr }}</div>
+            </div>
+            <div style="flex:1;">
+              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;">{{ refri_manual }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-3" style="border:1px solid rgba(167,139,250,.15);border-radius:14px;">
+          <div class="mini-label">🏆 Certificados</div>
+          <div class="d-flex gap-3 mt-2">
+            <div style="flex:1;">
+              <div class="mini-label">QR</div><div style="font-weight:800;color:#a78bfa;">{{ cert_qr }}</div>
+            </div>
+            <div style="flex:1;">
+              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;">{{ cert_manual }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="sec-title">🚀 Entregas por rol · Refrigerios + Certificados</div>
+      <div class="sec-sub">¿Cuántas personas recibieron su almuerzo y diploma en cada perfil?</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="color:#e5e7eb;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(148,163,184,.2);">
+              <th class="mini-label" style="padding:10px 14px;">ROL</th>
+              <th class="mini-label text-end" style="padding:10px 14px;">ASISTENTES</th>
+              <th class="mini-label text-end" style="padding:10px 14px;">ALMUERZO</th>
+              <th class="mini-label text-end" style="padding:10px 14px;">CERTIFICADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(22,163,74,.2);color:#4ade80;">APRENDIZ</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_aprendices }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_aprendices }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_aprendices }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(14,165,233,.2);color:#38bdf8;">INSTRUCTOR</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_instructores }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_instructores }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_instructores }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(168,85,247,.2);color:#c084fc;">INVITADO</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_invitados }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_invitados }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_invitados }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(251,191,36,.25);color:#713f12;">ORGANIZADOR</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_organizadores }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_organizadores }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_organizadores }}</td></tr>
+            <tr style="border-top:2px solid rgba(148,163,184,.18);background:rgba(148,163,184,.05);"><td style="padding:10px 14px;font-weight:800;color:#f8fafc;">TOTAL</td><td class="text-end" style="font-weight:800;color:#4ade80;">{{ asistentes }}</td><td class="text-end" style="font-weight:800;color:#fb923c;">{{ refrigerios_entregados }}</td><td class="text-end" style="font-weight:800;color:#a78bfa;">{{ certificados_entregados }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-xl-7">
+    <div class="glass-card p-4">
+      <div class="sec-title">📡 Actividad en tiempo real · Últimas 15 marcaciones</div>
+      <div class="sec-sub">Feed unificado de Asistencia, Refrigerio y Certificado. ¿Quién marcó, cuándo, qué y cómo?</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="color:#e5e7eb;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(148,163,184,.2);">
+              <th class="mini-label" style="padding:10px 14px;">HORA</th>
+              <th class="mini-label" style="padding:10px 14px;">TIPO</th>
+              <th class="mini-label" style="padding:10px 14px;">DOC</th>
+              <th class="mini-label" style="padding:10px 14px;">NOMBRE</th>
+              <th class="mini-label" style="padding:10px 14px;">ROL</th>
+              <th class="mini-label" style="padding:10px 14px;">MEDIO</th>
+              <th class="mini-label" style="padding:10px 14px;">OPERADOR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if actividad %}
+              {% for r in actividad %}
+                <tr class="tabla-fila">
+                  <td style="padding:10px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#cbd5e1;">{{ r.hora }}</td>
+                  <td style="padding:10px 14px;">
+                    {% if r.tipo == 'ASISTENCIA' %}<span class="chip" style="background:rgba(34,197,94,.18);color:#4ade80;">{{ r.tipo }}</span>
+                    {% elif r.tipo == 'REFRIGERIO' %}<span class="chip" style="background:rgba(251,146,60,.18);color:#fdba74;">{{ r.tipo }}</span>
+                    {% elif r.tipo == 'CERTIFICADO' %}<span class="chip" style="background:rgba(167,139,250,.2);color:#c4b5fd;">{{ r.tipo }}</span>
+                    {% else %}<span class="chip" style="background:rgba(148,163,184,.18);color:#cbd5e1;">{{ r.tipo }}</span>{% endif %}
+                  </td>
+                  <td style="padding:10px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1;">{{ r.doc }}</td>
+                  <td style="padding:10px 14px;color:#f8fafc;font-weight:600;">{{ r.nombre }}</td>
+                  <td style="padding:10px 14px;">
+                    {% if r.rol == 'APRENDIZ' %}<span class="chip" style="background:rgba(22,163,74,.2);color:#4ade80;">{{ r.rol }}</span>
+                    {% elif r.rol == 'INSTRUCTOR' %}<span class="chip" style="background:rgba(14,165,233,.2);color:#38bdf8;">{{ r.rol }}</span>
+                    {% elif r.rol == 'INVITADO' %}<span class="chip" style="background:rgba(168,85,247,.2);color:#c084fc;">{{ r.rol }}</span>
+                    {% elif r.rol == 'ORGANIZADOR' %}<span class="chip" style="background:rgba(251,191,36,.25);color:#713f12;">{{ r.rol }}</span>
+                    {% else %}<span class="chip" style="background:rgba(148,163,184,.18);color:#cbd5e1;">{{ r.rol }}</span>{% endif %}
+                  </td>
+                  <td style="padding:10px 14px;">
+                    {% if r.medio == 'QR' %}<span class="chip" style="background:rgba(34,197,94,.18);color:#4ade80;">📱 {{ r.medio }}</span>
+                    {% elif r.medio == 'MANUAL' %}<span class="chip" style="background:rgba(252,165,165,.18);color:#fca5a5;">✍ {{ r.medio }}</span>
+                    {% else %}<span class="chip">{{ r.medio }}</span>{% endif %}
+                  </td>
+                  <td style="padding:10px 14px;color:#94a3b8;font-size:.82rem;">{{ r.operador }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="7" class="text-center py-4 text-muted">Aún no hay marcaciones registradas en este evento.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="glass-card p-4 mb-3">
+      <div class="sec-title">⚠️ ¿Qué falta por cerrar?</div>
+      <div class="sec-sub">Brechas pendientes para cerrar el evento al 100%.</div>
+      <div class="d-grid gap-3">
+        <div class="p-3" style="background:{% if ausentes > 0 %}rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);{% else %}rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);{% endif %}border-radius:16px;">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div style="font-weight:800;color:#f8fafc;">👥 Ausentes (sin ingresar)</div>
+            <div style="font-size:1.3rem;font-weight:800;{% if ausentes > 0 %}color:#fca5a5;{% else %}color:#4ade80;{% endif %}">{{ ausentes }}</div>
+          </div>
+          <div class="mini-label">Faltan por marcar asistencia · Total inscritos: <b>{{ total_personas }}</b></div>
+        </div>
+        <div class="p-3" style="background:{% if refrigerios_pendientes > 0 %}rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);{% else %}rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);{% endif %}border-radius:16px;">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div style="font-weight:800;color:#f8fafc;">🍱 Almuerzos pendientes</div>
+            <div style="font-size:1.3rem;font-weight:800;{% if refrigerios_pendientes > 0 %}color:#fcd34d;{% else %}color:#4ade80;{% endif %}">{{ refrigerios_pendientes }}</div>
+          </div>
+          <div class="mini-label">De <b>{{ asistentes }}</b> asistentes, ya recibieron <b style="color:#fb923c;">{{ refrigerios_entregados }}</b></div>
+        </div>
+        <div class="p-3" style="background:{% if certificados_pendientes > 0 %}rgba(167,139,250,.1);border:1px solid rgba(196,181,253,.3);{% else %}rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);{% endif %}border-radius:16px;">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div style="font-weight:800;color:#f8fafc;">🏆 Certificados pendientes</div>
+            <div style="font-size:1.3rem;font-weight:800;{% if certificados_pendientes > 0 %}color:#c4b5fd;{% else %}color:#4ade80;{% endif %}">{{ certificados_pendientes }}</div>
+          </div>
+          <div class="mini-label">De <b>{{ asistentes }}</b> asistentes, ya recibieron <b style="color:#a78bfa;">{{ certificados_entregados }}</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="sec-title">📊 Gráficos logística</div>
+      <div class="grid-2">
+        <canvas id="chart-2b" height="170"></canvas>
+        <canvas id="chart-3b" height="170"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
-  function esperarChart(cb,i){i=i||0;if(typeof window.Chart==='function')return cb();if(i>120)return;setTimeout(()=>esperarChart(cb,i+1),100);}
+  function esperarChart(cb,i){i=i||0;if(typeof window.Chart==='function')return cb();if(i>120)return;setTimeout(()=>esperarChart(cb,i+1),80);}
   esperarChart(()=>{
-    const S='#39A900',A='#71277A',N='#FDC300',O='#003049',R='#C9222B',G='#adb5bd';
-    Chart.defaults.font.family="'Work Sans','Segoe UI',sans-serif";
-    new Chart(document.getElementById('chart-1'),{type:'doughnut',data:{labels:['Asistentes','Ausentes'],datasets:[{data:[{{ asistentes }},{{ ausentes }}],backgroundColor:[S,R],borderWidth:0}]},options:{cutout:'62%',plugins:{legend:{position:'bottom'}}}});
-    new Chart(document.getElementById('chart-2'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Almuerzos',data:[{{ refrigerios_entregados }},{{ refrigerios_pendientes }}],backgroundColor:[N,G],borderRadius:6}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
-    new Chart(document.getElementById('chart-3'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Certificados',data:[{{ certificados_entregados }},{{ certificados_pendientes }}],backgroundColor:[A,G],borderRadius:6}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
-    new Chart(document.getElementById('chart-4'),{type:'bar',data:{labels:['Aprendices','Instructores','Invitados','Organizadores'],datasets:[{label:'Total inscritos',data:[{{ total_aprendices }},{{ total_instructores }},{{ total_invitados }},{{ total_organizadores|default:0 }}],backgroundColor:[S,A,N,O],borderRadius:8,barThickness:30}]},options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
+    Chart.defaults.color = '#cbd5e1';
+    Chart.defaults.font.family = "'Inter','Work Sans','Segoe UI',sans-serif";
+    Chart.defaults.borderColor = 'rgba(148,163,184,.12)';
+    const S='#16a34a',SV='#4ade80',A='#0ea5e9',N='#ea580c',NV='#fb923c',O='#7c3aed',OV='#a78bfa',Y='#f59e0b',R='#ef4444',G='#475569';
+
+    new Chart(document.getElementById('chart-1'),{type:'doughnut',data:{labels:['Asistentes','Ausentes'],datasets:[{data:[{{ asistentes }},{{ ausentes }}],backgroundColor:[S,R],borderWidth:0}]},options:{cutout:'66%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},maintainAspectRatio:true}});
+
+    new Chart(document.getElementById('chart-4'),{type:'bar',data:{labels:['Aprendiz','Instructor','Invitado','Org'],datasets:[
+      {label:'Inscritos',data:[{{ total_aprendices }},{{ total_instructores }},{{ total_invitados }},{{ total_organizadores|default:0 }}],backgroundColor:G,borderRadius:7,barThickness:14},
+      {label:'Asistentes',data:[{{ asistentes_aprendices }},{{ asistentes_instructores }},{{ asistentes_invitados }},{{ asistentes_organizadores }}],backgroundColor:[SV,A,OV,Y],borderRadius:7,barThickness:14}
+    ]},options:{plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+
+    new Chart(document.getElementById('chart-2b'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Almuerzos',data:[{{ refrigerios_entregados }},{{ refrigerios_pendientes }}],backgroundColor:[NV,G],borderRadius:8,barThickness:22}]},options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
+
+    new Chart(document.getElementById('chart-3b'),{type:'bar',data:{labels:['Entregados','Pendientes'],datasets:[{label:'Certificados',data:[{{ certificados_entregados }},{{ certificados_pendientes }}],backgroundColor:[OV,G],borderRadius:8,barThickness:22}]},options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false}}}});
   });
 </script>
 {% endblock %}
