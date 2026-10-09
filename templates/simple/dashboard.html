@@ -57,16 +57,18 @@
           {% else %}
             <span class="pill" style="background:#1d4ed8;color:#ffffff;"><span class="dot-live" style="background:#bfdbfe;"></span> NO INICIADO</span>
           {% endif %}
-          <span class="pill" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;">🕒 Actualizado: {{ hora_actual }}</span>
-          <span class="pill" style="background:#0f172a;color:#cbd5e1;border:1px solid #1e293b;">🔄 Auto-refresh cada 30s</span>
+          <span style="color:#94a3b8;margin:0 .25rem 0 .65rem;opacity:.7;">|</span>
+          <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🕒 Actualizado: <span class="txt-mono" style="color:#334155;font-weight:700;">{{ hora_actual }}</span></span>
+          <span style="color:#94a3b8;margin:0 .4rem;opacity:.7;">|</span>
+          <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🔄 Auto-refresh cada 30s</span>
         </div>
         <h1 class="h5 mb-1" style="color:#0f172a;font-weight:800;">📊 {{ evento.nombre|default:"Dashboard Gerencial" }}</h1>
         <div style="color:#64748b;font-size:.85rem;">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
       </div>
       <div class="d-flex gap-2 flex-wrap">
-        <a class="btn-link-soft" style="background:linear-gradient(135deg,#16a34a,#15803d);" href="{% url 'simple:listados' 'asistencia' %}">📋 Asistencias</a>
-        <a class="btn-link-soft" style="background:linear-gradient(135deg,#ea580c,#c2410c);" href="{% url 'simple:listados' 'refrigerios' %}">🍱 Refrigerios</a>
-        <a class="btn-link-soft" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);" href="{% url 'simple:listados' 'certificados' %}">🏆 Certificados</a>
+        <a class="btn-link-soft" style="color:#ffffff !important;text-decoration:none !important;outline:none;background:linear-gradient(135deg,#16a34a,#15803d);" href="{% url 'simple:listados' 'asistencia' %}">📋 Asistencias</a>
+        <a class="btn-link-soft" style="color:#ffffff !important;text-decoration:none !important;outline:none;background:linear-gradient(135deg,#ea580c,#c2410c);" href="{% url 'simple:listados' 'refrigerios' %}">🍱 Refrigerios</a>
+        <a class="btn-link-soft" style="color:#ffffff !important;text-decoration:none !important;outline:none;background:linear-gradient(135deg,#7c3aed,#6d28d9);" href="{% url 'simple:listados' 'certificados' %}">🏆 Certificados</a>
       </div>
     </div>
   </div>
