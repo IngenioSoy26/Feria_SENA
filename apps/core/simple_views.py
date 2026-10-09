@@ -634,6 +634,98 @@ def _organizadores_qs_safe():
         return []
 
 
+def _qs_perfiles_o_fallback(ModeloPerfil, rol_tipo_persona, extra_annotate=None, extra_order=None):
+    """
+    Devuelve lista de objetos perfil, con FALLBACK SI perfil == 0 pero Personas.tipo_persona=rol SÍ existen.
+    Razón (bug screenshot invitados/organizadores): se crea Persona con tipo_persona=INVITADO pero NO
+    se crea perfil Invitado asociado (OneToOne). El listado queda vacío de mentira. Solución:
+      (1) Intentar perfil normal; si hay >=1 fila se retorna.
+      (2) Si 0 filas, se consulta Persona.filter(tipo_persona=rol) y se CREA perfil faltante
+          (sincroniza BD - repair on read) + después retorna perfil QS normal para que template use
+          sus campos entidad/cargo/area_responsabilidad etc. sin cambios.
+    """
+    from django.db import connection as _conn
+    _ok = False
+    try:
+        _order = extra_order or 'persona__apellidos'
+        if ModeloPerfil is None:
+            filas_perfil = []
+        else:
+            qs = ModeloPerfil.objects.select_related('persona').order_by(_order).all()
+            if extra_annotate:
+                qs = qs.annotate(**extra_annotate)
+            filas_perfil = list(qs)
+        _ok = True
+    except Exception:
+        filas_perfil = []
+        try: _conn.rollback()
+        except Exception: pass
+        try: _conn.close()
+        except Exception: pass
+
+    personas_rol = Persona.objects.filter(tipo_persona=rol_tipo_persona).order_by('apellidos', 'nombres').all()
+    total_personas = personas_rol.count() if hasattr(personas_rol, 'count') else len(list(personas_rol))
+
+    if (not filas_perfil) and total_personas > 0:
+        personas_list = list(personas_rol)
+        try:
+            with transaction.atomic():
+                for p in personas_list:
+                    if ModeloPerfil is None:
+                        continue
+                    try:
+                        kwargs_crear = {}
+                        if ModeloPerfil._meta.get_field('entidad'):
+                            try:
+                                _ent = (p.entidad or p.entidad_canonica or '').strip()
+                                kwargs_crear['entidad'] = (_ent[:200]) if _ent else ''
+                            except Exception:
+                                kwargs_crear['entidad'] = ''
+                        if ModeloPerfil._meta.get_field('cargo'):
+                            try:
+                                _car = (p.cargo or p.cargo_canonico or '').strip()
+                                if rol_tipo_persona == 'INSTRUCTOR':
+                                    kwargs_crear['cargo'] = (_car[:150] or 'Instructor')
+                                elif rol_tipo_persona == 'APRENDIZ':
+                                    kwargs_crear['cargo'] = (_car[:150] or 'Aprendiz')
+                                else:
+                                    kwargs_crear['cargo'] = (_car[:150] if _car else '')
+                            except Exception:
+                                kwargs_crear['cargo'] = ''
+                        if ModeloPerfil._meta.get_field('area_responsabilidad'):
+                            try:
+                                _area = (p.entidad or p.entidad_canonica or '').strip()
+                                kwargs_crear['area_responsabilidad'] = (_area[:200] if _area else '')
+                            except Exception:
+                                kwargs_crear['area_responsabilidad'] = ''
+                        ModeloPerfil.objects.get_or_create(
+                            persona=p,
+                            defaults=kwargs_crear,
+                        )
+                    except Exception:
+                        pass
+        except Exception:
+            try: _conn.rollback()
+            except Exception: pass
+
+        try:
+            _order2 = extra_order or 'persona__apellidos'
+            if ModeloPerfil is None:
+                return []
+            qs2 = ModeloPerfil.objects.select_related('persona').order_by(_order2).all()
+            if extra_annotate:
+                qs2 = qs2.annotate(**extra_annotate)
+            return list(qs2)
+        except Exception:
+            try: _conn.rollback()
+            except Exception: pass
+            try: _conn.close()
+            except Exception: pass
+            return []
+
+    return filas_perfil
+
+
 def _operador_para_guardar(request):
     if request.user and request.user.is_authenticated and not request.user.is_anonymous:
         return request.user
@@ -2139,19 +2231,19 @@ class ListadoUnicosView(LoginRequiredMixin, View):
             data = ProgramaTecnico.objects.order_by('nombre').all()
         elif que_normalizado == 'instructores':
             titulo = 'Instructores (únicos)'
-            data = Instructor.objects.select_related('persona').order_by('persona__apellidos').all()
+            data = _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR')
         elif que_normalizado == 'invitados':
             titulo = 'Invitados (únicos)'
-            data = Invitado.objects.select_related('persona').order_by('persona__apellidos').all()
+            data = _qs_perfiles_o_fallback(Invitado, 'INVITADO')
         elif que_normalizado == 'organizadores':
             titulo = 'Organizadores (únicos)'
-            data = _organizadores_qs_safe()
+            data = _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR')
         elif que_normalizado == 'proyectos':
             titulo = 'Proyectos registrados'
             data = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo').all()
         elif que_normalizado == 'aprendices':
             titulo = 'Aprendices por proyecto'
-            data = Aprendiz.objects.select_related('persona', 'proyecto').order_by('proyecto__codigo').all()
+            data = _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ', extra_order='proyecto__codigo')
         elif que_normalizado in ('asistencia', 'asistencias'):
             titulo = 'Lista de Asistencias'
             qs = AsistenciaEvento.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora')
@@ -2233,16 +2325,16 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
                     pass
                 items.append((p, proy))
         elif grupo == 'aprendices':
-            for a in Aprendiz.objects.select_related('persona', 'proyecto').order_by('persona__apellidos').all():
+            for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
                 items.append((a.persona, a.proyecto))
         elif grupo == 'instructores':
-            for i in Instructor.objects.select_related('persona').order_by('persona__apellidos').all():
+            for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
                 items.append((i.persona, None))
         elif grupo == 'invitados':
-            for i in Invitado.objects.select_related('persona').order_by('persona__apellidos').all():
+            for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
                 items.append((i.persona, None))
         elif grupo == 'organizadores':
-            for o in _organizadores_qs_safe():
+            for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
                 items.append((o.persona, None))
         elif grupo == 'asistentes':
             asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
@@ -2386,16 +2478,16 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
                     pass
                 lista.append((p, proy))
         elif grupo == 'aprendices':
-            for a in Aprendiz.objects.select_related('persona', 'proyecto').order_by('persona__apellidos').all():
+            for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
                 lista.append((a.persona, a.proyecto))
         elif grupo == 'instructores':
-            for i in Instructor.objects.select_related('persona').order_by('persona__apellidos').all():
+            for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
                 lista.append((i.persona, None))
         elif grupo == 'invitados':
-            for i in Invitado.objects.select_related('persona').order_by('persona__apellidos').all():
+            for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
                 lista.append((i.persona, None))
         elif grupo == 'organizadores':
-            for o in _organizadores_qs_safe():
+            for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
                 lista.append((o.persona, None))
 
         if not lista:
