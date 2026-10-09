@@ -4,25 +4,47 @@
 {% block contenido_extra_head %}
 <meta http-equiv="refresh" content="30">
 <style>
-  body{background:radial-gradient(1200px 600px at 10% -10%, #111827 0%, #0b1220 45%, #050912 100%);color:#e5e7eb;}
-  .glass-card{background:linear-gradient(180deg, rgba(31,41,55,.82), rgba(17,24,39,.78));backdrop-filter:blur(14px);border:1px solid rgba(148,163,184,.12);border-radius:22px;box-shadow:0 20px 45px rgba(0,0,0,.35);}
-  .kpi-card{background:linear-gradient(180deg, rgba(31,41,55,.9), rgba(17,24,39,.88));border:1px solid rgba(148,163,184,.10);border-radius:20px;backdrop-filter:blur(10px);}
-  .kpi-num{font-weight:800;letter-spacing:-.02em;font-size:clamp(1.6rem,3.4vw,2.2rem);}
-  .kpi-label{font-size:.78rem;color:#94a3b8;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.04em;}
-  .tabla-fila:hover{background:rgba(148,163,184,.07);}
-  .sep{border-top:1px dashed rgba(148,163,184,.15);margin:12px 0;}
-  .ring-dot{width:10px;height:10px;border-radius:999px;display:inline-block;box-shadow:0 0 0 3px rgba(0,0,0,.15);}
-  .chip{padding:3px 9px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em;}
-  .barra{height:8px;border-radius:999px;background:rgba(148,163,184,.12);overflow:hidden;}
-  .barra > span{display:block;height:100%;border-radius:999px;}
-  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-  .mini-label{font-size:.7rem;color:#94a3b8;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
-  .sec-title{font-weight:800;letter-spacing:-.01em;font-size:1.02rem;color:#f8fafc;}
-  .sec-sub{font-size:.78rem;color:#94a3b8;margin-bottom:14px;}
-  .header-grad{background:linear-gradient(135deg, rgba(57,169,0,.15), rgba(59,130,246,.10));border:1px solid rgba(57,169,0,.18);border-radius:22px;}
-  @media (max-width: 992px){.grid-3{grid-template-columns:1fr;}.grid-2{grid-template-columns:1fr;}}
+  body{background-color:#050912 !important;background-image:radial-gradient(1400px 700px at 10% -10%, #111827 0%, #0b1220 40%, #050912 100%) !important;color:#e5e7eb !important;min-height:100vh !important;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif !important;}
+  .glass-card{background:#1f2937 !important;background-image:linear-gradient(180deg, rgba(31,41,55,.98), rgba(17,24,39,.96)) !important;border:1px solid rgba(148,163,184,.25) !important;border-radius:22px !important;box-shadow:0 20px 45px rgba(0,0,0,.45) !important;backdrop-filter:blur(14px);}
+  .kpi-card{background:#1f2937 !important;background-image:linear-gradient(180deg, rgba(31,41,55,.98), rgba(17,24,39,.96)) !important;border:1px solid rgba(148,163,184,.22) !important;border-radius:20px !important;box-shadow:0 10px 30px rgba(0,0,0,.35) !important;backdrop-filter:blur(10px);min-height:160px;}
+  .kpi-num{font-weight:800 !important;letter-spacing:-.02em;font-size:clamp(1.8rem,4vw,2.6rem) !important;color:#f8fafc !important;line-height:1;}
+  .kpi-label{font-size:.78rem;color:#94a3b8 !important;font-weight:700 !important;letter-spacing:.08em !important;text-transform:uppercase !important;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:.74rem;font-weight:800 !important;letter-spacing:.04em;}
+  .tabla-fila:hover{background:rgba(148,163,184,.10) !important;}
+  .tabla-fila td{border-top:1px solid rgba(148,163,184,.14);}
+  .sep{border-top:1px dashed rgba(148,163,184,.25);margin:12px 0;}
+  .ring-dot{width:10px;height:10px;border-radius:999px;display:inline-block;box-shadow:0 0 0 3px rgba(0,0,0,.25);}
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}70%{box-shadow:0 0 0 10px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+  .chip{padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:800 !important;letter-spacing:.04em;border:1px solid transparent;}
+  .barra{height:10px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);}
+  .barra > span{display:block;height:100%;border-radius:999px;box-shadow:0 0 0 1px rgba(255,255,255,.08);}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .mini-label{font-size:.72rem !important;color:#cbd5e1 !important;font-weight:700 !important;letter-spacing:.06em !important;text-transform:uppercase;}
+  .sec-title{font-weight:800 !important;letter-spacing:-.01em;font-size:clamp(1rem,2vw,1.12rem) !important;color:#f8fafc !important;}
+  .sec-sub{font-size:.82rem !important;color:#cbd5e1 !important;margin-bottom:14px !important;line-height:1.5;}
+  .header-grad{background:#1f2937 !important;background-image:linear-gradient(135deg, rgba(57,169,0,.22), rgba(59,130,246,.15)) !important;border:1px solid rgba(57,169,0,.35) !important;border-radius:22px !important;box-shadow:0 20px 45px rgba(0,0,0,.4);}
+  .muted-small{font-size:.8rem;color:#cbd5e1 !important;}
+  .table th{color:#94a3b8 !important;font-weight:800 !important;letter-spacing:.08em;text-transform:uppercase;font-size:.72rem !important;}
+  .table td{color:#e5e7eb !important;font-size:.88rem !important;}
+  canvas{display:block !important;max-width:100% !important;width:100% !important;}
+  .chart-wrap{position:relative;width:100%;max-width:100%;margin:0 auto;}
+  .btn-db{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:14px;font-weight:800 !important;font-size:.84rem;color:#fff !important;text-decoration:none !important;border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 20px rgba(0,0,0,.25);transition:transform .15s ease, box-shadow .15s ease;white-space:nowrap;}
+  .btn-db:hover{transform:translateY(-1px);box-shadow:0 15px 28px rgba(0,0,0,.35);}
+  @media (max-width: 1199px){
+    .kpi-num{font-size:clamp(1.6rem,4.2vw,2.2rem) !important;}
+  }
+  @media (max-width: 992px){
+    .grid-3{grid-template-columns:1fr !important;}
+    .grid-2{grid-template-columns:1fr !important;}
+    .kpi-card{min-height:auto;}
+  }
+  @media (max-width: 576px){
+    .glass-card, .kpi-card{border-radius:18px !important;}
+    .sec-title{font-size:.98rem !important;}
+    .kpi-num{font-size:1.9rem !important;}
+    body{padding-top:8px !important;}
+  }
 </style>
 {% endblock %}
 
@@ -33,22 +55,22 @@
     <div class="flex-grow-1 min-0">
       <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
         {% if estado_evento == 'EN_CURSO' %}
-          <span class="pill" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.35);"><span class="ring-dot" style="background:#22c55e;animation:pulse 1.4s infinite;"></span> EN CURSO · Tiempo real</span>
+          <span class="pill" style="background:#16a34a !important;color:#ffffff !important;border:1px solid #22c55e;"><span class="ring-dot" style="background:#86efac;animation:pulse-dot 1.4s infinite;"></span> EN CURSO · Tiempo real</span>
         {% elif estado_evento == 'FINALIZADO' %}
-          <span class="pill" style="background:rgba(100,116,139,.2);color:#cbd5e1;border:1px solid rgba(100,116,139,.35);"><span class="ring-dot" style="background:#64748b;"></span> FINALIZADO</span>
+          <span class="pill" style="background:#475569 !important;color:#ffffff !important;border:1px solid #64748b;"><span class="ring-dot" style="background:#94a3b8;"></span> FINALIZADO</span>
         {% else %}
-          <span class="pill" style="background:rgba(59,130,246,.18);color:#93c5fd;border:1px solid rgba(59,130,246,.35);"><span class="ring-dot" style="background:#3b82f6;"></span> NO INICIADO</span>
+          <span class="pill" style="background:#1d4ed8 !important;color:#ffffff !important;border:1px solid #3b82f6;"><span class="ring-dot" style="background:#bfdbfe;"></span> NO INICIADO</span>
         {% endif %}
-        <span class="pill" style="background:rgba(148,163,184,.12);color:#cbd5e1;border:1px solid rgba(148,163,184,.18);">🕒 Actualizado: {{ hora_actual }}</span>
-        <span class="pill" style="background:rgba(15,23,42,.35);color:#94a3b8;border:1px solid rgba(148,163,184,.15);">🔄 Auto-refresh cada 30s</span>
+        <span class="pill" style="background:#334155 !important;color:#e2e8f0 !important;border:1px solid #475569;">🕒 Actualizado: {{ hora_actual }}</span>
+        <span class="pill" style="background:#0f172a !important;color:#cbd5e1 !important;border:1px solid #334155;">🔄 Auto-refresh cada 30s</span>
       </div>
-      <h2 class="mb-1" style="color:#f8fafc;font-size:clamp(1.2rem,2.6vw,1.75rem);font-weight:800;">📊 {{ evento.nombre|default:"Dashboard Gerencial" }}</h2>
-      <div class="muted-small" style="color:#cbd5e1;">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
+      <h2 class="mb-1" style="color:#f8fafc;font-size:clamp(1.2rem,2.8vw,1.8rem);font-weight:800 !important;line-height:1.2;">📊 {{ evento.nombre|default:"Dashboard Gerencial" }}</h2>
+      <div class="muted-small" style="color:#cbd5e1 !important;">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a class="btn btn-sm" style="background:rgba(31,41,55,.9);color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:14px;" href="{% url 'simple:listados' 'asistencia' %}">📋 Asistencias</a>
-      <a class="btn btn-sm" style="background:rgba(31,41,55,.9);color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:14px;" href="{% url 'simple:listados' 'refrigerios' %}">🍱 Refrigerios</a>
-      <a class="btn btn-sm" style="background:rgba(31,41,55,.9);color:#e5e7eb;border:1px solid rgba(148,163,184,.2);border-radius:14px;" href="{% url 'simple:listados' 'certificados' %}">🏆 Certificados</a>
+      <a class="btn-db" style="background:linear-gradient(135deg,#16a34a,#15803d);" href="{% url 'simple:listados' 'asistencia' %}">📋 Asistencias</a>
+      <a class="btn-db" style="background:linear-gradient(135deg,#ea580c,#c2410c);" href="{% url 'simple:listados' 'refrigerios' %}">🍱 Refrigerios</a>
+      <a class="btn-db" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);" href="{% url 'simple:listados' 'certificados' %}">🏆 Certificados</a>
     </div>
   </div>
 </div>
@@ -121,32 +143,32 @@
       <div class="sec-title">👥 Distribución por rol · Inscritos vs Asistentes</div>
       <div class="sec-sub">Cuántos entraron de cada perfil frente a los que estaban registrados.</div>
       <div class="grid-2">
-        <div class="p-3" style="background:rgba(22,163,74,.08);border:1px solid rgba(74,222,128,.2);border-radius:16px;">
-          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(22,163,74,.2);color:#4ade80;">APRENDIZ</span><span style="font-weight:800;color:#4ade80;">{{ asistentes_aprendices }}/{{ total_aprendices }}</span></div>
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(22,163,74,.22),rgba(21,128,61,.14));border:1px solid #22c55e;border-radius:16px;color:#f8fafc !important;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:#16a34a;color:#ffffff;border-color:#22c55e;">APRENDIZ</span><span style="font-weight:800;color:#86efac;">{{ asistentes_aprendices }}/{{ total_aprendices }}</span></div>
           <div class="barra"><span style="background:linear-gradient(90deg,#4ade80,#16a34a);width:{% widthratio asistentes_aprendices total_aprendices|default:1 100 %}%;"></span></div>
-          <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{% widthratio total_aprendices|default:0 1 total_aprendices %}{% if total_aprendices %}{% else %}0{% endif %} → {{ total_aprendices|default:0 }}</b></div>
+          <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{% if total_aprendices %}{{ total_aprendices|add:"0"|slugify|slice:":0" }}{{ total_aprendices|default:0 }}{% else %}0{% endif %} → {{ total_aprendices|default:0 }}</b></div>
         </div>
-        <div class="p-3" style="background:rgba(14,165,233,.08);border:1px solid rgba(56,189,248,.2);border-radius:16px;">
-          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(14,165,233,.2);color:#38bdf8;">INSTRUCTOR</span><span style="font-weight:800;color:#38bdf8;">{{ asistentes_instructores }}/{{ total_instructores }}</span></div>
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(14,165,233,.22),rgba(2,132,199,.14));border:1px solid #38bdf8;border-radius:16px;color:#f8fafc !important;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:#0369a1;color:#ffffff;border-color:#0ea5e9;">INSTRUCTOR</span><span style="font-weight:800;color:#7dd3fc;">{{ asistentes_instructores }}/{{ total_instructores }}</span></div>
           <div class="barra"><span style="background:linear-gradient(90deg,#38bdf8,#0ea5e9);width:{% widthratio asistentes_instructores total_instructores|default:1 100 %}%;"></span></div>
           <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{{ total_instructores|default:0 }}</b></div>
         </div>
-        <div class="p-3" style="background:rgba(168,85,247,.08);border:1px solid rgba(192,132,252,.2);border-radius:16px;">
-          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(168,85,247,.2);color:#c084fc;">INVITADO</span><span style="font-weight:800;color:#c084fc;">{{ asistentes_invitados }}/{{ total_invitados }}</span></div>
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(168,85,247,.22),rgba(147,51,234,.14));border:1px solid #a855f7;border-radius:16px;color:#f8fafc !important;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:#7e22ce;color:#ffffff;border-color:#a855f7;">INVITADO</span><span style="font-weight:800;color:#d8b4fe;">{{ asistentes_invitados }}/{{ total_invitados }}</span></div>
           <div class="barra"><span style="background:linear-gradient(90deg,#c084fc,#a855f7);width:{% widthratio asistentes_invitados total_invitados|default:1 100 %}%;"></span></div>
           <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{{ total_invitados|default:0 }}</b></div>
         </div>
-        <div class="p-3" style="background:rgba(251,191,36,.08);border:1px solid rgba(253,224,71,.2);border-radius:16px; color:#111;">
-          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:rgba(251,191,36,.25);color:#713f12;">ORGANIZADOR</span><span style="font-weight:800;color:#713f12;">{{ asistentes_organizadores }}/{{ total_organizadores|default:0 }}</span></div>
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(217,119,6,.28),rgba(180,83,9,.16));border:1px solid #f59e0b;border-radius:16px;color:#f8fafc !important;">
+          <div class="d-flex align-items-center justify-content-between mb-1"><span class="chip" style="background:#b45309;color:#ffffff;border-color:#f59e0b;">ORGANIZADOR</span><span style="font-weight:800;color:#fcd34d;">{{ asistentes_organizadores }}/{{ total_organizadores|default:0 }}</span></div>
           <div class="barra"><span style="background:linear-gradient(90deg,#fbbf24,#f59e0b);width:{% widthratio asistentes_organizadores total_organizadores|default:1 100 %}%;"></span></div>
-          <div class="mini-label mt-2">Ausentes: <b style="color:#7f1d1d;">{{ total_organizadores|default:0 }}</b></div>
+          <div class="mini-label mt-2">Ausentes: <b style="color:#fecaca;">{{ total_organizadores|default:0 }}</b></div>
         </div>
       </div>
       <div class="sep"></div>
-      <div class="grid-3" style="gap:12px;">
-        <canvas id="chart-1" height="170"></canvas>
-        <canvas id="chart-2" height="170"></canvas>
-        <canvas id="chart-4" height="170"></canvas>
+      <div class="grid-3 chart-wrap" style="gap:14px;align-items:stretch;">
+        <div><canvas id="chart-1" height="180"></canvas></div>
+        <div><canvas id="chart-2" height="180"></canvas></div>
+        <div><canvas id="chart-4" height="180"></canvas></div>
       </div>
     </div>
   </div>
@@ -155,36 +177,36 @@
       <div class="sec-title">🔍 Auditoría · Medio de marcación (QR vs Manual)</div>
       <div class="sec-sub">Integridad del flujo operativo · % de registros QR escaneados (fiable) vs tipeados MANUALMENTE (riesgo de error).</div>
       <div class="grid-3">
-        <div class="p-3" style="border:1px solid rgba(74,222,128,.15);border-radius:14px;">
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(22,163,74,.16),rgba(22,101,52,.08));border:1px solid rgba(74,222,128,.35);border-radius:16px;">
           <div class="mini-label">📋 Asistencia</div>
           <div class="d-flex gap-3 mt-2">
             <div style="flex:1;">
-              <div class="mini-label">QR</div><div style="font-weight:800;color:#4ade80;">{{ asist_qr }}</div>
+              <div class="mini-label">QR</div><div style="font-weight:800;color:#4ade80;font-size:1.35rem;">{{ asist_qr }}</div>
             </div>
             <div style="flex:1;">
-              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;">{{ asist_manual }}</div>
+              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;font-size:1.35rem;">{{ asist_manual }}</div>
             </div>
           </div>
         </div>
-        <div class="p-3" style="border:1px solid rgba(251,146,60,.15);border-radius:14px;">
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(234,88,12,.16),rgba(154,52,18,.08));border:1px solid rgba(251,146,60,.35);border-radius:16px;">
           <div class="mini-label">🍱 Refrigerios</div>
           <div class="d-flex gap-3 mt-2">
             <div style="flex:1;">
-              <div class="mini-label">QR</div><div style="font-weight:800;color:#fb923c;">{{ refri_qr }}</div>
+              <div class="mini-label">QR</div><div style="font-weight:800;color:#fb923c;font-size:1.35rem;">{{ refri_qr }}</div>
             </div>
             <div style="flex:1;">
-              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;">{{ refri_manual }}</div>
+              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;font-size:1.35rem;">{{ refri_manual }}</div>
             </div>
           </div>
         </div>
-        <div class="p-3" style="border:1px solid rgba(167,139,250,.15);border-radius:14px;">
+        <div class="p-3" style="background:linear-gradient(180deg,rgba(124,58,237,.18),rgba(91,33,182,.08));border:1px solid rgba(167,139,250,.35);border-radius:16px;">
           <div class="mini-label">🏆 Certificados</div>
           <div class="d-flex gap-3 mt-2">
             <div style="flex:1;">
-              <div class="mini-label">QR</div><div style="font-weight:800;color:#a78bfa;">{{ cert_qr }}</div>
+              <div class="mini-label">QR</div><div style="font-weight:800;color:#a78bfa;font-size:1.35rem;">{{ cert_qr }}</div>
             </div>
             <div style="flex:1;">
-              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;">{{ cert_manual }}</div>
+              <div class="mini-label">MANUAL</div><div style="font-weight:800;color:#fca5a5;font-size:1.35rem;">{{ cert_manual }}</div>
             </div>
           </div>
         </div>
@@ -204,11 +226,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(22,163,74,.2);color:#4ade80;">APRENDIZ</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_aprendices }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_aprendices }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_aprendices }}</td></tr>
-            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(14,165,233,.2);color:#38bdf8;">INSTRUCTOR</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_instructores }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_instructores }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_instructores }}</td></tr>
-            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(168,85,247,.2);color:#c084fc;">INVITADO</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_invitados }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_invitados }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_invitados }}</td></tr>
-            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:rgba(251,191,36,.25);color:#713f12;">ORGANIZADOR</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_organizadores }}</td><td class="text-end" style="color:#fb923c;font-weight:700;">{{ refri_organizadores }}</td><td class="text-end" style="color:#a78bfa;font-weight:700;">{{ cert_organizadores }}</td></tr>
-            <tr style="border-top:2px solid rgba(148,163,184,.18);background:rgba(148,163,184,.05);"><td style="padding:10px 14px;font-weight:800;color:#f8fafc;">TOTAL</td><td class="text-end" style="font-weight:800;color:#4ade80;">{{ asistentes }}</td><td class="text-end" style="font-weight:800;color:#fb923c;">{{ refrigerios_entregados }}</td><td class="text-end" style="font-weight:800;color:#a78bfa;">{{ certificados_entregados }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:#16a34a;color:#ffffff;border-color:#22c55e;">APRENDIZ</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_aprendices }}</td><td class="text-end" style="color:#fdba74;font-weight:700;">{{ refri_aprendices }}</td><td class="text-end" style="color:#c4b5fd;font-weight:700;">{{ cert_aprendices }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:#0369a1;color:#ffffff;border-color:#0ea5e9;">INSTRUCTOR</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_instructores }}</td><td class="text-end" style="color:#fdba74;font-weight:700;">{{ refri_instructores }}</td><td class="text-end" style="color:#c4b5fd;font-weight:700;">{{ cert_instructores }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:#7e22ce;color:#ffffff;border-color:#a855f7;">INVITADO</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_invitados }}</td><td class="text-end" style="color:#fdba74;font-weight:700;">{{ refri_invitados }}</td><td class="text-end" style="color:#c4b5fd;font-weight:700;">{{ cert_invitados }}</td></tr>
+            <tr class="tabla-fila"><td style="padding:10px 14px;"><span class="chip" style="background:#b45309;color:#ffffff;border-color:#f59e0b;">ORGANIZADOR</span></td><td class="text-end" style="font-weight:700;">{{ asistentes_organizadores }}</td><td class="text-end" style="color:#fdba74;font-weight:700;">{{ refri_organizadores }}</td><td class="text-end" style="color:#c4b5fd;font-weight:700;">{{ cert_organizadores }}</td></tr>
+            <tr style="border-top:2px solid rgba(148,163,184,.22);background:rgba(30,41,59,.55);"><td style="padding:10px 14px;font-weight:800;color:#f8fafc;">TOTAL</td><td class="text-end" style="font-weight:800;color:#86efac;">{{ asistentes }}</td><td class="text-end" style="font-weight:800;color:#fdba74;">{{ refrigerios_entregados }}</td><td class="text-end" style="font-weight:800;color:#c4b5fd;">{{ certificados_entregados }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -238,32 +260,32 @@
             {% if actividad %}
               {% for r in actividad %}
                 <tr class="tabla-fila">
-                  <td style="padding:10px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#cbd5e1;">{{ r.hora }}</td>
+                  <td style="padding:10px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:#e2e8f0;">{{ r.hora }}</td>
                   <td style="padding:10px 14px;">
-                    {% if r.tipo == 'ASISTENCIA' %}<span class="chip" style="background:rgba(34,197,94,.18);color:#4ade80;">{{ r.tipo }}</span>
-                    {% elif r.tipo == 'REFRIGERIO' %}<span class="chip" style="background:rgba(251,146,60,.18);color:#fdba74;">{{ r.tipo }}</span>
-                    {% elif r.tipo == 'CERTIFICADO' %}<span class="chip" style="background:rgba(167,139,250,.2);color:#c4b5fd;">{{ r.tipo }}</span>
-                    {% else %}<span class="chip" style="background:rgba(148,163,184,.18);color:#cbd5e1;">{{ r.tipo }}</span>{% endif %}
+                    {% if r.tipo == 'ASISTENCIA' %}<span class="chip" style="background:#16a34a;color:#ffffff;border-color:#22c55e;">{{ r.tipo }}</span>
+                    {% elif r.tipo == 'REFRIGERIO' %}<span class="chip" style="background:#ea580c;color:#ffffff;border-color:#fb923c;">{{ r.tipo }}</span>
+                    {% elif r.tipo == 'CERTIFICADO' %}<span class="chip" style="background:#7c3aed;color:#ffffff;border-color:#a78bfa;">{{ r.tipo }}</span>
+                    {% else %}<span class="chip" style="background:#475569;color:#ffffff;">{{ r.tipo }}</span>{% endif %}
                   </td>
-                  <td style="padding:10px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1;">{{ r.doc }}</td>
+                  <td style="padding:10px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#e2e8f0;">{{ r.doc }}</td>
                   <td style="padding:10px 14px;color:#f8fafc;font-weight:600;">{{ r.nombre }}</td>
                   <td style="padding:10px 14px;">
-                    {% if r.rol == 'APRENDIZ' %}<span class="chip" style="background:rgba(22,163,74,.2);color:#4ade80;">{{ r.rol }}</span>
-                    {% elif r.rol == 'INSTRUCTOR' %}<span class="chip" style="background:rgba(14,165,233,.2);color:#38bdf8;">{{ r.rol }}</span>
-                    {% elif r.rol == 'INVITADO' %}<span class="chip" style="background:rgba(168,85,247,.2);color:#c084fc;">{{ r.rol }}</span>
-                    {% elif r.rol == 'ORGANIZADOR' %}<span class="chip" style="background:rgba(251,191,36,.25);color:#713f12;">{{ r.rol }}</span>
-                    {% else %}<span class="chip" style="background:rgba(148,163,184,.18);color:#cbd5e1;">{{ r.rol }}</span>{% endif %}
+                    {% if r.rol == 'APRENDIZ' %}<span class="chip" style="background:#16a34a;color:#ffffff;border-color:#22c55e;">{{ r.rol }}</span>
+                    {% elif r.rol == 'INSTRUCTOR' %}<span class="chip" style="background:#0369a1;color:#ffffff;border-color:#0ea5e9;">{{ r.rol }}</span>
+                    {% elif r.rol == 'INVITADO' %}<span class="chip" style="background:#7e22ce;color:#ffffff;border-color:#a855f7;">{{ r.rol }}</span>
+                    {% elif r.rol == 'ORGANIZADOR' %}<span class="chip" style="background:#b45309;color:#ffffff;border-color:#f59e0b;">{{ r.rol }}</span>
+                    {% else %}<span class="chip" style="background:#475569;color:#ffffff;">{{ r.rol }}</span>{% endif %}
                   </td>
                   <td style="padding:10px 14px;">
-                    {% if r.medio == 'QR' %}<span class="chip" style="background:rgba(34,197,94,.18);color:#4ade80;">📱 {{ r.medio }}</span>
-                    {% elif r.medio == 'MANUAL' %}<span class="chip" style="background:rgba(252,165,165,.18);color:#fca5a5;">✍ {{ r.medio }}</span>
-                    {% else %}<span class="chip">{{ r.medio }}</span>{% endif %}
+                    {% if r.medio == 'QR' %}<span class="chip" style="background:#16a34a;color:#ffffff;border-color:#22c55e;">📱 {{ r.medio }}</span>
+                    {% elif r.medio == 'MANUAL' %}<span class="chip" style="background:#b91c1c;color:#ffffff;border-color:#ef4444;">✍ {{ r.medio }}</span>
+                    {% else %}<span class="chip" style="background:#475569;color:#ffffff;">{{ r.medio }}</span>{% endif %}
                   </td>
-                  <td style="padding:10px 14px;color:#94a3b8;font-size:.82rem;">{{ r.operador }}</td>
+                  <td style="padding:10px 14px;color:#cbd5e1;font-size:.82rem;">{{ r.operador }}</td>
                 </tr>
               {% endfor %}
             {% else %}
-              <tr><td colspan="7" class="text-center py-4 text-muted">Aún no hay marcaciones registradas en este evento.</td></tr>
+              <tr><td colspan="7" class="text-center py-4" style="color:#cbd5e1;">Aún no hay marcaciones registradas en este evento.</td></tr>
             {% endif %}
           </tbody>
         </table>
@@ -275,34 +297,34 @@
       <div class="sec-title">⚠️ ¿Qué falta por cerrar?</div>
       <div class="sec-sub">Brechas pendientes para cerrar el evento al 100%.</div>
       <div class="d-grid gap-3">
-        <div class="p-3" style="background:{% if ausentes > 0 %}rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);{% else %}rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);{% endif %}border-radius:16px;">
+        <div class="p-3" style="background:{% if ausentes > 0 %}linear-gradient(180deg,rgba(239,68,68,.20),rgba(185,28,28,.08));border:1px solid rgba(248,113,113,.4);{% else %}linear-gradient(180deg,rgba(22,163,74,.22),rgba(21,128,61,.08));border:1px solid rgba(74,222,128,.4);{% endif %}border-radius:16px;">
           <div class="d-flex align-items-center justify-content-between mb-1">
             <div style="font-weight:800;color:#f8fafc;">👥 Ausentes (sin ingresar)</div>
-            <div style="font-size:1.3rem;font-weight:800;{% if ausentes > 0 %}color:#fca5a5;{% else %}color:#4ade80;{% endif %}">{{ ausentes }}</div>
+            <div style="font-size:1.5rem;font-weight:800;{% if ausentes > 0 %}color:#fca5a5;{% else %}color:#86efac;{% endif %}">{{ ausentes }}</div>
           </div>
-          <div class="mini-label">Faltan por marcar asistencia · Total inscritos: <b>{{ total_personas }}</b></div>
+          <div class="mini-label">Faltan por marcar asistencia · Total inscritos: <b style="color:#e2e8f0;">{{ total_personas }}</b></div>
         </div>
-        <div class="p-3" style="background:{% if refrigerios_pendientes > 0 %}rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);{% else %}rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);{% endif %}border-radius:16px;">
+        <div class="p-3" style="background:{% if refrigerios_pendientes > 0 %}linear-gradient(180deg,rgba(217,119,6,.28),rgba(180,83,9,.10));border:1px solid rgba(251,191,36,.45);{% else %}linear-gradient(180deg,rgba(22,163,74,.22),rgba(21,128,61,.08));border:1px solid rgba(74,222,128,.4);{% endif %}border-radius:16px;">
           <div class="d-flex align-items-center justify-content-between mb-1">
             <div style="font-weight:800;color:#f8fafc;">🍱 Refrigerios pendientes</div>
-            <div style="font-size:1.3rem;font-weight:800;{% if refrigerios_pendientes > 0 %}color:#fcd34d;{% else %}color:#4ade80;{% endif %}">{{ refrigerios_pendientes }}</div>
+            <div style="font-size:1.5rem;font-weight:800;{% if refrigerios_pendientes > 0 %}color:#fcd34d;{% else %}color:#86efac;{% endif %}">{{ refrigerios_pendientes }}</div>
           </div>
-          <div class="mini-label">De <b>{{ asistentes }}</b> asistentes, ya recibieron <b style="color:#fb923c;">{{ refrigerios_entregados }}</b></div>
+          <div class="mini-label">De <b style="color:#e2e8f0;">{{ asistentes }}</b> asistentes, ya recibieron <b style="color:#fb923c;">{{ refrigerios_entregados }}</b></div>
         </div>
-        <div class="p-3" style="background:{% if certificados_pendientes > 0 %}rgba(167,139,250,.1);border:1px solid rgba(196,181,253,.3);{% else %}rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);{% endif %}border-radius:16px;">
+        <div class="p-3" style="background:{% if certificados_pendientes > 0 %}linear-gradient(180deg,rgba(124,58,237,.24),rgba(91,33,182,.10));border:1px solid rgba(167,139,250,.45);{% else %}linear-gradient(180deg,rgba(22,163,74,.22),rgba(21,128,61,.08));border:1px solid rgba(74,222,128,.4);{% endif %}border-radius:16px;">
           <div class="d-flex align-items-center justify-content-between mb-1">
             <div style="font-weight:800;color:#f8fafc;">🏆 Certificados pendientes</div>
-            <div style="font-size:1.3rem;font-weight:800;{% if certificados_pendientes > 0 %}color:#c4b5fd;{% else %}color:#4ade80;{% endif %}">{{ certificados_pendientes }}</div>
+            <div style="font-size:1.5rem;font-weight:800;{% if certificados_pendientes > 0 %}color:#d8b4fe;{% else %}color:#86efac;{% endif %}">{{ certificados_pendientes }}</div>
           </div>
-          <div class="mini-label">De <b>{{ asistentes }}</b> asistentes, ya recibieron <b style="color:#a78bfa;">{{ certificados_entregados }}</b></div>
+          <div class="mini-label">De <b style="color:#e2e8f0;">{{ asistentes }}</b> asistentes, ya recibieron <b style="color:#a78bfa;">{{ certificados_entregados }}</b></div>
         </div>
       </div>
     </div>
     <div class="glass-card p-4">
       <div class="sec-title">📊 Gráficos logística</div>
-      <div class="grid-2">
-        <canvas id="chart-2b" height="170"></canvas>
-        <canvas id="chart-3b" height="170"></canvas>
+      <div class="grid-2" style="gap:16px;">
+        <div class="chart-wrap" style="min-height:200px;"><canvas id="chart-2b"></canvas></div>
+        <div class="chart-wrap" style="min-height:200px;"><canvas id="chart-3b"></canvas></div>
       </div>
     </div>
   </div>
