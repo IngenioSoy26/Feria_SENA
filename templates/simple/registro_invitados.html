@@ -164,6 +164,9 @@
         return s.toUpperCase();
       });
     });
+    nc.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().replace(/\s+/g,' ').toUpperCase();
+    });
     nc.addEventListener('paste', function(){ setTimeout(() => nc.dispatchEvent(new Event('input')), 10); });
   }
   const ent = document.querySelector('[name="entidad"]');
@@ -175,6 +178,9 @@
         return s.toUpperCase();
       });
     });
+    ent.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().replace(/\s+/g,' ').toUpperCase();
+    });
     ent.addEventListener('paste', function(){ setTimeout(() => ent.dispatchEvent(new Event('input')), 10); });
   }
   const car = document.querySelector('[name="cargo"]');
@@ -185,6 +191,9 @@
         s = s.replace(/\s+/g, ' ');
         return s.toUpperCase();
       });
+    });
+    car.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().replace(/\s+/g,' ').toUpperCase();
     });
     car.addEventListener('paste', function(){ setTimeout(() => car.dispatchEvent(new Event('input')), 10); });
   }
