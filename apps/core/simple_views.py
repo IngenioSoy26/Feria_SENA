@@ -339,6 +339,160 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         return 'INVITADO'
 
 
+class RegistroVisitantesPublicoForm(_forms.Form):
+    ROL_SOLO_VISITANTE = (('VISITANTE', '🚶 Visitante'),)
+    tipo_identificacion = _forms.ModelChoiceField(
+        label='Tipo de Identificación',
+        queryset=TipoIdentificacion.objects.filter(activo=True).order_by('codigo'),
+        widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
+        required=True,
+        empty_label='----- Seleccione una opción -----',
+        initial=None,
+    )
+    numero_identificacion = _forms.CharField(
+        label='Número de Identificación',
+        max_length=30,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Solo dígitos · sin puntos ni comas',
+            'autocomplete':'off',
+            'inputmode':'numeric',
+            'pattern':'[0-9]{5,30}',
+            'title':'Solo dígitos · mínimo 5'}),
+        required=True,
+    )
+    nombre_completo = _forms.CharField(
+        label='Nombre completo',
+        max_length=240,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Primer nombre · Segundo nombre · Primer apellido · Segundo apellido',
+            'autocomplete':'name',
+            'autocapitalize':'characters',
+            'pattern':r'.*\S.*\S.*',
+            'title':'Nombre(s) y apellido(s) · mínimo 2 palabras'}),
+        required=True,
+    )
+    tipo_rol = _forms.ChoiceField(
+        label='Tipo de Rol',
+        choices=ROL_SOLO_VISITANTE,
+        widget=_forms.Select(attrs={
+            'class':'form-select form-select-lg',
+            'disabled':'disabled',
+            'readonly':'readonly',
+            'title':'Rol pre-definido: Visitante - no modificable'}),
+        required=True,
+    )
+    entidad = _forms.CharField(
+        label='Entidad ⚑ OBLIGATORIA · Empresa / Institución / Organismo',
+        max_length=200,
+        required=True,
+        help_text='De dónde proviene el Visitante.',
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'',
+            'autocomplete':'organization',
+            'pattern':r'\S.{1,199}',
+            'title':'Entidad · mínimo 2 caracteres'}),
+    )
+    cargo = _forms.CharField(
+        label='Cargo ⚑ OBLIGATORIO · Función / Rol en la entidad',
+        max_length=150,
+        required=True,
+        help_text='¿Cuál es su cargo o función?',
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'',
+            'autocomplete':'organization-title',
+            'pattern':r'\S.{1,149}',
+            'title':'Cargo · mínimo 2 caracteres'}),
+    )
+    correo = _forms.EmailField(
+        label='Correo electrónico ⚑ OBLIGATORIO',
+        required=True,
+        widget=_forms.EmailInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'correo@ejemplo.com · OBLIGATORIO',
+            'autocomplete':'email',
+            'inputmode':'email',
+            'pattern':r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}',
+            'title':'Formato: usuario@dominio.com'}),
+    )
+    telefono = _forms.CharField(
+        label='Teléfono / Celular ⚑ OBLIGATORIO',
+        max_length=30,
+        required=True,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'',
+            'autocomplete':'tel',
+            'inputmode':'tel',
+            'pattern':'[0-9]{7,30}',
+            'title':'Solo dígitos · mínimo 7'}),
+    )
+
+    def clean_tipo_identificacion(self):
+        ti = self.cleaned_data.get('tipo_identificacion')
+        if ti is None:
+            raise _forms.ValidationError('❌ Selecciona un TIPO DE DOCUMENTO válido (no dejes la opción -----).')
+        return ti
+
+    def clean_numero_identificacion(self):
+        v = (self.cleaned_data.get('numero_identificacion') or '').strip()
+        v = _re.sub(r'[\s\.\,\-\_]', '', v).strip()
+        if not v or not v.isdigit():
+            raise _forms.ValidationError(
+                '❌ El documento debe contener SOLO dígitos. (Sin espacios, puntos, guiones ni comas).'
+            )
+        if len(v) < 5:
+            raise _forms.ValidationError('❌ El documento debe tener al menos 5 dígitos.')
+        return v
+
+    def clean_nombre_completo(self):
+        raw = (self.cleaned_data.get('nombre_completo') or '').strip()
+        if not raw or len(raw) < 5:
+            raise _forms.ValidationError('❌ Escribe el nombre completo (mínimo 5 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        palabras = [p for p in limpio.split(' ') if p]
+        if len(palabras) < 2:
+            raise _forms.ValidationError('❌ Escribe nombre(s) y apellido(s). Mínimo 2 palabras.')
+        return limpio.upper()
+
+    def clean_entidad(self):
+        raw = (self.cleaned_data.get('entidad') or '').strip()
+        if not raw or len(raw) < 2:
+            raise _forms.ValidationError('❌ Escribe la Entidad / Institución (mínimo 2 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        return limpio.upper()
+
+    def clean_cargo(self):
+        raw = (self.cleaned_data.get('cargo') or '').strip()
+        if not raw or len(raw) < 2:
+            raise _forms.ValidationError('❌ Escribe el Cargo / Función (mínimo 2 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        return limpio.upper()
+
+    def clean_correo(self):
+        v = (self.cleaned_data.get('correo') or '').strip().lower()
+        if not v:
+            raise _forms.ValidationError('❌ El correo electrónico es OBLIGATORIO.')
+        if '@' not in v or '.' not in v:
+            raise _forms.ValidationError('❌ Correo inválido. Debe contener @ y un dominio (ej: @correo.com).')
+        return v
+
+    def clean_telefono(self):
+        v = (self.cleaned_data.get('telefono') or '').strip()
+        v_limpio = _re.sub(r'[\s\.\,\-\_\(\)\+]', '', v).strip()
+        if not v_limpio or not v_limpio.isdigit():
+            raise _forms.ValidationError('❌ El teléfono es OBLIGATORIO y solo debe contener dígitos.')
+        if len(v_limpio) < 7:
+            raise _forms.ValidationError('❌ El teléfono debe tener al menos 7 dígitos.')
+        return v_limpio
+
+    def clean_tipo_rol(self):
+        return 'VISITANTE'
+
+
 def _split_nombre_apellidos(nombre_completo):
     palabras = [p for p in (nombre_completo or '').split(' ') if p]
     n = len(palabras)
@@ -510,6 +664,30 @@ def guardar_persona_publica(datos, creado_por=None):
                 '⚠ Perfil Organizador: no se pudo crear (¿migración organizadores.0001 pendiente?). '
                 f'Detalle: {_err}'
             )
+    elif rol == 'VISITANTE':
+        try:
+            try:
+                from apps.visitantes.models import Visitante as _VisCls
+                _vis_defaults = {
+                    'entidad': entidad_up or '',
+                    'cargo': cargo_cap or '',
+                }
+                _, creado_vis = _VisCls.objects.get_or_create(
+                    persona=persona,
+                    defaults=_vis_defaults,
+                )
+                if not creado_vis and (entidad_up or cargo_cap):
+                    try:
+                        _VisCls.objects.filter(pk=persona.perfil_visitante.pk).update(
+                            entidad=entidad_up or '',
+                            cargo=cargo_cap or '',
+                        )
+                    except Exception:
+                        pass
+            except Exception as _err_vis:
+                warns.append(f'⚠ Perfil Visitante: error (migración pendiente?). Detalle: {_err_vis}')
+        except (_PE, Exception) as _err:
+            warns.append(f'⚠ Perfil Visitante: error (migración pendiente?). Detalle: {_err}')
     return persona, created, warns
 
 
@@ -678,6 +856,7 @@ def _qs_perfiles_o_fallback(ModeloPerfil, rol_tipo_persona, extra_annotate=None,
                             elif rol_tipo_persona == 'APRENDIZ': _c = 'Aprendiz'
                             elif rol_tipo_persona == 'ORGANIZADOR': _c = 'Organizador'
                             elif rol_tipo_persona == 'INVITADO': _c = 'Invitado'
+                            elif rol_tipo_persona == 'VISITANTE': _c = 'Visitante'
                         kwargs_crear['cargo'] = (_c or '')[:150]
                     except Exception:
                         pass
@@ -723,6 +902,7 @@ def _qs_perfiles_o_fallback(ModeloPerfil, rol_tipo_persona, extra_annotate=None,
             elif rol_tipo_persona == 'APRENDIZ': _cargo = 'Aprendiz'
             elif rol_tipo_persona == 'ORGANIZADOR': _cargo = 'Organizador'
             elif rol_tipo_persona == 'INVITADO': _cargo = 'Invitado'
+            elif rol_tipo_persona == 'VISITANTE': _cargo = 'Visitante'
         fallback.append({
             'pk': p.pk, '_es_fallback': True,
             'persona': p, 'entidad': _entidad, 'cargo': _cargo,
@@ -1965,6 +2145,49 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         total_instructores = total_por_rol.get('INSTRUCTOR', 0)
         total_invitados = total_por_rol.get('INVITADO', 0)
         total_organizadores = total_por_rol.get('ORGANIZADOR', 0)
+        total_visitantes = total_por_rol.get('VISITANTE', 0)
+
+        total_proyectos = Proyecto.objects.filter(evento=evento).count()
+        qs_proy_evento = Proyecto.objects.filter(evento=evento)
+        try:
+            total_instituciones_inscritas = (
+                InstitucionEducativa.objects
+                .filter(id__in=qs_proy_evento.values('institucion_id'))
+                .values('id')
+                .distinct()
+                .count()
+            )
+        except Exception:
+            total_instituciones_inscritas = 0
+        try:
+            total_programas_unicos = (
+                ProgramaTecnico.objects
+                .filter(id__in=qs_proy_evento.values('programa_id'))
+                .values('id')
+                .distinct()
+                .count()
+            )
+        except Exception:
+            total_programas_unicos = 0
+        try:
+            qs_ficha_ids = Aprendiz.objects.filter(
+                proyecto__evento=evento,
+                ficha_id__isnull=False,
+            ).values('ficha_id')
+            total_fichas_unicas = Ficha.objects.filter(id__in=qs_ficha_ids).values('id').distinct().count()
+        except Exception:
+            total_fichas_unicas = 0
+        total_personas_estructura = (
+            total_aprendices + total_instructores + total_invitados
+            + total_organizadores + total_visitantes
+        )
+        personas_estructura_desglose = [
+            ('Aprendices inscritos', total_aprendices, 'chip-apr',),
+            ('Instructores', total_instructores, 'chip-ins',),
+            ('Invitados', total_invitados, 'chip-inv',),
+            ('Organizadores', total_organizadores, 'chip-org',),
+            ('Visitantes (form. futuro)', total_visitantes, 'chip-manual',),
+        ]
 
         qs_asistencia = AsistenciaEvento.objects.filter(evento=evento).select_related('persona', 'operador')
         asistentes_total = qs_asistencia.count()
@@ -2007,11 +2230,6 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         cert_manual = qs_certificados.filter(medio='MANUAL').count()
         certificados_pendientes = max(asistentes_total - certificados_entregados, 0)
         pct_certificados = (certificados_entregados * 100 // asistentes_total) if asistentes_total else 0
-
-        total_proyectos = Proyecto.objects.filter(evento=evento).count()
-        total_colegios = InstitucionEducativa.objects.count()
-        total_fichas = Ficha.objects.filter(institucion__in=InstitucionEducativa.objects.all()).count()
-        total_programas = Ficha.objects.values_list('programa', flat=True).distinct().count()
 
         ahora = timezone.localtime(timezone.now()) if timezone.is_aware(timezone.now()) else timezone.now()
         fi = evento.fecha_inicio
@@ -2108,10 +2326,13 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             'total_instructores': total_instructores,
             'total_invitados': total_invitados,
             'total_organizadores': total_organizadores,
+            'total_visitantes': total_visitantes,
             'total_proyectos': total_proyectos,
-            'total_colegios': total_colegios,
-            'total_fichas': total_fichas,
-            'total_programas': total_programas,
+            'total_instituciones_inscritas': total_instituciones_inscritas,
+            'total_programas_unicos': total_programas_unicos,
+            'total_fichas_unicas': total_fichas_unicas,
+            'total_personas_estructura': total_personas_estructura,
+            'personas_estructura_desglose': personas_estructura_desglose,
 
             'asistentes': asistentes_total,
             'ausentes': ausentes,
@@ -2243,6 +2464,13 @@ class ListadoUnicosView(LoginRequiredMixin, View):
         elif que_normalizado == 'organizadores':
             titulo = 'Organizadores (únicos)'
             data = _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR')
+        elif que_normalizado == 'visitantes':
+            titulo = 'Visitantes (únicos)'
+            try:
+                from apps.visitantes.models import Visitante as _VisMod
+                data = _qs_perfiles_o_fallback(_VisMod, 'VISITANTE')
+            except Exception:
+                data = _qs_perfiles_o_fallback(None, 'VISITANTE')
         elif que_normalizado == 'proyectos':
             titulo = 'Proyectos registrados'
             data = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo').all()
@@ -2348,6 +2576,16 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
         elif grupo == 'organizadores':
             for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
                 _per = getattr(o, 'persona', None) or (o.get('persona') if isinstance(o, dict) else None)
+                if _per:
+                    items.append((_per, None))
+        elif grupo == 'visitantes':
+            try:
+                from apps.visitantes.models import Visitante as _VisMod
+                _qs_vis = _qs_perfiles_o_fallback(_VisMod, 'VISITANTE')
+            except Exception:
+                _qs_vis = _qs_perfiles_o_fallback(None, 'VISITANTE')
+            for v in _qs_vis:
+                _per = getattr(v, 'persona', None) or (v.get('persona') if isinstance(v, dict) else None)
                 if _per:
                     items.append((_per, None))
         elif grupo == 'asistentes':
@@ -2510,6 +2748,16 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         elif grupo == 'organizadores':
             for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
                 _per = getattr(o, 'persona', None) or (o.get('persona') if isinstance(o, dict) else None)
+                if _per:
+                    lista.append((_per, None))
+        elif grupo == 'visitantes':
+            try:
+                from apps.visitantes.models import Visitante as _VisMod
+                _qs_vis = _qs_perfiles_o_fallback(_VisMod, 'VISITANTE')
+            except Exception:
+                _qs_vis = _qs_perfiles_o_fallback(None, 'VISITANTE')
+            for v in _qs_vis:
+                _per = getattr(v, 'persona', None) or (v.get('persona') if isinstance(v, dict) else None)
                 if _per:
                     lista.append((_per, None))
 
@@ -2812,6 +3060,191 @@ class RegistroInvitadosGraciasView(View):
             except Exception:
                 pass
         return render(request, 'simple/registro_invitados_gracias.html', {
+            'evento': evento,
+            'persona': persona,
+            'rol_display': rol_display,
+            'rol_pill_cls': rol_pill_cls,
+            'url_escarapela': url_escarapela,
+            'url_form': url_form,
+            'token_registro': t_r,
+            'no_encontrado': False,
+            'entidad_mostrar': entidad_mostrar,
+            'cargo_mostrar': cargo_mostrar,
+        })
+
+
+class RegistroVisitantesPublicView(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+    template_name = 'simple/registro_visitantes.html'
+    modo = 'registro'
+
+    def dispatch(self, request, *args, **kwargs):
+        resp = _solicitar_login_o_token(request, 'registro')
+        if resp is not None:
+            return resp
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, **_ignorado):
+        evento = _evento_activo()
+        try:
+            inicial_ti = TipoIdentificacion.objects.filter(activo=True, codigo='CC').first()
+        except Exception:
+            inicial_ti = None
+        f = RegistroVisitantesPublicoForm(
+            initial={'tipo_identificacion': inicial_ti, 'tipo_rol': 'VISITANTE'} if inicial_ti else {'tipo_rol': 'VISITANTE'}
+        )
+        t_r = settings.TOKEN_REGISTRO_PUBLICO or ''
+        base = request.build_absolute_uri('/').rstrip('/')
+        url_reg_visitantes = f"{base}/r/{t_r}/registro/visitantes/" if t_r else reverse('simple:registro_visitantes')
+        return render(request, self.template_name, {
+            'evento': evento,
+            'form': f,
+            'token_registro': t_r,
+            'url_registro_visitantes': url_reg_visitantes,
+        })
+
+    def post(self, request, **_ignorado):
+        evento = _evento_activo()
+        form = RegistroVisitantesPublicoForm(request.POST or None)
+        t_r = settings.TOKEN_REGISTRO_PUBLICO or ''
+        base = request.build_absolute_uri('/').rstrip('/')
+        url_reg_visitantes = f"{base}/r/{t_r}/registro/visitantes/" if t_r else reverse('simple:registro_visitantes')
+        if not form.is_valid():
+            return render(request, self.template_name, {
+                'evento': evento,
+                'form': form,
+                'token_registro': t_r,
+                'url_registro_visitantes': url_reg_visitantes,
+            })
+        datos = dict(form.cleaned_data)
+        datos['tipo_rol'] = 'VISITANTE'
+        try:
+            persona, created, warns = guardar_persona_publica(
+                datos,
+                creado_por=(request.user if request.user.is_authenticated else None),
+            )
+        except Exception as err:
+            form.add_error(None, f'❌ Error guardando los datos: {err}')
+            return render(request, self.template_name, {
+                'evento': evento,
+                'form': form,
+                'token_registro': t_r,
+                'url_registro_visitantes': url_reg_visitantes,
+            })
+        for w in warns:
+            messages.warning(request, w)
+        if created:
+            messages.success(request, f'✅ Visitante registrado correctamente. ¡Gracias por asistir!')
+        else:
+            messages.info(request, 'ℹ️ El documento del visitante ya estaba registrado. Se actualizaron los datos.')
+        if t_r:
+            url_gracias = reverse('simple:public_registro_visitantes_gracias', kwargs={
+                'token_registro': t_r, 'pk': persona.pk,
+            })
+        else:
+            url_gracias = reverse('simple:registro_visitantes_gracias', kwargs={'pk': persona.pk})
+        return HttpResponseRedirect(url_gracias)
+
+
+class RegistroVisitantesGraciasView(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+    template_name = 'simple/registro_visitantes_gracias.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        t_url = kwargs.get('token_registro')
+        if not t_url:
+            auth_resp = _solicitar_login_o_token(request, 'registro')
+            if auth_resp is not None:
+                return auth_resp
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, pk, **kwargs):
+        evento = _evento_activo()
+        t_r = kwargs.get('token_registro') or settings.TOKEN_REGISTRO_PUBLICO or ''
+        try:
+            persona = Persona.objects.get(pk=pk)
+        except (Persona.DoesNotExist, ValueError, TypeError):
+            persona = None
+            no_encontrado = True
+        else:
+            no_encontrado = False
+        if persona is not None and persona.tipo_persona != 'VISITANTE':
+            no_encontrado = True
+        if no_encontrado:
+            if t_r:
+                url_form = reverse('simple:public_registro_visitantes', kwargs={'token_registro': t_r})
+            else:
+                url_form = reverse('simple:registro_visitantes')
+            return render(request, 'simple/registro_visitantes_gracias.html', {
+                'evento': evento,
+                'persona': None,
+                'no_encontrado': True,
+                'url_form': url_form,
+                'token_registro': t_r,
+            })
+        if t_r:
+            url_escarapela = reverse(
+                'simple:public_escarapela',
+                kwargs={'token_registro': t_r, 'persona_id': persona.pk},
+            )
+            url_form = reverse('simple:public_registro_visitantes', kwargs={'token_registro': t_r})
+        else:
+            url_escarapela = reverse('simple:escarapela_persona', kwargs={'persona_id': persona.pk})
+            url_form = reverse('simple:registro_visitantes')
+        rol_display = dict(Persona.TIPOS).get(persona.tipo_persona, persona.tipo_persona)
+        rol_pill_cls = {
+            'APRENDIZ': 'bg-verde-claro text-white',
+            'INSTRUCTOR': 'bg-naranja text-white',
+            'INVITADO': 'bg-azul-o text-white',
+            'ORGANIZADOR': 'bg-azul text-white',
+            'VISITANTE': 'text-white',
+        }.get(persona.tipo_persona, 'bg-gray-600 text-white')
+        entidad_mostrar = None
+        cargo_mostrar = None
+        try:
+            perfil_vis = persona.perfil_visitante
+            if perfil_vis:
+                if getattr(perfil_vis, 'entidad', None):
+                    entidad_mostrar = str(perfil_vis.entidad).strip() or None
+                if getattr(perfil_vis, 'cargo', None):
+                    cargo_mostrar = str(perfil_vis.cargo).strip() or None
+        except Exception:
+            pass
+        if not entidad_mostrar:
+            try:
+                v = getattr(persona, 'entidad_canonica', None)
+                if v: entidad_mostrar = v
+            except Exception:
+                pass
+        if not cargo_mostrar:
+            try:
+                v = getattr(persona, 'cargo_canonico', None)
+                if v: cargo_mostrar = v
+            except Exception:
+                pass
+        if not entidad_mostrar:
+            try:
+                v = getattr(persona, 'entidad', None)
+                if v: entidad_mostrar = v
+            except Exception:
+                pass
+        if not cargo_mostrar:
+            try:
+                v = getattr(persona, 'cargo', None)
+                if v: cargo_mostrar = v
+            except Exception:
+                pass
+        if entidad_mostrar:
+            try:
+                entidad_mostrar = str(entidad_mostrar).strip().upper()
+            except Exception:
+                pass
+        if cargo_mostrar:
+            try:
+                cargo_mostrar = str(cargo_mostrar).strip().upper()
+            except Exception:
+                pass
+        return render(request, 'simple/registro_visitantes_gracias.html', {
             'evento': evento,
             'persona': persona,
             'rol_display': rol_display,

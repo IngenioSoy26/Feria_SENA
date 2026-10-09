@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'apps.instructores',
     'apps.invitados',
     'apps.organizadores',
+    'apps.visitantes',
     'apps.escarapelas',
     'apps.asistencia',
     'apps.refrigerios',

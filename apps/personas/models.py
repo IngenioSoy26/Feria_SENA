@@ -12,6 +12,7 @@ class Persona(models.Model):
         ('INSTRUCTOR', 'Instructor'),
         ('INVITADO', 'Invitado'),
         ('ORGANIZADOR', 'Organizador'),
+        ('VISITANTE', 'Visitante'),
     )
 
     tipo_identificacion = models.ForeignKey(TipoIdentificacion, on_delete=models.PROTECT)

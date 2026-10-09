@@ -23,6 +23,8 @@ _publicas = [
     path('r/<slug:token_registro>/registro/personas/gracias/<int:pk>/', simple_views.RegistroPersonasGraciasView.as_view(), name='public_registro_personas_gracias'),
     path('r/<slug:token_registro>/registro/invitados/', simple_views.RegistroInvitadosPublicView.as_view(), name='public_registro_invitados'),
     path('r/<slug:token_registro>/registro/invitados/gracias/<int:pk>/', simple_views.RegistroInvitadosGraciasView.as_view(), name='public_registro_invitados_gracias'),
+    path('r/<slug:token_registro>/registro/visitantes/', simple_views.RegistroVisitantesPublicView.as_view(), name='public_registro_visitantes'),
+    path('r/<slug:token_registro>/registro/visitantes/gracias/<int:pk>/', simple_views.RegistroVisitantesGraciasView.as_view(), name='public_registro_visitantes_gracias'),
     path('r/<slug:token_registro>/buscar/', simple_views.BuscarAjaxView.as_view(), name='public_buscar'),
     path('r/<slug:token_registro>/escarapela/<int:persona_id>/', simple_views.DescargarEscarapelaIndividual.as_view(), name='public_escarapela'),
     path('r/<slug:token_registro>/escarapelas/lote/<slug:grupo>/', simple_views.DescargarEscarapelasLote.as_view(), name='public_escarapelas_lote'),
@@ -55,6 +57,8 @@ urlpatterns = [
     path('registro/personas/gracias/<int:pk>/', simple_views.RegistroPersonasGraciasView.as_view(), name='registro_personas_gracias'),
     path('registro/invitados/', simple_views.RegistroInvitadosPublicView.as_view(), name='registro_invitados'),
     path('registro/invitados/gracias/<int:pk>/', simple_views.RegistroInvitadosGraciasView.as_view(), name='registro_invitados_gracias'),
+    path('registro/visitantes/', simple_views.RegistroVisitantesPublicView.as_view(), name='registro_visitantes'),
+    path('registro/visitantes/gracias/<int:pk>/', simple_views.RegistroVisitantesGraciasView.as_view(), name='registro_visitantes_gracias'),
     path('buscar/', simple_views.BuscarAjaxView.as_view(), name='buscar'),
 
     path('operador/<slug:tipo>/', simple_views.OperadorMobileView.as_view(), name='operador'),

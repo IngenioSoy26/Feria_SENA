@@ -140,10 +140,73 @@
         <div class="kpi-big mt-2" style="font-size:clamp(1.3rem,2.6vw,1.9rem);color:#2563eb;">{{ total_proyectos }} <span style="font-size:.7rem;color:#64748b;font-weight:700;">proyectos</span></div>
         <hr style="border-color:#e2e8f0;">
         <div class="row g-2">
-          <div class="col-6"><div class="kpi-label">Instituciones</div><div style="font-weight:800;color:#0f172a;">{{ total_colegios }}</div></div>
-          <div class="col-6"><div class="kpi-label">Programas</div><div style="font-weight:800;color:#0f172a;">{{ total_programas }}</div></div>
-          <div class="col-6"><div class="kpi-label">Fichas</div><div style="font-weight:800;color:#0f172a;">{{ total_fichas }}</div></div>
-          <div class="col-6"><div class="kpi-label">Personas</div><div style="font-weight:800;color:#0f172a;">{{ total_personas }}</div></div>
+          <div class="col-6"><div class="kpi-label">Instituciones</div><div style="font-weight:800;color:#0f172a;">{{ total_instituciones_inscritas }}</div></div>
+          <div class="col-6"><div class="kpi-label">Programas</div><div style="font-weight:800;color:#0f172a;">{{ total_programas_unicos }} <span style="font-size:.62rem;color:#64748b;font-weight:700;">únicos</span></div></div>
+          <div class="col-6"><div class="kpi-label">Fichas</div><div style="font-weight:800;color:#0f172a;">{{ total_fichas_unicas }} <span style="font-size:.62rem;color:#64748b;font-weight:700;">únicas</span></div></div>
+          <div class="col-6"><div class="kpi-label">Personas</div><div style="font-weight:800;color:#0f172a;">{{ total_personas_estructura }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <div class="section-title">🏛️ ESTRUCTURA DEL EVENTO · Desglose completo</div>
+        <div class="section-sub">Cifras reales filtradas por el evento activo. Instituciones solo inscritas con proyectos, programas y fichas sin duplicados, y personas sumando los 5 roles (incluyendo visitantes).</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-6 col-md-3">
+            <div class="role-card" style="border-color:#bfdbfe;background:#eff6ff;">
+              <div class="kpi-label mb-2">🎓 INSTITUCIONES INSCRITAS</div>
+              <div class="kpi-big" style="color:#1d4ed8;font-size:clamp(1.6rem,3vw,2.3rem);">{{ total_instituciones_inscritas }}</div>
+              <div class="kpi-sub mt-2">Solo I.E. que tienen al menos 1 proyecto en el evento.</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="role-card" style="border-color:#bbf7d0;background:#f0fdf4;">
+              <div class="kpi-label mb-2">📦 PROYECTOS INSCRITOS</div>
+              <div class="kpi-big" style="color:#15803d;font-size:clamp(1.6rem,3vw,2.3rem);">{{ total_proyectos }}</div>
+              <div class="kpi-sub mt-2">Total proyectos registrados en este evento.</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="role-card" style="border-color:#fde68a;background:#fffbeb;">
+              <div class="kpi-label mb-2">🎯 PROGRAMAS <span class="chip chip-org" style="font-size:.6rem;">SIN REPETIR</span></div>
+              <div class="kpi-big" style="color:#92400e;font-size:clamp(1.6rem,3vw,2.3rem);">{{ total_programas_unicos }}</div>
+              <div class="kpi-sub mt-2">Si 2 proyectos pertenecen al mismo programa, se cuenta 1 vez.</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="role-card" style="border-color:#e9d5ff;background:#faf5ff;">
+              <div class="kpi-label mb-2">📒 FICHAS PARTICIPANTES <span class="chip chip-inv" style="font-size:.6rem;">SIN REPETIR</span></div>
+              <div class="kpi-big" style="color:#6b21a8;font-size:clamp(1.6rem,3vw,2.3rem);">{{ total_fichas_unicas }}</div>
+              <div class="kpi-sub mt-2">Solo fichas que tienen aprendices en proyectos del evento.</div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-12">
+            <div class="role-card" style="border-color:#86efac;background:#dcfce7;">
+              <div class="row align-items-center g-3">
+                <div class="col-12 col-md-4">
+                  <div class="kpi-label mb-2">👥 TOTAL PERSONAS (5 ROLES)</div>
+                  <div class="kpi-big" style="color:#16a34a;font-size:clamp(1.8rem,3.2vw,2.8rem);" class="txt-mono">{{ total_personas_estructura }}</div>
+                  <div class="kpi-sub mt-2" style="color:#166534;">Aprendices + Instructores + Invitados + Organizadores + Visitantes</div>
+                </div>
+                <div class="col-12 col-md-8">
+                  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end">
+                    {% for nombre, n, clase in personas_estructura_desglose %}
+                      <span class="chip {{ clase }}" style="font-size:.78rem;padding:.45rem .85rem;">{{ nombre }} · <b style="font-size:.9rem;">{{ n }}</b></span>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

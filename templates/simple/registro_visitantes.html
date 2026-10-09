@@ -1,0 +1,226 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Registro de Visitantes · {{ evento.nombre|default:"Feria SENA" }}{% endblock %}
+
+{% block navegacion %}{% endblock %}
+
+{% block contenido %}
+
+<header class="nav-sena navbar text-white sticky-top mb-4">
+  <div class="container-fluid">
+    <div class="navbar-brand text-white fw-bold d-flex align-items-center gap-3" style="cursor:default;">
+      <span class="logo-sena-pill" aria-hidden="true" style="background:#fff;">
+        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;display:block;">
+      </span>
+      <div class="lh-sm text-start">
+        <div class="fs-5 mb-0">SENA</div>
+        <small class="fw-normal opacity-90" style="font-size:.78rem;letter-spacing:.01em;">{{ evento.nombre|default:"Feria Proyectos Productivos 2026" }}</small>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  #form-registro-visitantes input.form-control:invalid:not(:placeholder-shown),
+  #form-registro-visitantes input.form-control:user-invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 .15rem rgba(220,38,38,.12);
+  }
+  #form-registro-visitantes .badge.bg-danger {
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+</style>
+
+<div class="glass-card" style="max-width:780px;margin:0 auto;">
+  <div class="d-flex align-items-start gap-3 mb-4">
+    <div class="ico-big d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#dc2626,#b91c1c);border:2px solid #991b1b;color:white;">
+      <span style="font-size:28px;">🚶</span>
+    </div>
+    <div class="flex-grow-1">
+      <h3 class="card-title mb-0">Registro de Visitantes</h3>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger border-0 rounded-4 shadow-sm">
+      {% for err in form.non_field_errors %}{{ err }}<br>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" id="form-registro-visitantes" novalidate>
+    {% csrf_token %}
+
+    <div class="form-card" style="background:linear-gradient(180deg,#fef2f2,#ffffff);">
+      <h5 class="mb-3 text-sena-dark">👤 Datos del visitante</h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Tipo de Identificación <span class="req">*</span></label>
+          {{ form.tipo_identificacion }}
+          {% if form.tipo_identificacion.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.tipo_identificacion.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Número de Identificación <span class="req">*</span></label>
+          {{ form.numero_identificacion }}
+          {% if form.numero_identificacion.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.numero_identificacion.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Nombre completo <span class="req">*</span></label>
+          {{ form.nombre_completo }}
+          {% if form.nombre_completo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.nombre_completo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+          <div class="small text-muted mt-1">
+            <i class="bi bi-info-circle me-1"></i>Escribe nombre(s) y los dos apellidos. Ej: <b>María López Pérez</b>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <input type="hidden" name="tipo_rol" value="VISITANTE">
+          <label class="form-label">
+            Entidad · Institución / Empresa
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.entidad }}
+          {% if form.entidad.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.entidad.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+          <div class="muted-small mt-1">De dónde proviene el Visitante.</div>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Cargo · Función
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.cargo }}
+          {% if form.cargo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.cargo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Correo electrónico
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.correo }}
+          {% if form.correo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.correo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Teléfono / Celular
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.telefono }}
+          {% if form.telefono.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.telefono.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center align-items-center">
+      <button class="btn-sena btn-big" type="submit" style="background:linear-gradient(135deg,#dc2626,#b91c1c);">
+        💾 Registrar Visitante
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  function _mantenerPosicion(input, fnTransformar){
+    const s = input.selectionStart;
+    const e = input.selectionEnd;
+    const antes = input.value.length;
+    input.value = fnTransformar(input.value || '');
+    const d = (input.value.length || 0) - antes;
+    try { input.setSelectionRange(Math.max(0, s + d), Math.max(0, e + d)); } catch(_) {}
+  }
+  const inputs = document.querySelectorAll('#form-registro-visitantes input, #form-registro-visitantes select:not([disabled])');
+  for (const el of inputs) {
+    if (!el.value && el.type !== 'hidden') {
+      try { el.focus(); break; } catch(_){}
+    }
+  }
+  const doc = document.querySelector('[name="numero_identificacion"]');
+  if (doc) {
+    doc.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){ return (v || '').toString().replace(/[^0-9]/g, '').slice(0, 30); });
+    });
+    doc.addEventListener('paste', function(){ setTimeout(() => doc.dispatchEvent(new Event('input')), 10); });
+  }
+  const tel = document.querySelector('[name="telefono"]');
+  if (tel) {
+    tel.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){ return (v || '').toString().replace(/[^0-9]/g, '').slice(0, 30); });
+    });
+    tel.addEventListener('paste', function(){ setTimeout(() => tel.dispatchEvent(new Event('input')), 10); });
+  }
+  const nc = document.querySelector('[name="nombre_completo"]');
+  if (nc) {
+    nc.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){
+        let s = (v || '').toString();
+        s = s.replace(/\s+/g, ' ');
+        return s.toUpperCase();
+      });
+    });
+    nc.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().replace(/\s+/g,' ').toUpperCase();
+    });
+    nc.addEventListener('paste', function(){ setTimeout(() => nc.dispatchEvent(new Event('input')), 10); });
+  }
+  const ent = document.querySelector('[name="entidad"]');
+  if (ent) {
+    ent.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){
+        let s = (v || '').toString();
+        s = s.replace(/\s+/g, ' ');
+        return s.toUpperCase();
+      });
+    });
+    ent.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().replace(/\s+/g,' ').toUpperCase();
+    });
+    ent.addEventListener('paste', function(){ setTimeout(() => ent.dispatchEvent(new Event('input')), 10); });
+  }
+  const car = document.querySelector('[name="cargo"]');
+  if (car) {
+    car.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){
+        let s = (v || '').toString();
+        s = s.replace(/\s+/g, ' ');
+        return s.toUpperCase();
+      });
+    });
+    car.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().replace(/\s+/g,' ').toUpperCase();
+    });
+    car.addEventListener('paste', function(){ setTimeout(() => car.dispatchEvent(new Event('input')), 10); });
+  }
+  const corr = document.querySelector('[name="correo"]');
+  if (corr) {
+    corr.addEventListener('input', function(){
+      _mantenerPosicion(this, function(v){ return (v || '').toString().replace(/\s+/g, '').toLowerCase(); });
+    });
+    corr.addEventListener('blur', function(){
+      this.value = (this.value || '').toString().trim().toLowerCase();
+    });
+  }
+})();
+</script>
+{% endblock %}

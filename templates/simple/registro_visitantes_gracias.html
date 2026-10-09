@@ -1,0 +1,90 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Visitante Registrado · {{ evento.nombre|default:"Feria SENA" }}{% endblock %}
+
+{% block navegacion %}{% endblock %}
+
+{% block contenido %}
+
+<header class="nav-sena navbar text-white sticky-top mb-4">
+  <div class="container-fluid">
+    <div class="navbar-brand text-white fw-bold d-flex align-items-center gap-3" style="cursor:default;">
+      <span class="logo-sena-pill" aria-hidden="true" style="background:#fff;">
+        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;display:block;">
+      </span>
+      <div class="lh-sm text-start">
+        <div class="fs-5 mb-0">SENA</div>
+        <small class="fw-normal opacity-90" style="font-size:.78rem;letter-spacing:.01em;">{{ evento.nombre|default:"Feria Proyectos Productivos 2026" }}</small>
+      </div>
+    </div>
+  </div>
+</header>
+
+{% if no_encontrado %}
+<div class="glass-card" style="max-width:640px;margin:0 auto;text-align:center;">
+  <div class="pt-2 pb-4">
+    <div style="width:96px;height:96px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(245,158,11,0.25);">
+      <span style="font-size:44px;">⚠️</span>
+    </div>
+  </div>
+  <h3 class="card-title mb-1">Registro no encontrado</h3>
+  <p class="muted-small mb-4">
+    No se pudo localizar el registro de visitante solicitado. Es posible que el enlace esté incompleto
+    o que el registro no exista.
+  </p>
+  <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
+    <a href="{{ url_form }}" class="btn-sena btn-big" style="background:linear-gradient(135deg,#dc2626,#b91c1c);">
+      ＋ Volver al formulario de visitantes
+    </a>
+  </div>
+</div>
+{% else %}
+<div class="glass-card" style="max-width:640px;margin:0 auto;text-align:center;">
+  <div class="pt-2 pb-4">
+    <div style="width:96px;height:96px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#dc2626,#b91c1c);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(220,38,38,0.25);">
+      <span style="font-size:52px;">🚶</span>
+    </div>
+  </div>
+  <h3 class="card-title mb-1">¡Visitante registrado con éxito!</h3>
+  <small class="muted-small">Gracias por acompañarnos en la {{ evento.nombre|default:"Feria SENA 2026" }}.</small>
+
+  <div class="form-card mt-4 text-start">
+    <div class="row g-3 align-items-center">
+      <div class="col-12 col-sm-4 text-center text-sm-end">
+        <div class="badge rounded-pill px-3 py-2 text-white" style="font-size:0.95rem;background:#dc2626;">🚶 Visitante</div>
+      </div>
+      <div class="col-12 col-sm-8">
+        <div class="mb-1 text-sena-dark fw-bold" style="font-size:1.15rem;">
+          {{ persona.nombres }} {{ persona.apellidos }}
+        </div>
+        <div class="muted-small">
+          <i class="bi bi-person-vcard me-1"></i>{{ persona.tipo_identificacion }} · <span class="mono">{{ persona.numero_identificacion }}</span>
+        </div>
+        {% if entidad_mostrar %}
+        <div class="muted-small"><i class="bi bi-building me-1"></i>🏛️ Entidad: <b>{{ entidad_mostrar }}</b></div>
+        {% endif %}
+        {% if cargo_mostrar %}
+        <div class="muted-small"><i class="bi bi-person-badge me-1"></i>🎖️ Cargo: <b>{{ cargo_mostrar }}</b></div>
+        {% endif %}
+        {% if persona.correo %}
+        <div class="muted-small"><i class="bi bi-envelope me-1"></i><b>{{ persona.correo }}</b></div>
+        {% endif %}
+        {% if persona.telefono %}
+        <div class="muted-small"><i class="bi bi-telephone me-1"></i><span class="mono"><b>{{ persona.telefono }}</b></span></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
+    <a href="{{ url_form }}" class="btn-outline-sena">
+      ＋ Registrar otro visitante
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}
