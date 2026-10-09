@@ -2329,42 +2329,42 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
                 except Exception:
                     pass
                 items.append((p, proy))
-    elif grupo == 'aprendices':
-        for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
-            _proy = getattr(a, 'proyecto', None) or (a.get('proyecto') if isinstance(a, dict) else None)
-            _per = getattr(a, 'persona', None) or (a.get('persona') if isinstance(a, dict) else None)
-            if _per:
-                items.append((_per, _proy))
-    elif grupo == 'instructores':
-        for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
-            _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
-            if _per:
-                items.append((_per, None))
-    elif grupo == 'invitados':
-        for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
-            _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
-            if _per:
-                items.append((_per, None))
-    elif grupo == 'organizadores':
-        for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
-            _per = getattr(o, 'persona', None) or (o.get('persona') if isinstance(o, dict) else None)
-            if _per:
-                items.append((_per, None))
-    elif grupo == 'asistentes':
-        asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
-        seen = set()
-        for a in asistencias:
-            if a.persona_id in seen:
-                continue
-            seen.add(a.persona_id)
-            proy = None
-            try:
-                if hasattr(a.persona, 'perfil_aprendiz') and a.persona.perfil_aprendiz:
-                    proy = a.persona.perfil_aprendiz.proyecto
-            except Exception:
-                pass
-            items.append((a.persona, proy))
-    else:
+        elif grupo == 'aprendices':
+            for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
+                _proy = getattr(a, 'proyecto', None) or (a.get('proyecto') if isinstance(a, dict) else None)
+                _per = getattr(a, 'persona', None) or (a.get('persona') if isinstance(a, dict) else None)
+                if _per:
+                    items.append((_per, _proy))
+        elif grupo == 'instructores':
+            for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
+                _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+                if _per:
+                    items.append((_per, None))
+        elif grupo == 'invitados':
+            for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
+                _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+                if _per:
+                    items.append((_per, None))
+        elif grupo == 'organizadores':
+            for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
+                _per = getattr(o, 'persona', None) or (o.get('persona') if isinstance(o, dict) else None)
+                if _per:
+                    items.append((_per, None))
+        elif grupo == 'asistentes':
+            asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
+            seen = set()
+            for a in asistencias:
+                if a.persona_id in seen:
+                    continue
+                seen.add(a.persona_id)
+                proy = None
+                try:
+                    if hasattr(a.persona, 'perfil_aprendiz') and a.persona.perfil_aprendiz:
+                        proy = a.persona.perfil_aprendiz.proyecto
+                except Exception:
+                    pass
+                items.append((a.persona, proy))
+        else:
             try:
                 pk = int(grupo)
                 institucion = get_object_or_404(InstitucionEducativa, pk=pk)
