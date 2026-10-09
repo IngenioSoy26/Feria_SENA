@@ -19,6 +19,8 @@ def _token_valido(esperado):
 _publicas = [
     path('r/<slug:token_registro>/registro/', simple_views.WizardRegistroView.as_view(), {'paso': 1}, name='public_wizard'),
     path('r/<slug:token_registro>/registro/<int:paso>/', simple_views.WizardRegistroView.as_view(), name='public_wizard_paso'),
+    path('r/<slug:token_registro>/registro/personas/', simple_views.RegistroPersonasPublicView.as_view(), name='public_registro_personas'),
+    path('r/<slug:token_registro>/registro/personas/gracias/<int:pk>/', simple_views.RegistroPersonasGraciasView.as_view(), name='public_registro_personas_gracias'),
     path('r/<slug:token_registro>/buscar/', simple_views.BuscarAjaxView.as_view(), name='public_buscar'),
     path('r/<slug:token_registro>/escarapela/<int:persona_id>/', simple_views.DescargarEscarapelaIndividual.as_view(), name='public_escarapela'),
     path('r/<slug:token_registro>/escarapelas/lote/<slug:grupo>/', simple_views.DescargarEscarapelasLote.as_view(), name='public_escarapelas_lote'),
@@ -47,6 +49,8 @@ urlpatterns = [
 
     path('registro/', simple_views.WizardRegistroView.as_view(), {'paso': 1}, name='wizard'),
     path('registro/<int:paso>/', simple_views.WizardRegistroView.as_view(), name='wizard_paso'),
+    path('registro/personas/', simple_views.RegistroPersonasPublicView.as_view(), name='registro_personas'),
+    path('registro/personas/gracias/<int:pk>/', simple_views.RegistroPersonasGraciasView.as_view(), name='registro_personas_gracias'),
     path('buscar/', simple_views.BuscarAjaxView.as_view(), name='buscar'),
 
     path('operador/<slug:tipo>/', simple_views.OperadorMobileView.as_view(), name='operador'),

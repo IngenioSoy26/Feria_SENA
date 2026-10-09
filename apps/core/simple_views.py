@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
 from django.urls import reverse
+from django import forms as _forms
 
 from apps.core.simple_pdf import (
     generar_escarapela_individual, generar_escarapelas_lote,
@@ -37,6 +38,163 @@ from apps.reportes.services.importacion_excel import (
     CLASIFICACION_DUPLICADO,
     CLASIFICACION_ERROR,
 )
+import re as _re
+import uuid as _uuid
+from django.db import connection as _conn_db_global
+
+
+# ============================================================
+# FORM · Guardar Persona PÚBLICA (Invitado / Instructor / Organizador)
+# ============================================================
+class RegistroPersonasPublicoForm(_forms.Form):
+    ROLES_PUBLICOS = (
+        ('INVITADO', '🎟️ Invitado'),
+        ('INSTRUCTOR', '👨‍🏫 Instructor'),
+        ('ORGANIZADOR', '🛡️ Organizador'),
+    )
+    tipo_identificacion = _forms.ModelChoiceField(
+        label='Tipo de Identificación',
+        queryset=TipoIdentificacion.objects.filter(activo=True).order_by('codigo'),
+        widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
+        required=True,
+    )
+    numero_identificacion = _forms.CharField(
+        label='Número de Identificación',
+        max_length=30,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Solo dígitos · sin puntos ni comas',
+            'autocomplete':'off',
+            'inputmode':'numeric'}),
+        required=True,
+    )
+    nombre_completo = _forms.CharField(
+        label='Nombre completo',
+        max_length=240,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Primer nombre · Segundo nombre · Primer apellido · Segundo apellido',
+            'autocomplete':'name',
+            'autocapitalize':'words'}),
+        required=True,
+    )
+    tipo_rol = _forms.ChoiceField(
+        label='Tipo de Rol',
+        choices=ROLES_PUBLICOS,
+        widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
+        required=True,
+    )
+    correo = _forms.EmailField(
+        label='Correo electrónico',
+        required=False,
+        widget=_forms.EmailInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'correo@ejemplo.com · opcional',
+            'autocomplete':'email',
+            'inputmode':'email'}),
+    )
+    telefono = _forms.CharField(
+        label='Teléfono / Celular',
+        max_length=30,
+        required=False,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'3001234567 · opcional',
+            'autocomplete':'tel',
+            'inputmode':'tel'}),
+    )
+
+    def clean_numero_identificacion(self):
+        v = (self.cleaned_data.get('numero_identificacion') or '').strip()
+        v = _re.sub(r'[\s\.\,\-\_]', '', v).strip()
+        if not v or not v.isdigit():
+            raise _forms.ValidationError(
+                '❌ El documento debe contener SOLO dígitos. (Sin espacios, puntos, guiones ni comas).'
+            )
+        if len(v) < 5:
+            raise _forms.ValidationError('❌ El documento debe tener al menos 5 dígitos.')
+        return v
+
+    def clean_nombre_completo(self):
+        raw = (self.cleaned_data.get('nombre_completo') or '').strip()
+        if not raw or len(raw) < 5:
+            raise _forms.ValidationError('❌ Escribe el nombre completo (mínimo 5 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        palabras = [p for p in limpio.split(' ') if p]
+        if len(palabras) < 2:
+            raise _forms.ValidationError('❌ Escribe nombre(s) y apellido(s). Mínimo 2 palabras.')
+        return limpio
+
+
+def _split_nombre_apellidos(nombre_completo):
+    palabras = [p for p in (nombre_completo or '').split(' ') if p]
+    n = len(palabras)
+    if n == 0:
+        return '', ''
+    if n == 1:
+        return palabras[0], ''
+    if n == 2:
+        return palabras[0], palabras[1]
+    if n == 3:
+        return palabras[0], ' '.join(palabras[1:])
+    mitad = n // 2
+    return ' '.join(palabras[:mitad]), ' '.join(palabras[mitad:])
+
+
+def guardar_persona_publica(datos, creado_por=None):
+    warns = []
+    ti = datos['tipo_identificacion']
+    nd = datos['numero_identificacion']
+    rol = datos['tipo_rol']
+    nombres, apellidos = _split_nombre_apellidos(datos['nombre_completo'])
+    correo = (datos.get('correo') or '').strip().lower() or None
+    telefono = (datos.get('telefono') or '').strip() or None
+
+    persona, created = Persona.objects.update_or_create(
+        tipo_identificacion=ti,
+        numero_identificacion=nd,
+        defaults={
+            'nombres': (nombres or '').upper(),
+            'apellidos': (apellidos or '').upper(),
+            'tipo_persona': rol,
+            'correo': correo,
+            'telefono': telefono,
+            'activo': True,
+            'creado_por': creado_por,
+        },
+    )
+    if not getattr(persona, 'qr_token', None):
+        while True:
+            tok = _uuid.uuid4()
+            if not Persona.objects.filter(qr_token=tok).exists():
+                persona.qr_token = tok
+                persona.save(update_fields=['qr_token'])
+                break
+
+    if rol == 'INVITADO':
+        Invitado.objects.get_or_create(
+            persona=persona, defaults={'activo': True, 'entidad': '', 'cargo': ''},
+        )
+    elif rol == 'INSTRUCTOR':
+        Instructor.objects.get_or_create(
+            persona=persona, defaults={'activo': True},
+        )
+    elif rol == 'ORGANIZADOR':
+        try:
+            _org_cls = _Organizador
+            if _org_cls is None:
+                from apps.organizadores.models import Organizador as _org_cls
+            _org_cls.objects.get_or_create(persona=persona, defaults={'activo': True})
+        except Exception as _err:
+            try: _conn_db_global.rollback()
+            except Exception: pass
+            try: _conn_db_global.close()
+            except Exception: pass
+            warns.append(
+                '⚠ Perfil Organizador: no se pudo crear (¿migración organizadores.0001 pendiente?). '
+                f'Detalle: {_err}'
+            )
+    return persona, created, warns
 
 
 def _evento_activo():
@@ -257,6 +415,7 @@ class HomeSimpleView(LoginRequiredMixin, View):
         t_o = settings.TOKEN_OPERADORES_PUBLICO or ''
         enlaces = {
             'registro': f"{base}/r/{t_r}/registro/" if t_r else None,
+            'registro_personas': f"{base}/r/{t_r}/registro/personas/" if t_r else None,
             'op_asistencia': f"{base}/o/{t_o}/asistencia/" if t_o else None,
             'op_refrigerios': f"{base}/o/{t_o}/refrigerios/" if t_o else None,
             'op_certificados': f"{base}/o/{t_o}/certificados/" if t_o else None,
@@ -313,6 +472,7 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
         t_o = settings.TOKEN_OPERADORES_PUBLICO or ''
         enlaces = {
             'registro': f"{base}/r/{t_r}/registro/" if t_r else None,
+            'registro_personas': f"{base}/r/{t_r}/registro/personas/" if t_r else None,
             'op_asistencia': f"{base}/o/{t_o}/asistencia/" if t_o else None,
             'op_refrigerios': f"{base}/o/{t_o}/refrigerios/" if t_o else None,
             'op_certificados': f"{base}/o/{t_o}/certificados/" if t_o else None,
@@ -1131,7 +1291,18 @@ class ListadoUnicosView(LoginRequiredMixin, View):
 # ============================================================
 # ESCARAPELAS PDF - Individual / Lotes
 # ============================================================
-class DescargarEscarapelaIndividual(LoginRequiredMixin, View):
+class DescargarEscarapelaIndividual(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO', 'OPERATIVO']
+
+    def dispatch(self, request, *args, **kwargs):
+        token_url = kwargs.get('token_registro')
+        if token_url:
+            return super().dispatch(request, *args, **kwargs)
+        auth_resp = _solicitar_login_o_token(request, 'registro')
+        if auth_resp is not None:
+            return auth_resp
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, persona_id, **_ignorado):
         p = get_object_or_404(Persona, pk=persona_id)
         evento = _evento_activo()
@@ -1341,6 +1512,121 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         resp['Pragma'] = 'no-cache'
         resp['Expires'] = '0'
         return resp
+
+
+# ============================================================
+# FORMULARIO DE REGISTRO RÁPIDO · PERSONAS (Invitados / Instructores / Organizadores)
+# ============================================================
+class RegistroPersonasPublicView(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+    template_name = 'simple/registro_personas.html'
+    modo = 'registro'
+
+    def dispatch(self, request, *args, **kwargs):
+        resp = _solicitar_login_o_token(request, 'registro')
+        if resp is not None:
+            return resp
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, **_ignorado):
+        evento = _evento_activo()
+        try:
+            inicial_ti = TipoIdentificacion.objects.filter(activo=True, codigo='CC').first()
+        except Exception:
+            inicial_ti = None
+        f = RegistroPersonasPublicoForm(initial={'tipo_identificacion': inicial_ti} if inicial_ti else None)
+        t_r = settings.TOKEN_REGISTRO_PUBLICO or ''
+        base = request.build_absolute_uri('/').rstrip('/')
+        url_reg_personas = f"{base}/r/{t_r}/registro/personas/" if t_r else reverse('simple:registro_personas')
+        return render(request, self.template_name, {
+            'evento': evento,
+            'form': f,
+            'token_registro': t_r,
+            'url_registro_personas': url_reg_personas,
+        })
+
+    def post(self, request, **_ignorado):
+        evento = _evento_activo()
+        form = RegistroPersonasPublicoForm(request.POST or None)
+        t_r = settings.TOKEN_REGISTRO_PUBLICO or ''
+        base = request.build_absolute_uri('/').rstrip('/')
+        url_reg_personas = f"{base}/r/{t_r}/registro/personas/" if t_r else reverse('simple:registro_personas')
+        if not form.is_valid():
+            return render(request, self.template_name, {
+                'evento': evento,
+                'form': form,
+                'token_registro': t_r,
+                'url_registro_personas': url_reg_personas,
+            })
+        try:
+            persona, created, warns = guardar_persona_publica(
+                form.cleaned_data,
+                creado_por=(request.user if request.user.is_authenticated else None),
+            )
+        except Exception as err:
+            form.add_error(None, f'❌ Error guardando los datos: {err}')
+            return render(request, self.template_name, {
+                'evento': evento,
+                'form': form,
+                'token_registro': t_r,
+                'url_registro_personas': url_reg_personas,
+            })
+        for w in warns:
+            messages.warning(request, w)
+        if created:
+            messages.success(request, f'✅ Registro guardado correctamente. ¡Gracias por asistir!')
+        else:
+            messages.info(request, 'ℹ️ El documento ya estaba registrado. Se actualizaron los datos.')
+        if t_r:
+            url_gracias = reverse('simple:public_registro_personas_gracias', kwargs={
+                'token_registro': t_r, 'pk': persona.pk,
+            })
+        else:
+            url_gracias = reverse('simple:registro_personas_gracias', kwargs={'pk': persona.pk})
+        return HttpResponseRedirect(url_gracias)
+
+
+class RegistroPersonasGraciasView(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+    template_name = 'simple/registro_personas_gracias.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        t_url = kwargs.get('token_registro')
+        if not t_url:
+            auth_resp = _solicitar_login_o_token(request, 'registro')
+            if auth_resp is not None:
+                return auth_resp
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, pk, **kwargs):
+        evento = _evento_activo()
+        persona = get_object_or_404(Persona, pk=pk)
+        t_r = kwargs.get('token_registro') or settings.TOKEN_REGISTRO_PUBLICO or ''
+        if t_r:
+            url_escarapela = reverse(
+                'simple:public_escarapela',
+                kwargs={'token_registro': t_r, 'persona_id': persona.pk},
+            )
+            url_form = reverse('simple:public_registro_personas', kwargs={'token_registro': t_r})
+        else:
+            url_escarapela = reverse('simple:escarapela_persona', kwargs={'persona_id': persona.pk})
+            url_form = reverse('simple:registro_personas')
+        rol_display = dict(Persona.TIPOS).get(persona.tipo_persona, persona.tipo_persona)
+        rol_pill_cls = {
+            'APRENDIZ': 'bg-verde-claro text-white',
+            'INSTRUCTOR': 'bg-naranja text-white',
+            'INVITADO': 'bg-azul-o text-white',
+            'ORGANIZADOR': 'bg-azul text-white',
+        }.get(persona.tipo_persona, 'bg-gray-600 text-white')
+        return render(request, self.template_name, {
+            'evento': evento,
+            'persona': persona,
+            'rol_display': rol_display,
+            'rol_pill_cls': rol_pill_cls,
+            'url_escarapela': url_escarapela,
+            'url_form': url_form,
+            'token_registro': t_r,
+        })
 
 
 TIPOS_IMPORTACION_LABELS = {
