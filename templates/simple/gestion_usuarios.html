@@ -1,0 +1,158 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Gestión de Usuarios · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="mb-4 d-flex align-items-end justify-content-between flex-wrap gap-3">
+  <div>
+    <h3 class="mb-0" style="font-size:1.3rem;">👥 Gestión de Usuarios</h3>
+    <span class="muted-small">Crear · editar · activar · resetear contraseñas SIN usar /admin/ de Django</span>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn-ghost" href="{% url 'simple:panel_admin' %}">⌂ Panel Admin</a>
+    <a class="btn-sena btn-big" href="{% url 'simple:crear_usuario' %}" style="min-height:44px;padding:10px 20px;">＋ Nuevo usuario</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-lg-3">
+    <div class="kpi-card" style="background:linear-gradient(180deg,#ecfeff,#fff);">
+      <div class="kpi-label">Usuarios totales</div>
+      <div class="kpi-num text-sena">{{ total }}</div>
+      <div class="small text-muted mt-1">📊 {{ activos }} activos · {{ inactivos }} inactivos</div>
+    </div>
+  </div>
+  {% for codigo, label, n in roles_opts_con_conteo %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <div class="kpi-card" style="background:linear-gradient(180deg,#f7fff0,#fff);">
+      <div class="kpi-label d-flex align-items-center gap-2">
+        {% if codigo == 'ADMINISTRADOR' %}🛡
+        {% elif codigo == 'REGISTRO' %}📝
+        {% elif codigo == 'GERENTE' %}📊
+        {% elif codigo == 'OPERADOR_ASISTENCIA' %}✅
+        {% elif codigo == 'OPERADOR_REFRIGERIO' %}🍱
+        {% elif codigo == 'OPERADOR_CERTIFICADO' %}📜
+        {% else %}🔍{% endif %}
+        {{ label }}
+      </div>
+      <div class="kpi-num text-sena-dark" style="font-size:1.35rem;">{{ n }}</div>
+      <a class="mini-link mt-1" href="?rol={{ codigo }}">Ver este rol</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="glass-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-4">
+      <label class="form-label mb-1" style="font-size:.82rem;">🔎 Buscar por nombre / usuario / correo</label>
+      <input class="form-control form-control-lg" type="search" name="q" placeholder="Escribe texto..." value="{{ filtro_texto|default:'' }}" />
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label mb-1" style="font-size:.82rem;">👤 Filtrar por rol</label>
+      <select name="rol" class="form-select form-select-lg">
+        {% for codigo, label in roles_opts %}
+        <option value="{{ codigo }}" {% if filtro_rol == codigo %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-5 d-grid gap-2 d-md-flex justify-content-md-end">
+      <button type="submit" class="btn-sena btn-big" style="min-height:48px;padding:10px 20px;">🔍 Aplicar filtros</button>
+      <a href="{% url 'simple:gestion_usuarios' %}" class="btn-outline-sena" style="min-height:48px;padding:10px 20px;">❌ Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<div class="glass-card p-0 overflow-hidden">
+  <div class="table-wrap" style="border:0;border-radius:0;">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:220px;">Usuario</th>
+          <th>Nombre completo</th>
+          <th>Correo</th>
+          <th style="width:180px;">Rol</th>
+          <th style="width:110px;">Estado</th>
+          <th style="width:150px;">Últ. acceso</th>
+          <th class="text-right" style="width:360px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in usuarios %}
+      <tr>
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#e6f7ff,#c6eaff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#0369a1;text-transform:uppercase;">
+              {% if u.nombres %}{{ u.nombres|slice:":1" }}{% else %}{{ u.username|slice:":1" }}{% endif %}
+              {% if u.apellidos %}{{ u.apellidos|slice:":1" }}{% else %}{{ u.username|slice:"1:2" }}{% endif %}
+            </div>
+            <div>
+              <div class="fw-bold text-sena-dark">@{{ u.username }}</div>
+              <div class="muted-small">#{{ u.id }}</div>
+            </div>
+          </div>
+        </td>
+        <td class="tb-name">
+          <div class="fw-bold text-sena-dark">{{ u.nombres|default:"" }} {{ u.apellidos|default:"" }}</div>
+          <div class="muted-small">{{ u.first_name }} {{ u.last_name }}</div>
+        </td>
+        <td class="tb-muted"><a href="mailto:{{ u.email }}">{{ u.email }}</a></td>
+        <td>
+          <span class="badge rounded-pill px-3 py-2 d-inline-block text-white
+            {% if u.rol_sistema == 'ADMINISTRADOR' %}bg-danger
+            {% elif u.rol_sistema == 'REGISTRO' %}bg-verde
+            {% elif u.rol_sistema == 'GERENTE' %}bg-purpura
+            {% elif u.rol_sistema == 'OPERADOR_ASISTENCIA' %}bg-verde-claro
+            {% elif u.rol_sistema == 'OPERADOR_REFRIGERIO' %}bg-naranja
+            {% elif u.rol_sistema == 'OPERADOR_CERTIFICADO' %}bg-azul-o
+            {% else %}bg-gris{% endif %}">
+            {% if u.rol_sistema == 'ADMINISTRADOR' %}🛡 Administrador
+            {% elif u.rol_sistema == 'REGISTRO' %}📝 Registro
+            {% elif u.rol_sistema == 'GERENTE' %}📊 Gerente
+            {% elif u.rol_sistema == 'OPERADOR_ASISTENCIA' %}✅ Op. Asistencia
+            {% elif u.rol_sistema == 'OPERADOR_REFRIGERIO' %}🍱 Op. Refrigerio
+            {% elif u.rol_sistema == 'OPERADOR_CERTIFICADO' %}📜 Op. Certificado
+            {% else %}🔍 Consulta{% endif %}
+          </span>
+        </td>
+        <td>
+          {% if u.activo %}
+            <span class="badge text-bg-success px-3 py-1 rounded-pill">✅ Activo</span>
+          {% else %}
+            <span class="badge text-bg-secondary px-3 py-1 rounded-pill">⚠ Inactivo</span>
+          {% endif %}
+        </td>
+        <td class="tb-muted mono" style="font-size:.82rem;">
+          {% if u.ultimo_acceso %}
+            {{ u.ultimo_acceso|date:"d/m/Y H:i" }}
+          {% else %}
+            <span class="muted-small opacity-75">nunca</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="d-grid gap-1 d-md-flex justify-content-end">
+            <a class="btn-outline-sena" style="min-height:40px;padding:6px 12px;font-size:.85rem;" href="{% url 'simple:editar_usuario' u.pk %}">✏️ Editar</a>
+            <a class="btn-outline-sena" style="min-height:40px;padding:6px 12px;font-size:.85rem;" href="{% url 'simple:reset_password_usuario' u.pk %}">🔐 Reset</a>
+            <form method="post" action="{% url 'simple:toggle_usuario_activo' u.pk %}" onsubmit="return confirm('Seguro que deseas {% if u.activo %}DESACTIVAR{% else %}ACTIVAR{% endif %} al usuario @{{ u.username }}?');">
+              {% csrf_token %}
+              <button type="submit" class="btn-ghost" style="min-height:40px;padding:6px 14px;font-size:.85rem;{% if u.activo %}color:#9ca3af;{% else %}color:#16a34a;{% endif %}">
+                {% if u.activo %}🚫 Desactivar{% else %}✅ Activar{% endif %}
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center py-5 muted-small">
+          <div style="font-size:46px;">📭</div>
+          No hay usuarios para este filtro. Prueba limpiando filtros o creando un usuario nuevo.
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

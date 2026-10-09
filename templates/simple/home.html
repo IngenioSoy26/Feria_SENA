@@ -84,6 +84,28 @@
                 {% if not enlaces_publicos.op_certificados %}disabled{% endif %}>📋 Copiar</button>
       </div>
     </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">👥 Registro Personas · Invit · Inst · Org</label>
+      <div class="input-group">
+        <input id="lnk-personas" readonly class="form-control pub-input"
+               value="{{ enlaces_publicos.registro_personas|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-personas"
+                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;border-color:#0891b2;"
+                {% if not enlaces_publicos.registro_personas %}disabled{% endif %}>📋 Copiar</button>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">🎟️ Registro SOLO Invitados · rol BLOQUEADO · correo + teléfono OBLIGATORIOS</label>
+      <div class="input-group">
+        <input id="lnk-invitados" readonly class="form-control pub-input"
+               style="background:linear-gradient(180deg,#eff6ff,#ffffff);border-color:#93c5fd;"
+               value="{{ enlaces_publicos.registro_invitados|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-invitados"
+                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;background:#1d4ed8;color:white;border-color:#1d4ed8;"
+                {% if not enlaces_publicos.registro_invitados %}disabled{% endif %}>📋 Copiar</button>
+      </div>
+      <div class="muted-small mt-1">⚠️ Por este enlace solo se pueden registrar Invitados. No permite elegir otro rol.</div>
+    </div>
   </div>
   <div class="muted-small mt-3">
     🔐 Para volver al modo <b>solo con login</b> (seguro), vacía <code>TOKEN_REGISTRO</code> y <code>TOKEN_OPERADORES</code>
@@ -97,6 +119,68 @@
   <span class="muted-small">Toca una tarjeta · funciona perfecto en móvil</span>
 </div>
 
+{% if es_op_asistencia %}
+<div class="menu-hero mb-5">
+  <a class="mh mh-verde-claro" href="{% url 'simple:operador' 'asistencia' %}">
+    <div class="mh-ico">✅</div>
+    <div>
+      Asistencia<br/>
+      <small>Escanea código QR · única opción permitida</small>
+    </div>
+  </a>
+</div>
+{% elif es_op_refrigerio %}
+<div class="menu-hero mb-5">
+  <a class="mh mh-naranja" href="{% url 'simple:operador' 'refrigerios' %}">
+    <div class="mh-ico">🍱</div>
+    <div>
+      Refrigerios<br/>
+      <small>Entrega de almuerzo · única opción permitida</small>
+    </div>
+  </a>
+</div>
+{% elif es_op_certificado %}
+<div class="menu-hero mb-5">
+  <a class="mh mh-azul-o" href="{% url 'simple:operador' 'certificados' %}">
+    <div class="mh-ico">📜</div>
+    <div>
+      Certificados · Operador<br/>
+      <small>Genera código y entrega · única opción permitida</small>
+    </div>
+  </a>
+</div>
+{% elif es_gerente %}
+<div class="menu-hero mb-5">
+  <a class="mh mh-purpura" href="{% url 'simple:listados' 'proyectos' %}">
+    <div class="mh-ico">🎯</div>
+    <div>
+      Proyectos<br/>
+      <small>Ver todos · fichas</small>
+    </div>
+  </a>
+  <a class="mh mh-azul" target="_blank" href="{% url 'simple:escarapelas_lote' 'todos' %}">
+    <div class="mh-ico">🎫</div>
+    <div>
+      Escarapelas PDF<br/>
+      <small>Lote imprimible A6</small>
+    </div>
+  </a>
+  <a class="mh mh-rojo" target="_blank" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">
+    <div class="mh-ico">🏆</div>
+    <div>
+      Certificados<br/>
+      <small>Participación aprendices</small>
+    </div>
+  </a>
+  <a class="mh mh-gris" href="{% url 'simple:dashboard' %}">
+    <div class="mh-ico">📊</div>
+    <div>
+      Dashboard y Reportes<br/>
+      <small>Informe completo del evento</small>
+    </div>
+  </a>
+</div>
+{% else %}
 <div class="menu-hero mb-5">
   <a class="mh mh-verde" href="{% url 'simple:wizard' %}">
     <div class="mh-ico">📝</div>
@@ -161,7 +245,17 @@
       <small>Informe del evento</small>
     </div>
   </a>
+  {% if es_admin_full %}
+  <a class="mh" style="background:linear-gradient(180deg,#fee2e2,#fecaca);" href="{% url 'simple:gestion_usuarios' %}">
+    <div class="mh-ico">👥</div>
+    <div>
+      Gestión Usuarios<br/>
+      <small>Roles · contraseñas · activar</small>
+    </div>
+  </a>
+  {% endif %}
 </div>
+{% endif %}
 
 <div class="row g-3">
   <div class="col-12 col-lg-8">

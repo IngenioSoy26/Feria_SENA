@@ -21,6 +21,8 @@ _publicas = [
     path('r/<slug:token_registro>/registro/<int:paso>/', simple_views.WizardRegistroView.as_view(), name='public_wizard_paso'),
     path('r/<slug:token_registro>/registro/personas/', simple_views.RegistroPersonasPublicView.as_view(), name='public_registro_personas'),
     path('r/<slug:token_registro>/registro/personas/gracias/<int:pk>/', simple_views.RegistroPersonasGraciasView.as_view(), name='public_registro_personas_gracias'),
+    path('r/<slug:token_registro>/registro/invitados/', simple_views.RegistroInvitadosPublicView.as_view(), name='public_registro_invitados'),
+    path('r/<slug:token_registro>/registro/invitados/gracias/<int:pk>/', simple_views.RegistroInvitadosGraciasView.as_view(), name='public_registro_invitados_gracias'),
     path('r/<slug:token_registro>/buscar/', simple_views.BuscarAjaxView.as_view(), name='public_buscar'),
     path('r/<slug:token_registro>/escarapela/<int:persona_id>/', simple_views.DescargarEscarapelaIndividual.as_view(), name='public_escarapela'),
     path('r/<slug:token_registro>/escarapelas/lote/<slug:grupo>/', simple_views.DescargarEscarapelasLote.as_view(), name='public_escarapelas_lote'),
@@ -51,6 +53,8 @@ urlpatterns = [
     path('registro/<int:paso>/', simple_views.WizardRegistroView.as_view(), name='wizard_paso'),
     path('registro/personas/', simple_views.RegistroPersonasPublicView.as_view(), name='registro_personas'),
     path('registro/personas/gracias/<int:pk>/', simple_views.RegistroPersonasGraciasView.as_view(), name='registro_personas_gracias'),
+    path('registro/invitados/', simple_views.RegistroInvitadosPublicView.as_view(), name='registro_invitados'),
+    path('registro/invitados/gracias/<int:pk>/', simple_views.RegistroInvitadosGraciasView.as_view(), name='registro_invitados_gracias'),
     path('buscar/', simple_views.BuscarAjaxView.as_view(), name='buscar'),
 
     path('operador/<slug:tipo>/', simple_views.OperadorMobileView.as_view(), name='operador'),
@@ -65,4 +69,10 @@ urlpatterns = [
 
     path('certificado/editar/<int:persona_id>/<slug:tipo>/', simple_views.EditarCertificadoView.as_view(), name='certificado_editar'),
     path('certificado/lote/<slug:tipo>/<slug:grupo>/', simple_views.DescargarCertificadosLoteView.as_view(), name='certificados_lote'),
+
+    path('usuarios/', simple_views.GestionUsuariosView.as_view(), name='gestion_usuarios'),
+    path('usuarios/nuevo/', simple_views.CrearEditarUsuarioView.as_view(), name='crear_usuario'),
+    path('usuarios/editar/<int:pk>/', simple_views.CrearEditarUsuarioView.as_view(), name='editar_usuario'),
+    path('usuarios/toggle/<int:pk>/', simple_views.ToggleUsuarioActivoView.as_view(), name='toggle_usuario_activo'),
+    path('usuarios/reset-password/<int:pk>/', simple_views.ResetPasswordUsuarioView.as_view(), name='reset_password_usuario'),
 ] + _publicas

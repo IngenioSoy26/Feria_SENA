@@ -1,0 +1,143 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Registro de Invitados · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="glass-card" style="max-width:780px;margin:0 auto;">
+  <div class="d-flex align-items-start gap-3 mb-4">
+    <div class="ico-big d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);border:2px solid #1e40af;color:white;">
+      <span style="font-size:28px;">🎟️</span>
+    </div>
+    <div class="flex-grow-1">
+      <h3 class="card-title mb-0">Registro de Invitados</h3>
+      <small class="muted-small">
+        🎟️ Solo rol Invitado · pre-definido · 1 paso · Todos los campos obligatorios
+      </small>
+    </div>
+    <span class="badge text-white px-3 py-2 rounded-pill" style="background:#0ea5e9;">
+      🛡️ Rol bloqueado · Invitado
+    </span>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger border-0 rounded-4 shadow-sm">
+      {% for err in form.non_field_errors %}{{ err }}<br>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" id="form-registro-invitados" novalidate>
+    {% csrf_token %}
+
+    <div class="form-card" style="background:linear-gradient(180deg,#eff6ff,#ffffff);">
+      <h5 class="mb-3 text-sena-dark">👤 Datos del invitado</h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Tipo de Identificación <span class="req">*</span></label>
+          {{ form.tipo_identificacion }}
+          {% if form.tipo_identificacion.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.tipo_identificacion.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Número de Identificación <span class="req">*</span></label>
+          {{ form.numero_identificacion }}
+          {% if form.numero_identificacion.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.numero_identificacion.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Nombre completo <span class="req">*</span></label>
+          {{ form.nombre_completo }}
+          {% if form.nombre_completo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.nombre_completo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+          <div class="small text-muted mt-1">
+            <i class="bi bi-info-circle me-1"></i>Escribe nombre(s) y los dos apellidos. Ej: <b>María López Pérez</b>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Rol en el evento <span class="req">*</span></label>
+          {{ form.tipo_rol }}
+          <input type="hidden" name="tipo_rol" value="INVITADO">
+          {% if form.tipo_rol.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.tipo_rol.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+          <div class="muted-small mt-1">⚠️ Este campo no es modificable</div>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Correo electrónico
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.correo }}
+          {% if form.correo.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.correo.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">
+            Teléfono / Celular
+            <span class="req">*</span>
+            <span class="badge rounded-pill bg-danger text-white px-2" style="font-size:.6rem;">OBLIGATORIO</span>
+          </label>
+          {{ form.telefono }}
+          {% if form.telefono.errors %}
+            <div class="text-danger mt-1 small">{% for err in form.telefono.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <a href="{% url 'simple:home' %}" class="btn-ghost">← Volver al inicio</a>
+      <button class="btn-sena btn-big" type="submit" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);">
+        💾 Registrar Invitado
+        <span class="btn-sub">→ 1 paso · Genera escarapela PDF</span>
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const inputs = document.querySelectorAll('#form-registro-invitados input, #form-registro-invitados select:not([disabled])');
+  for (const el of inputs) {
+    if (!el.value && el.type !== 'hidden') {
+      try { el.focus(); break; } catch(_){}
+    }
+  }
+  const doc = document.querySelector('[name="numero_identificacion"]');
+  if (doc) {
+    doc.addEventListener('input', function(){
+      let v = (this.value || '').toString();
+      v = v.replace(/[\s\.\,\-\_]/g, '');
+      if (!/^\d*$/.test(v)) v = v.replace(/[^\d]/g, '');
+      this.value = v;
+    });
+  }
+  const tel = document.querySelector('[name="telefono"]');
+  if (tel) {
+    tel.addEventListener('input', function(){
+      let v = (this.value || '').toString();
+      v = v.replace(/[\s\.\,\-\_\(\)\+]/g, '');
+      if (!/^\d*$/.test(v)) v = v.replace(/[^\d]/g, '');
+      this.value = v;
+    });
+  }
+  const nc = document.querySelector('[name="nombre_completo"]');
+  if (nc) {
+    nc.addEventListener('change', function(){
+      let v = (this.value || '').toString().trim();
+      v = v.replace(/\s+/g,' ');
+      this.value = v;
+    });
+  }
+})();
+</script>
+{% endblock %}

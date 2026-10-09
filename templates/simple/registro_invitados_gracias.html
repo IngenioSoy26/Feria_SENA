@@ -1,0 +1,75 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Invitado Registrado · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="glass-card" style="max-width:640px;margin:0 auto;text-align:center;">
+  <div class="pt-2 pb-4">
+    <div style="width:96px;height:96px;margin:0 auto;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0ea5e9);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(29,78,216,0.25);">
+      <span style="font-size:52px;">🎟️</span>
+    </div>
+  </div>
+  <h3 class="card-title mb-1">¡Invitado registrado con éxito!</h3>
+  <small class="muted-small">Gracias por acompañarnos en la Feria SENA 2026.</small>
+
+  <div class="form-card mt-4 text-start">
+    <div class="row g-3 align-items-center">
+      <div class="col-12 col-sm-4 text-center text-sm-end">
+        <div class="badge rounded-pill px-3 py-2 bg-azul-o text-white" style="font-size:0.95rem;">🎟️ Invitado</div>
+      </div>
+      <div class="col-12 col-sm-8">
+        <div class="mb-1 text-sena-dark fw-bold" style="font-size:1.15rem;">
+          {{ persona.nombres }} {{ persona.apellidos }}
+        </div>
+        <div class="muted-small">
+          <i class="bi bi-person-vcard me-1"></i>{{ persona.tipo_identificacion }} · <span class="mono">{{ persona.numero_identificacion }}</span>
+        </div>
+        <div class="muted-small"><i class="bi bi-envelope me-1"></i><b>{{ persona.correo }}</b></div>
+        <div class="muted-small"><i class="bi bi-telephone me-1"></i><span class="mono"><b>{{ persona.telefono }}</b></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 p-4 rounded-4 text-start" style="background:linear-gradient(135deg,#eff6ff,#ecfeff);border:1.5px solid #7dd3fc;">
+    <div class="d-flex align-items-start gap-3">
+      <div style="width:44px;height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 44px;">
+        <span style="font-size:22px;">🎫</span>
+      </div>
+      <div class="flex-grow-1">
+        <div class="fw-bold text-sena-dark mb-1">Descarga tu escarapela de Invitado</div>
+        <div class="muted-small mb-3">
+          Presenta esta credencial en la entrada y al ingresar a cada actividad. También la necesitarás para reclamar tu refrigerio.
+        </div>
+        <a href="{{ url_escarapela }}" target="_blank" rel="noopener" class="btn-sena btn-big d-inline-flex align-items-center gap-2" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9);">
+          <i class="bi bi-download me-1"></i> Descargar escarapela PDF
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
+    <a href="{{ url_form }}" class="btn-outline-sena">
+      ＋ Registrar otro invitado
+    </a>
+    <a href="{% url 'simple:home' %}" class="btn-ghost">
+      ⌂ Ir al inicio
+    </a>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if url_escarapela %}
+<script>
+  setTimeout(function(){
+    try {
+      const w = window.open("{{ url_escarapela|escapejs }}", "_blank", "noopener");
+      if (!w) {
+        // bloqueado - usuario hace clic manual
+      }
+    } catch(_) {}
+  }, 1200);
+</script>
+{% endif %}
+{% endblock %}

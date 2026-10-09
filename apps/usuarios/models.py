@@ -4,12 +4,13 @@ from django.db import models
 
 class Usuario(AbstractUser):
     ROLES_SISTEMA = (
-        ('ADMINISTRADOR', 'Administrador'),
-        ('REGISTRO', 'Registro'),
-        ('OPERADOR_ASISTENCIA', 'Operador de Asistencia'),
-        ('OPERADOR_REFRIGERIO', 'Operador de Refrigerio'),
-        ('OPERADOR_CERTIFICADO', 'Operador de Certificado'),
-        ('CONSULTA', 'Consulta'),
+        ('ADMINISTRADOR', 'Administrador · acceso completo'),
+        ('REGISTRO', 'Registro · proyectos y fichas'),
+        ('GERENTE', 'Gerente · solo Dashboard y reportes'),
+        ('OPERADOR_ASISTENCIA', 'Operador de Asistencia · QR'),
+        ('OPERADOR_REFRIGERIO', 'Operador de Refrigerio · almuerzo'),
+        ('OPERADOR_CERTIFICADO', 'Operador de Certificado · entrega'),
+        ('CONSULTA', 'Consulta · solo lectura'),
     )
 
     email = models.EmailField(unique=True)

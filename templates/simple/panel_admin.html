@@ -138,6 +138,18 @@
         </div>
       </div>
 
+      {% if es_admin_full %}
+      <div class="kpi-card" style="background:linear-gradient(180deg,#fff5f5,#fff);outline:2px solid #fecaca;">
+        <div class="kpi-label" style="color:#991b1b;">👥 GESTIÓN DE USUARIOS · Acceso Administrador</div>
+        <div class="kpi-num" style="color:#dc2626;font-size:1.4rem;">Crear · Editar · Activar · Resetear Pwd</div>
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a class="mini-link text-white" style="background:#b91c1c;" href="{% url 'simple:gestion_usuarios' %}">📋 Ver todos los usuarios</a>
+          <a class="mini-link text-white" style="background:#dc2626;" href="{% url 'simple:crear_usuario' %}">＋ Crear nuevo usuario</a>
+        </div>
+        <div class="muted-small mt-2">⚠️ No hace falta entrar al /admin/ de Django. Todo aquí.</div>
+      </div>
+      {% endif %}
+
       <div class="kpi-card" style="background:linear-gradient(180deg,#f5faff,#fff);">
         <div class="kpi-label">📥 Importar Excel + 🔑 Enlaces</div>
         <div class="d-flex gap-2 mt-2 flex-wrap">
@@ -157,6 +169,14 @@
             <input readonly type="text" class="pub-input flex-grow-1" id="pub-reg-personas" value="{{ enlaces_publicos.registro_personas|default:'⚠ TOKEN_REGISTRO no está en el .env — configúralo para habilitar registro sin login.' }}">
             <button class="btn-copiar btn-ghost" style="min-height:42px;padding:8px 14px;" data-target="pub-reg-personas" type="button">📋 Copiar</button>
           </div>
+        </div>
+        <div class="mt-2">
+          <label class="form-label mb-1" style="font-size:.82rem;">🎟️ Enlace Registro · SOLO INVITADOS (rol bloqueado · correo + teléfono obligatorios)</label>
+          <div class="d-flex gap-2">
+            <input readonly type="text" class="pub-input flex-grow-1" id="pub-reg-invitados" value="{{ enlaces_publicos.registro_invitados|default:'⚠ TOKEN_REGISTRO no está en el .env — configúralo para habilitar registro sin login.' }}" style="background:linear-gradient(180deg,#eff6ff,#ffffff);border:1.5px solid #93c5fd;">
+            <button class="btn-copiar btn-ghost" style="min-height:42px;padding:8px 14px;background:#1d4ed8;color:white;border-color:#1d4ed8;" data-target="pub-reg-invitados" type="button">📋 Copiar</button>
+          </div>
+          <div class="muted-small mt-1">⚠️ Las personas que entren por este enlace quedan registradas SIEMPRE como Invitado. No pueden cambiar de rol.</div>
         </div>
         <div class="mt-2">
           <label class="form-label mb-1" style="font-size:.82rem;">🛠 Enlace Operadores (QR móvil)</label>

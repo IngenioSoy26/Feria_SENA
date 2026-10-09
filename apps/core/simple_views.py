@@ -3,7 +3,7 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
-from django.db import transaction
+from django.db import transaction, models as _models_django
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
@@ -41,6 +41,16 @@ from apps.reportes.services.importacion_excel import (
 import re as _re
 import uuid as _uuid
 from django.db import connection as _conn_db_global
+from django.contrib.auth import get_user_model as _get_user_model
+from apps.usuarios.forms import (
+    UsuarioGestionForm,
+    ResetPasswordUsuarioForm,
+    generar_password_segura,
+)
+try:
+    _UsuarioSistema = _get_user_model()
+except Exception:
+    _UsuarioSistema = None
 
 
 # ============================================================
@@ -124,6 +134,106 @@ class RegistroPersonasPublicoForm(_forms.Form):
         if len(palabras) < 2:
             raise _forms.ValidationError('❌ Escribe nombre(s) y apellido(s). Mínimo 2 palabras.')
         return limpio
+
+
+class RegistroInvitadosPublicoForm(_forms.Form):
+    ROL_SOLO_INVITADO = (('INVITADO', '🎟️ Invitado'),)
+    tipo_identificacion = _forms.ModelChoiceField(
+        label='Tipo de Identificación',
+        queryset=TipoIdentificacion.objects.filter(activo=True).order_by('codigo'),
+        widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
+        required=True,
+    )
+    numero_identificacion = _forms.CharField(
+        label='Número de Identificación',
+        max_length=30,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Solo dígitos · sin puntos ni comas',
+            'autocomplete':'off',
+            'inputmode':'numeric'}),
+        required=True,
+    )
+    nombre_completo = _forms.CharField(
+        label='Nombre completo',
+        max_length=240,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'Primer nombre · Segundo nombre · Primer apellido · Segundo apellido',
+            'autocomplete':'name',
+            'autocapitalize':'words'}),
+        required=True,
+    )
+    tipo_rol = _forms.ChoiceField(
+        label='Tipo de Rol',
+        choices=ROL_SOLO_INVITADO,
+        widget=_forms.Select(attrs={
+            'class':'form-select form-select-lg',
+            'disabled':'disabled',
+            'readonly':'readonly',
+            'title':'Rol pre-definido: Invitado - no modificable'}),
+        required=True,
+    )
+    correo = _forms.EmailField(
+        label='Correo electrónico ⚑ OBLIGATORIO',
+        required=True,
+        widget=_forms.EmailInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'correo@ejemplo.com · OBLIGATORIO',
+            'autocomplete':'email',
+            'inputmode':'email'}),
+    )
+    telefono = _forms.CharField(
+        label='Teléfono / Celular ⚑ OBLIGATORIO',
+        max_length=30,
+        required=True,
+        widget=_forms.TextInput(attrs={
+            'class':'form-control form-control-lg',
+            'placeholder':'3001234567 · OBLIGATORIO · 10 dígitos',
+            'autocomplete':'tel',
+            'inputmode':'tel'}),
+    )
+
+    def clean_numero_identificacion(self):
+        v = (self.cleaned_data.get('numero_identificacion') or '').strip()
+        v = _re.sub(r'[\s\.\,\-\_]', '', v).strip()
+        if not v or not v.isdigit():
+            raise _forms.ValidationError(
+                '❌ El documento debe contener SOLO dígitos. (Sin espacios, puntos, guiones ni comas).'
+            )
+        if len(v) < 5:
+            raise _forms.ValidationError('❌ El documento debe tener al menos 5 dígitos.')
+        return v
+
+    def clean_nombre_completo(self):
+        raw = (self.cleaned_data.get('nombre_completo') or '').strip()
+        if not raw or len(raw) < 5:
+            raise _forms.ValidationError('❌ Escribe el nombre completo (mínimo 5 caracteres).')
+        limpio = _re.sub(r'\s+', ' ', raw).strip()
+        palabras = [p for p in limpio.split(' ') if p]
+        if len(palabras) < 2:
+            raise _forms.ValidationError('❌ Escribe nombre(s) y apellido(s). Mínimo 2 palabras.')
+        return limpio
+
+    def clean_correo(self):
+        v = (self.cleaned_data.get('correo') or '').strip().lower()
+        if not v:
+            raise _forms.ValidationError('❌ El correo electrónico es OBLIGATORIO.')
+        if '@' not in v or '.' not in v:
+            raise _forms.ValidationError('❌ Correo inválido. Debe contener @ y un dominio (ej: @correo.com).')
+        return v
+
+    def clean_telefono(self):
+        v = (self.cleaned_data.get('telefono') or '').strip()
+        v_limpio = _re.sub(r'[\s\.\,\-\_\(\)\+]', '', v).strip()
+        if not v_limpio or not v_limpio.isdigit():
+            raise _forms.ValidationError('❌ El teléfono es OBLIGATORIO y solo debe contener dígitos.')
+        if len(v_limpio) < 7:
+            raise _forms.ValidationError('❌ El teléfono debe tener al menos 7 dígitos.')
+        return v_limpio
+
+    def clean_tipo_rol(self):
+        return 'INVITADO'
 
 
 def _split_nombre_apellidos(nombre_completo):
@@ -243,7 +353,43 @@ def _servicio_almuerzo(evento):
 def _es_admin(request):
     if not request.user or not request.user.is_authenticated:
         return False
-    return request.user.is_superuser or request.user.groups.filter(name__in=['ADMINISTRADOR', 'REGISTRO']).exists()
+    if getattr(request.user, 'is_superuser', False):
+        return True
+    try:
+        rol_user = str(getattr(request.user, 'rol_sistema', '') or '').strip().upper()
+        if rol_user in {'ADMINISTRADOR', 'REGISTRO'}:
+            return True
+    except Exception:
+        pass
+    try:
+        if request.user.groups.filter(name__in=['ADMINISTRADOR', 'REGISTRO']).exists():
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _tiene_rol_usuario(request, roles_permitidos):
+    if not request.user or not request.user.is_authenticated:
+        return False
+    if getattr(request.user, 'is_superuser', False):
+        return True
+    if isinstance(roles_permitidos, str):
+        roles_permitidos = {roles_permitidos}
+    else:
+        roles_permitidos = set(str(r).upper() for r in roles_permitidos)
+    try:
+        rol_user = str(getattr(request.user, 'rol_sistema', '') or '').strip().upper()
+        if rol_user in roles_permitidos:
+            return True
+    except Exception:
+        pass
+    try:
+        if request.user.groups.filter(name__in=list(roles_permitidos)).exists():
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def _organizadores_count_safe() -> int:
@@ -416,14 +562,24 @@ class HomeSimpleView(LoginRequiredMixin, View):
         enlaces = {
             'registro': f"{base}/r/{t_r}/registro/" if t_r else None,
             'registro_personas': f"{base}/r/{t_r}/registro/personas/" if t_r else None,
+            'registro_invitados': f"{base}/r/{t_r}/registro/invitados/" if t_r else None,
             'op_asistencia': f"{base}/o/{t_o}/asistencia/" if t_o else None,
             'op_refrigerios': f"{base}/o/{t_o}/refrigerios/" if t_o else None,
             'op_certificados': f"{base}/o/{t_o}/certificados/" if t_o else None,
         }
+        rol_usuario = str(getattr(request.user, 'rol_sistema', '') or '').strip().upper()
         return render(request, 'simple/home.html', {
             'evento': evento,
             'es_admin': es_admin,
             'enlaces_publicos': enlaces,
+            'rol_usuario': rol_usuario,
+            'es_admin_full': _tiene_rol_usuario(request, 'ADMINISTRADOR'),
+            'es_registro': _tiene_rol_usuario(request, 'REGISTRO'),
+            'es_gerente': _tiene_rol_usuario(request, 'GERENTE'),
+            'es_op_asistencia': _tiene_rol_usuario(request, 'OPERADOR_ASISTENCIA'),
+            'es_op_refrigerio': _tiene_rol_usuario(request, 'OPERADOR_REFRIGERIO'),
+            'es_op_certificado': _tiene_rol_usuario(request, 'OPERADOR_CERTIFICADO'),
+            'es_consulta': _tiene_rol_usuario(request, 'CONSULTA'),
         })
 
 
@@ -473,6 +629,7 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
         enlaces = {
             'registro': f"{base}/r/{t_r}/registro/" if t_r else None,
             'registro_personas': f"{base}/r/{t_r}/registro/personas/" if t_r else None,
+            'registro_invitados': f"{base}/r/{t_r}/registro/invitados/" if t_r else None,
             'op_asistencia': f"{base}/o/{t_o}/asistencia/" if t_o else None,
             'op_refrigerios': f"{base}/o/{t_o}/refrigerios/" if t_o else None,
             'op_certificados': f"{base}/o/{t_o}/certificados/" if t_o else None,
@@ -484,6 +641,9 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
             'enlaces_publicos': enlaces,
             't_r': t_r,
             't_o': t_o,
+            'es_admin_full': _tiene_rol_usuario(request, 'ADMINISTRADOR'),
+            'es_registro': _tiene_rol_usuario(request, 'REGISTRO'),
+            'rol_usuario': str(getattr(request.user, 'rol_sistema', '') or '').strip().upper(),
         })
 
 
@@ -1629,6 +1789,122 @@ class RegistroPersonasGraciasView(View):
         })
 
 
+class RegistroInvitadosPublicView(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+    template_name = 'simple/registro_invitados.html'
+    modo = 'registro'
+
+    def dispatch(self, request, *args, **kwargs):
+        resp = _solicitar_login_o_token(request, 'registro')
+        if resp is not None:
+            return resp
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, **_ignorado):
+        evento = _evento_activo()
+        try:
+            inicial_ti = TipoIdentificacion.objects.filter(activo=True, codigo='CC').first()
+        except Exception:
+            inicial_ti = None
+        f = RegistroInvitadosPublicoForm(
+            initial={'tipo_identificacion': inicial_ti, 'tipo_rol': 'INVITADO'} if inicial_ti else {'tipo_rol': 'INVITADO'}
+        )
+        t_r = settings.TOKEN_REGISTRO_PUBLICO or ''
+        base = request.build_absolute_uri('/').rstrip('/')
+        url_reg_invitados = f"{base}/r/{t_r}/registro/invitados/" if t_r else reverse('simple:registro_invitados')
+        return render(request, self.template_name, {
+            'evento': evento,
+            'form': f,
+            'token_registro': t_r,
+            'url_registro_invitados': url_reg_invitados,
+        })
+
+    def post(self, request, **_ignorado):
+        evento = _evento_activo()
+        form = RegistroInvitadosPublicoForm(request.POST or None)
+        t_r = settings.TOKEN_REGISTRO_PUBLICO or ''
+        base = request.build_absolute_uri('/').rstrip('/')
+        url_reg_invitados = f"{base}/r/{t_r}/registro/invitados/" if t_r else reverse('simple:registro_invitados')
+        if not form.is_valid():
+            return render(request, self.template_name, {
+                'evento': evento,
+                'form': form,
+                'token_registro': t_r,
+                'url_registro_invitados': url_reg_invitados,
+            })
+        datos = dict(form.cleaned_data)
+        datos['tipo_rol'] = 'INVITADO'
+        try:
+            persona, created, warns = guardar_persona_publica(
+                datos,
+                creado_por=(request.user if request.user.is_authenticated else None),
+            )
+        except Exception as err:
+            form.add_error(None, f'❌ Error guardando los datos: {err}')
+            return render(request, self.template_name, {
+                'evento': evento,
+                'form': form,
+                'token_registro': t_r,
+                'url_registro_invitados': url_reg_invitados,
+            })
+        for w in warns:
+            messages.warning(request, w)
+        if created:
+            messages.success(request, f'✅ Invitado registrado correctamente. ¡Gracias por asistir!')
+        else:
+            messages.info(request, 'ℹ️ El documento del invitado ya estaba registrado. Se actualizaron los datos.')
+        if t_r:
+            url_gracias = reverse('simple:public_registro_invitados_gracias', kwargs={
+                'token_registro': t_r, 'pk': persona.pk,
+            })
+        else:
+            url_gracias = reverse('simple:registro_invitados_gracias', kwargs={'pk': persona.pk})
+        return HttpResponseRedirect(url_gracias)
+
+
+class RegistroInvitadosGraciasView(View):
+    roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
+    template_name = 'simple/registro_invitados_gracias.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        t_url = kwargs.get('token_registro')
+        if not t_url:
+            auth_resp = _solicitar_login_o_token(request, 'registro')
+            if auth_resp is not None:
+                return auth_resp
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, pk, **kwargs):
+        evento = _evento_activo()
+        persona = get_object_or_404(Persona, pk=pk)
+        t_r = kwargs.get('token_registro') or settings.TOKEN_REGISTRO_PUBLICO or ''
+        if t_r:
+            url_escarapela = reverse(
+                'simple:public_escarapela',
+                kwargs={'token_registro': t_r, 'persona_id': persona.pk},
+            )
+            url_form = reverse('simple:public_registro_invitados', kwargs={'token_registro': t_r})
+        else:
+            url_escarapela = reverse('simple:escarapela_persona', kwargs={'persona_id': persona.pk})
+            url_form = reverse('simple:registro_invitados')
+        rol_display = dict(Persona.TIPOS).get(persona.tipo_persona, persona.tipo_persona)
+        rol_pill_cls = {
+            'APRENDIZ': 'bg-verde-claro text-white',
+            'INSTRUCTOR': 'bg-naranja text-white',
+            'INVITADO': 'bg-azul-o text-white',
+            'ORGANIZADOR': 'bg-azul text-white',
+        }.get(persona.tipo_persona, 'bg-gray-600 text-white')
+        return render(request, self.template_name, {
+            'evento': evento,
+            'persona': persona,
+            'rol_display': rol_display,
+            'rol_pill_cls': rol_pill_cls,
+            'url_escarapela': url_escarapela,
+            'url_form': url_form,
+            'token_registro': t_r,
+        })
+
+
 TIPOS_IMPORTACION_LABELS = {
     'instituciones': '🏫 Instituciones Educativas',
     'programas': '📚 Programas Técnicos',
@@ -1764,3 +2040,164 @@ class ImportadorExcelView(LoginRequiredMixin, RoleRequiredMixin, View):
 
         messages.error(request, 'Acción no reconocida.')
         return redirect('simple:importador_excel')
+
+
+# ============================================================
+# GESTIÓN DE USUARIOS — solo ADMINISTRADOR (fuera de Django Admin)
+# ============================================================
+_ROL_STYLES = {
+    'ADMINISTRADOR': 'bg-red-600 text-white',
+    'REGISTRO': 'bg-verde text-white',
+    'GERENTE': 'bg-purpura text-white',
+    'OPERADOR_ASISTENCIA': 'bg-verde-claro text-white',
+    'OPERADOR_REFRIGERIO': 'bg-naranja text-white',
+    'OPERADOR_CERTIFICADO': 'bg-azul-o text-white',
+    'CONSULTA': 'bg-gris text-white',
+}
+_ROL_ICON = {
+    'ADMINISTRADOR': '🛡',
+    'REGISTRO': '📝',
+    'GERENTE': '📊',
+    'OPERADOR_ASISTENCIA': '✅',
+    'OPERADOR_REFRIGERIO': '🍱',
+    'OPERADOR_CERTIFICADO': '📜',
+    'CONSULTA': '🔍',
+}
+
+
+class GestionUsuariosView(LoginRequiredMixin, RoleRequiredMixin, View):
+    roles_requeridos = ['ADMINISTRADOR']
+    template_name = 'simple/gestion_usuarios.html'
+
+    def get(self, request, **_):
+        Usu = _UsuarioSistema
+        qs = Usu.objects.order_by('-activo', 'rol_sistema', 'apellidos', 'nombres')
+        filtro_rol = (request.GET.get('rol') or '').strip().upper()
+        filtro_texto = (request.GET.get('q') or '').strip()
+        if filtro_rol:
+            qs = qs.filter(rol_sistema=filtro_rol)
+        if filtro_texto:
+            qs = qs.filter(
+                _models_django.Q(username__icontains=filtro_texto)
+                | _models_django.Q(nombres__icontains=filtro_texto)
+                | _models_django.Q(apellidos__icontains=filtro_texto)
+                | _models_django.Q(email__icontains=filtro_texto)
+            )
+        usuarios = list(qs)
+        total = _UsuarioSistema.objects.count()
+        activos = _UsuarioSistema.objects.filter(activo=True).count()
+        inactivos = max(total - activos, 0)
+        conteo_por_rol = {}
+        for r, _ in (_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else []):
+            conteo_por_rol[r] = _UsuarioSistema.objects.filter(rol_sistema=r).count()
+        roles_labels = dict(_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else [])
+        roles_opts_base = [('', 'Todos los roles')] + list(
+            (_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else [])
+        )
+        roles_opts_con_conteo = []
+        for codigo, label in roles_opts_base:
+            if codigo:
+                roles_opts_con_conteo.append((codigo, label, conteo_por_rol.get(codigo, 0)))
+        ctx = {
+            'usuarios': usuarios,
+            'total': total,
+            'activos': activos,
+            'inactivos': inactivos,
+            'conteo_por_rol': conteo_por_rol,
+            'roles_labels': roles_labels,
+            'roles_opts': roles_opts_base,
+            'roles_opts_con_conteo': roles_opts_con_conteo,
+            'filtro_rol': filtro_rol,
+            'filtro_texto': filtro_texto,
+            'rol_styles': _ROL_STYLES,
+            'rol_icon': _ROL_ICON,
+        }
+        return render(request, self.template_name, ctx)
+
+
+class CrearEditarUsuarioView(LoginRequiredMixin, RoleRequiredMixin, View):
+    roles_requeridos = ['ADMINISTRADOR']
+    template_name = 'simple/form_usuario.html'
+
+    def _get_usuario(self, pk):
+        if pk:
+            return get_object_or_404(_UsuarioSistema, pk=pk)
+        return None
+
+    def get(self, request, pk=None, **_):
+        usuario = self._get_usuario(pk)
+        form = UsuarioGestionForm(instance=usuario)
+        return render(request, self.template_name, {
+            'form': form,
+            'usuario': usuario,
+            'es_nuevo': not usuario,
+        })
+
+    def post(self, request, pk=None, **_):
+        usuario = self._get_usuario(pk)
+        form = UsuarioGestionForm(request.POST or None, instance=usuario)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    user_guardado = form.save(commit=True)
+                    pwd_generada = getattr(user_guardado, '_password_generada', None) or form.cleaned_data.get('_password_generada')
+            except Exception as e:
+                form.add_error(None, f'❌ Error guardando el usuario: {e}')
+                return render(request, self.template_name, {
+                    'form': form, 'usuario': usuario, 'es_nuevo': not usuario,
+                })
+            if usuario:
+                messages.success(request, f'✅ Usuario actualizado correctamente: @{user_guardado.username}')
+            else:
+                msgs = [f'✅ Usuario creado correctamente: @{user_guardado.username}']
+                if pwd_generada:
+                    msgs.append(f'🔐 Usuario: <b>{user_guardado.username}</b> | Password: <b class="text-sena">{pwd_generada}</b>')
+                    messages.success(request, ' · '.join(msgs))
+                else:
+                    messages.success(request, msgs[0])
+            return redirect('simple:gestion_usuarios')
+        return render(request, self.template_name, {
+            'form': form, 'usuario': usuario, 'es_nuevo': not usuario,
+        })
+
+
+class ToggleUsuarioActivoView(LoginRequiredMixin, RoleRequiredMixin, View):
+    roles_requeridos = ['ADMINISTRADOR']
+
+    def post(self, request, pk, **_):
+        u = get_object_or_404(_UsuarioSistema, pk=pk)
+        if u.pk == getattr(request.user, 'pk', None):
+            messages.warning(request, '⚠ No puedes desactivarte a ti mismo.')
+            return redirect('simple:gestion_usuarios')
+        u.activo = not u.activo
+        u.is_active = u.activo
+        u.save(update_fields=['activo', 'is_active'])
+        if u.activo:
+            messages.success(request, f'✅ Usuario @{u.username} ACTIVADO.')
+        else:
+            messages.warning(request, f'⚠ Usuario @{u.username} INACTIVADO (no podrá iniciar sesión).')
+        return redirect('simple:gestion_usuarios')
+
+
+class ResetPasswordUsuarioView(LoginRequiredMixin, RoleRequiredMixin, View):
+    roles_requeridos = ['ADMINISTRADOR']
+    template_name = 'simple/reset_password_usuario.html'
+
+    def get(self, request, pk, **_):
+        u = get_object_or_404(_UsuarioSistema, pk=pk)
+        form = ResetPasswordUsuarioForm()
+        return render(request, self.template_name, {'form': form, 'usuario': u})
+
+    def post(self, request, pk, **_):
+        u = get_object_or_404(_UsuarioSistema, pk=pk)
+        form = ResetPasswordUsuarioForm(request.POST or None)
+        if form.is_valid():
+            pwd = form.cleaned_data['_password_generada']
+            u.set_password(pwd)
+            u.save(update_fields=['password'])
+            messages.success(
+                request,
+                f'🔐 Contraseña reseteada para <b>@{u.username}</b> · <b>Nueva contraseña</b>: <span class="badge text-bg-success px-3 py-2" style="font-size:1.02rem;">{pwd}</span>'
+            )
+            return redirect('simple:gestion_usuarios')
+        return render(request, self.template_name, {'form': form, 'usuario': u})

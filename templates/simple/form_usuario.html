@@ -1,0 +1,148 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}{% if es_nuevo %}Nuevo Usuario{% else %}Editar Usuario{% endif %} · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="glass-card" style="max-width:860px;margin:0 auto;">
+  <div class="d-flex align-items-start gap-3 mb-4">
+    <div class="ico-big d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#ecfeff,#bae6fd);color:#0c4a6e;">
+      <span style="font-size:30px;">{% if es_nuevo %}＋👤{% else %}✏️{% endif %}</span>
+    </div>
+    <div class="flex-grow-1">
+      <h3 class="card-title mb-0">
+        {% if es_nuevo %}Crear Nuevo Usuario{% else %}Editar Usuario · @{{ usuario.username }}{% endif %}
+      </h3>
+      <small class="muted-small">
+        Define un rol según la actividad que va a realizar en el aplicativo.
+      </small>
+    </div>
+  </div>
+
+  {% if form.errors %}
+    <div class="alert alert-danger border-0 rounded-4 shadow-sm">
+      <b>❌ Corrige los siguientes errores:</b>
+      <ul class="mb-0 mt-2">
+        {% for field, errors in form.errors.items %}{% for err in errors %}
+        <li>{% if field != '__all__' %}<b>{{ field }}</b> · {% endif %}{{ err }}</li>
+        {% endfor %}{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="form-card">
+      <h5 class="mb-3 text-sena-dark">
+        {% if es_nuevo %}📝 Datos básicos del nuevo usuario{% else %}📝 Modificar datos del usuario{% endif %}
+      </h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label">Username · login <span class="req">*</span></label>
+          {{ form.username }}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Nombres <span class="req">*</span></label>
+          {{ form.nombres }}
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Apellidos <span class="req">*</span></label>
+          {{ form.apellidos }}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Correo electrónico <span class="req">*</span></label>
+          {{ form.email }}
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Rol en el sistema <span class="req">*</span></label>
+          {{ form.rol_sistema }}
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="form-check mt-4">
+            {{ form.activo }}
+            <label class="form-check-label ms-1 fw-bold text-sena-dark" for="id_activo">Usuario ACTIVO (puede iniciar sesión)</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card mt-4" style="background:linear-gradient(180deg,#f0fdf4,#ffffff);">
+      <h5 class="mb-3 text-sena-dark">🔐 Credenciales de ingreso</h5>
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+          <div class="form-check">
+            {{ form.password_auto }}
+            <label class="form-check-label ms-1 fw-bold text-sena-dark" for="id_password_auto">{{ form.password_auto.label }}</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-7">
+          <label class="form-label">{{ form.password_manual.label }}</label>
+          {{ form.password_manual }}
+          {% if es_nuevo %}<small class="muted-small d-block mt-1">· Si activaste "generar automáticamente", puedes dejar esto vacío.</small>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <a href="{% url 'simple:gestion_usuarios' %}" class="btn-ghost">← Volver a la lista</a>
+      <button class="btn-sena btn-big" type="submit" style="min-height:50px;">
+        💾 {% if es_nuevo %}Crear usuario y mostrar contraseña{% else %}Guardar cambios{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  // Sincronizar checkbox password_auto con el campo manual disabled
+  const chk = document.getElementById('id_password_auto');
+  const pw = document.getElementById('id_password_manual');
+  function sync(){
+    if (!chk || !pw) return;
+    if (chk.checked) {
+      pw.disabled = true;
+      pw.value = '';
+      pw.style.background = '#f3f4f6';
+      pw.style.opacity = '0.7';
+    } else {
+      pw.disabled = false;
+      pw.style.background = '';
+      pw.style.opacity = '1';
+      try { pw.focus(); } catch(_){}
+    }
+  }
+  if (chk) chk.addEventListener('change', sync);
+  sync();
+
+  // Sugerir username a partir de nombres y apellidos (solo si es nuevo y está vacío)
+  {% if es_nuevo %}
+  const nombres = document.querySelector('[name="nombres"]');
+  const apellidos = document.querySelector('[name="apellidos"]');
+  const username = document.querySelector('[name="username"]');
+  function sugerir(){
+    try {
+      if (username.dataset.editado === '1') return;
+      const n = (nombres.value || '').trim().toLowerCase().split(/\s+/)[0] || '';
+      const a = (apellidos.value || '').trim().toLowerCase().split(/\s+/)[0] || '';
+      if (n && a) {
+        const sug = (n.charAt(0) + a).replace(/[^a-z0-9]/gi,'').replace(/_{2,}/g,'_');
+        if (sug.length >= 4) username.value = sug;
+      } else if (n && !a) {
+        username.value = n.replace(/[^a-z0-9]/gi,'');
+      }
+    } catch(_){}
+  }
+  if (nombres && apellidos && username){
+    nombres.addEventListener('change', sugerir);
+    nombres.addEventListener('blur', sugerir);
+    apellidos.addEventListener('change', sugerir);
+    apellidos.addEventListener('blur', sugerir);
+    username.addEventListener('input', function(){ this.dataset.editado = '1'; });
+  }
+  {% endif %}
+})();
+</script>
+{% endblock %}
