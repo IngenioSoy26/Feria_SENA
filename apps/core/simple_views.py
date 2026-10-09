@@ -1920,49 +1920,74 @@ class DashboardSimpleView(LoginRequiredMixin, View):
                 else: estado_evento = 'EN_CURSO'
 
         actividad = []
-        qs_actividad = (
-            (qs_asistencia.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombres','persona__apellidos','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='ASISTENCIA').order_by('-entrega')[:5]) |
-            (qs_refrigerios.annotate(entrega=F('fecha_hora')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombres','persona__apellidos','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='REFRIGERIO').order_by('-entrega')[:5]) |
-            (qs_certificados.annotate(entrega=F('fecha_hora_entrega')).values('pk','entrega','medio','persona__numero_identificacion','persona__nombres','persona__apellidos','persona__tipo_persona','operador__first_name','operador__last_name','operador__rol_sistema').annotate(tipo_registro='CERTIFICADO').order_by('-entrega')[:5])
-        )
         try:
-            actividad = sorted(list(qs_actividad), key=lambda r: (r.get('entrega') or r.get('fecha_hora_entrega') or r.get('fecha_hora')), reverse=True)[:15]
+            for obj in qs_asistencia.order_by('-fecha_hora')[:5]:
+                p = obj.persona
+                op = obj.operador
+                actividad.append({
+                    'entrega': obj.fecha_hora,
+                    'tipo': 'ASISTENCIA',
+                    'doc': getattr(p, 'numero_identificacion', '') or '',
+                    'nombres': getattr(p, 'nombres', '') or '',
+                    'apellidos': getattr(p, 'apellidos', '') or '',
+                    'rol': getattr(p, 'tipo_persona', '') or '',
+                    'medio': (getattr(obj, 'medio', '') or '').strip(),
+                    'op_nom': (getattr(op, 'first_name', '') or '').strip() + ' ' + (getattr(op, 'last_name', '') or '').strip(),
+                    'op_rol': (getattr(op, 'rol_sistema', '') or '').strip(),
+                })
+            for obj in qs_refrigerios.order_by('-fecha_hora')[:5]:
+                p = obj.persona
+                op = obj.operador
+                actividad.append({
+                    'entrega': obj.fecha_hora,
+                    'tipo': 'REFRIGERIO',
+                    'doc': getattr(p, 'numero_identificacion', '') or '',
+                    'nombres': getattr(p, 'nombres', '') or '',
+                    'apellidos': getattr(p, 'apellidos', '') or '',
+                    'rol': getattr(p, 'tipo_persona', '') or '',
+                    'medio': (getattr(obj, 'medio', '') or '').strip(),
+                    'op_nom': (getattr(op, 'first_name', '') or '').strip() + ' ' + (getattr(op, 'last_name', '') or '').strip(),
+                    'op_rol': (getattr(op, 'rol_sistema', '') or '').strip(),
+                })
+            for obj in qs_certificados.order_by('-fecha_hora_entrega')[:5]:
+                p = obj.persona
+                op = obj.operador
+                actividad.append({
+                    'entrega': obj.fecha_hora_entrega,
+                    'tipo': 'CERTIFICADO',
+                    'doc': getattr(p, 'numero_identificacion', '') or '',
+                    'nombres': getattr(p, 'nombres', '') or '',
+                    'apellidos': getattr(p, 'apellidos', '') or '',
+                    'rol': getattr(p, 'tipo_persona', '') or '',
+                    'medio': (getattr(obj, 'medio', '') or '').strip(),
+                    'op_nom': (getattr(op, 'first_name', '') or '').strip() + ' ' + (getattr(op, 'last_name', '') or '').strip(),
+                    'op_rol': (getattr(op, 'rol_sistema', '') or '').strip(),
+                })
+            actividad.sort(key=lambda r: r.get('entrega') or timezone.now(), reverse=True)
+            actividad = actividad[:15]
         except Exception:
             actividad = []
 
-        def _hora(reg):
-            f = reg.get('entrega') or reg.get('fecha_hora_entrega') or reg.get('fecha_hora')
-            if not f: return '—'
-            try:
-                return timezone.localtime(f).strftime('%H:%M')
-            except Exception:
-                return str(f)[11:16]
-        def _oper(reg):
-            n = (reg.get('operador__first_name') or '') + ' ' + (reg.get('operador__last_name') or '')
-            n = n.strip() or '—'
-            r = (reg.get('operador__rol_sistema') or '').strip()
-            if r:
-                return f"{n} · [{r}]"
-            return n
-        def _nombre(reg):
-            n = f"{reg.get('persona__nombres') or ''} {reg.get('persona__apellidos') or ''}".strip()
-            return n or '—'
-        def _doc(reg):
-            return (reg.get('persona__numero_identificacion') or '').strip() or '—'
-        def _rol(reg):
-            return (reg.get('persona__tipo_persona') or '').strip() or '—'
-        def _medio(reg):
-            return (reg.get('medio') or '').strip() or '—'
         actividad_formateada = []
         for r in actividad:
+            f = r.get('entrega')
+            if f:
+                try: hora = timezone.localtime(f).strftime('%H:%M')
+                except Exception: hora = str(f)[11:16]
+            else:
+                hora = '—'
+            op_nom = (r.get('op_nom') or '').strip() or '—'
+            op_rol = (r.get('op_rol') or '').strip()
+            operador = f"{op_nom} · [{op_rol}]" if op_rol else op_nom
+            nombre = f"{r.get('nombres') or ''} {r.get('apellidos') or ''}".strip() or '—'
             actividad_formateada.append({
-                'tipo': (r.get('tipo_registro') or '').strip() or '—',
-                'hora': _hora(r),
-                'doc': _doc(r),
-                'nombre': _nombre(r),
-                'rol': _rol(r),
-                'medio': _medio(r),
-                'operador': _oper(r),
+                'tipo': (r.get('tipo') or '').strip() or '—',
+                'hora': hora,
+                'doc': (r.get('doc') or '').strip() or '—',
+                'nombre': nombre,
+                'rol': (r.get('rol') or '').strip() or '—',
+                'medio': (r.get('medio') or '').strip() or '—',
+                'operador': operador,
             })
 
         return render(request, 'simple/dashboard.html', {
