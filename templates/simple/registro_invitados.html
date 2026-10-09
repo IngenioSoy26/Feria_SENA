@@ -1,8 +1,22 @@
 {% extends "simple/base_simple.html" %}
 {% load static %}
-{% block titulo %}Registro de Invitados · Feria SENA{% endblock %}
+{% block titulo %}Registro de Invitados · {{ evento.nombre|default:"Feria SENA" }}{% endblock %}
 
 {% block navegacion %}{% endblock %}
+
+<header class="nav-sena navbar text-white sticky-top">
+  <div class="container-fluid">
+    <div class="navbar-brand text-white fw-bold d-flex align-items-center gap-3" style="cursor:default;">
+      <span class="logo-sena-pill" aria-hidden="true" style="background:#fff;">
+        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;display:block;">
+      </span>
+      <div class="lh-sm text-start">
+        <div class="fs-5 mb-0">SENA</div>
+        <small class="fw-normal opacity-90" style="font-size:.78rem;letter-spacing:.01em;">{{ evento.nombre|default:"Feria Proyectos Productivos 2026" }}</small>
+      </div>
+    </div>
+  </div>
+</header>
 
 {% block contenido %}
 
