@@ -22,7 +22,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'csp',
-    'apps.core',
     'apps.usuarios',
     'apps.eventos',
     'apps.instituciones',
@@ -39,6 +38,7 @@ INSTALLED_APPS = [
     'apps.dashboard',
     'apps.reportes',
     'apps.auditoria',
+    'apps.core',
 ]
 
 MIDDLEWARE = [
