@@ -72,7 +72,10 @@ class PersonaCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
         from apps.instructores.models import Instructor
         from apps.invitados.models import Invitado
         from apps.proyectos.models import Aprendiz
-        from apps.organizadores.models import Organizador
+        try:
+            from apps.organizadores.models import Organizador as _Organizador_cls
+        except Exception:
+            _Organizador_cls = None
 
         if tipo == 'INSTRUCTOR':
             programas = form.cleaned_data.get('programas', [])
@@ -96,14 +99,20 @@ class PersonaCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
             )
             messages.info(self.request, 'Perfil de Invitado creado correctamente.')
 
-        elif tipo == 'ORGANIZADOR':
+        elif tipo == 'ORGANIZADOR' and _Organizador_cls is not None:
             cargo = form.cleaned_data.get('cargo_organizador') or None
             area = form.cleaned_data.get('area_organizador') or None
-            Organizador.objects.update_or_create(
-                persona=self.object,
-                defaults={'cargo': cargo, 'area_responsabilidad': area, 'activo': True},
-            )
-            messages.info(self.request, 'Perfil de Organizador creado correctamente.')
+            try:
+                _Organizador_cls.objects.update_or_create(
+                    persona=self.object,
+                    defaults={'cargo': cargo, 'area_responsabilidad': area, 'activo': True},
+                )
+                messages.info(self.request, 'Perfil de Organizador creado correctamente.')
+            except Exception as err:
+                messages.warning(
+                    self.request,
+                    f'Perfil Organizador: no se pudo crear (¿migración pendiente?). Detalle: {err}',
+                )
 
         elif tipo == 'APRENDIZ':
             proyecto = form.cleaned_data.get('proyecto')
@@ -145,7 +154,6 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         from apps.instructores.models import Instructor
         from apps.invitados.models import Invitado
         from apps.proyectos.models import Aprendiz
-        from apps.organizadores.models import Organizador
 
         if hasattr(persona, 'perfil_instructor'):
             initial['programas'] = persona.perfil_instructor.programas.values_list('pk', flat=True)
@@ -155,9 +163,12 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         if hasattr(persona, 'perfil_aprendiz'):
             initial['proyecto'] = persona.perfil_aprendiz.proyecto_id
             initial['grado'] = persona.perfil_aprendiz.grado
-        if hasattr(persona, 'perfil_organizador'):
-            initial['cargo_organizador'] = persona.perfil_organizador.cargo
-            initial['area_organizador'] = persona.perfil_organizador.area_responsabilidad
+        try:
+            if hasattr(persona, 'perfil_organizador'):
+                initial['cargo_organizador'] = persona.perfil_organizador.cargo
+                initial['area_organizador'] = persona.perfil_organizador.area_responsabilidad
+        except Exception:
+            pass
         return initial
 
     @transaction.atomic
@@ -173,7 +184,10 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         from apps.instructores.models import Instructor
         from apps.invitados.models import Invitado
         from apps.proyectos.models import Aprendiz
-        from apps.organizadores.models import Organizador
+        try:
+            from apps.organizadores.models import Organizador as _Organizador_cls
+        except Exception:
+            _Organizador_cls = None
 
         if tipo == 'INSTRUCTOR':
             programas = form.cleaned_data.get('programas', [])
@@ -193,15 +207,21 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
                 },
             )
 
-        elif tipo == 'ORGANIZADOR':
-            Organizador.objects.update_or_create(
-                persona=self.object,
-                defaults={
-                    'cargo': form.cleaned_data.get('cargo_organizador') or None,
-                    'area_responsabilidad': form.cleaned_data.get('area_organizador') or None,
-                    'activo': True,
-                },
-            )
+        elif tipo == 'ORGANIZADOR' and _Organizador_cls is not None:
+            try:
+                _Organizador_cls.objects.update_or_create(
+                    persona=self.object,
+                    defaults={
+                        'cargo': form.cleaned_data.get('cargo_organizador') or None,
+                        'area_responsabilidad': form.cleaned_data.get('area_organizador') or None,
+                        'activo': True,
+                    },
+                )
+            except Exception as err:
+                messages.warning(
+                    self.request,
+                    f'Perfil Organizador: no se pudo actualizar (¿migración pendiente?). Detalle: {err}',
+                )
 
         elif tipo == 'APRENDIZ':
             proyecto = form.cleaned_data.get('proyecto')

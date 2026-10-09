@@ -18,29 +18,35 @@ class OrganizadorListView(LoginRequiredMixin, RoleRequiredMixin, ListView):
     roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related(
-            'persona', 'persona__tipo_identificacion'
-        )
-        q = self.request.GET.get('q', '').strip()
-        activo = self.request.GET.get('activo', '')
-        if q:
-            qs = qs.filter(
-                Q(persona__nombres__icontains=q)
-                | Q(persona__apellidos__icontains=q)
-                | Q(persona__numero_identificacion__icontains=q)
-                | Q(persona__correo__icontains=q)
-                | Q(cargo__icontains=q)
-                | Q(area_responsabilidad__icontains=q)
+        try:
+            qs = super().get_queryset().select_related(
+                'persona', 'persona__tipo_identificacion'
             )
-        if activo in ('1', '0'):
-            qs = qs.filter(activo=(activo == '1'))
-        return qs.order_by('persona__apellidos', 'persona__nombres')
+            q = self.request.GET.get('q', '').strip()
+            activo = self.request.GET.get('activo', '')
+            if q:
+                qs = qs.filter(
+                    Q(persona__nombres__icontains=q)
+                    | Q(persona__apellidos__icontains=q)
+                    | Q(persona__numero_identificacion__icontains=q)
+                    | Q(persona__correo__icontains=q)
+                    | Q(cargo__icontains=q)
+                    | Q(area_responsabilidad__icontains=q)
+                )
+            if activo in ('1', '0'):
+                qs = qs.filter(activo=(activo == '1'))
+            return qs.order_by('persona__apellidos', 'persona__nombres')
+        except Exception:
+            return Organizador.objects.none()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['q'] = self.request.GET.get('q', '')
         ctx['activo'] = self.request.GET.get('activo', '')
-        ctx['total'] = self.get_queryset().count()
+        try:
+            ctx['total'] = self.get_queryset().count()
+        except Exception:
+            ctx['total'] = 0
         return ctx
 
 
@@ -51,7 +57,10 @@ class OrganizadorDetailView(LoginRequiredMixin, RoleRequiredMixin, DetailView):
     roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
 
     def get_queryset(self):
-        return super().get_queryset().select_related('persona', 'persona__tipo_identificacion')
+        try:
+            return super().get_queryset().select_related('persona', 'persona__tipo_identificacion')
+        except Exception:
+            return Organizador.objects.none()
 
 
 class OrganizadorCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
@@ -84,13 +93,19 @@ class OrganizadorCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
         return redirect(self.success_url)
 
     def _crear_perfil_organizador(self, form):
-        Organizador.objects.get_or_create(
-            persona=self.object,
-            defaults={
-                'cargo': form.cleaned_data.get('cargo_organizador') or None,
-                'area_responsabilidad': form.cleaned_data.get('area_organizador') or None,
-            },
-        )
+        try:
+            Organizador.objects.get_or_create(
+                persona=self.object,
+                defaults={
+                    'cargo': form.cleaned_data.get('cargo_organizador') or None,
+                    'area_responsabilidad': form.cleaned_data.get('area_organizador') or None,
+                },
+            )
+        except Exception as err:
+            messages.warning(
+                self.request,
+                f'Perfil Organizador: no se pudo crear (¿migración pendiente?). Detalle: {err}',
+            )
 
 
 class OrganizadorUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
@@ -101,18 +116,24 @@ class OrganizadorUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
     roles_requeridos = ['ADMINISTRADOR', 'REGISTRO']
 
     def get_object(self, queryset=None):
-        org = super().get_object(queryset)
-        return org.persona
+        try:
+            org = super().get_object(queryset)
+            return org.persona
+        except Exception:
+            return None
 
     def get_initial(self):
         initial = super().get_initial()
         initial['tipo_persona'] = 'ORGANIZADOR'
         initial['crear_perfil'] = True
         persona = self.object
-        org = getattr(persona, 'perfil_organizador', None)
-        if org:
-            initial['cargo_organizador'] = org.cargo
-            initial['area_organizador'] = org.area_responsabilidad
+        try:
+            org = getattr(persona, 'perfil_organizador', None)
+            if org:
+                initial['cargo_organizador'] = org.cargo
+                initial['area_organizador'] = org.area_responsabilidad
+        except Exception:
+            pass
         return initial
 
     def get_context_data(self, **kwargs):
@@ -126,14 +147,20 @@ class OrganizadorUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         form.instance.tipo_persona = 'ORGANIZADOR'
         self.object = form.save()
         if form.cleaned_data.get('crear_perfil'):
-            Organizador.objects.update_or_create(
-                persona=self.object,
-                defaults={
-                    'cargo': form.cleaned_data.get('cargo_organizador') or None,
-                    'area_responsabilidad': form.cleaned_data.get('area_organizador') or None,
-                    'activo': True,
-                },
-            )
+            try:
+                Organizador.objects.update_or_create(
+                    persona=self.object,
+                    defaults={
+                        'cargo': form.cleaned_data.get('cargo_organizador') or None,
+                        'area_responsabilidad': form.cleaned_data.get('area_organizador') or None,
+                        'activo': True,
+                    },
+                )
+            except Exception as err:
+                messages.warning(
+                    self.request,
+                    f'Perfil Organizador: no se pudo actualizar (¿migración pendiente?). Detalle: {err}',
+                )
         messages.success(self.request, f'Organizador {self.object.nombre_completo} actualizado correctamente.')
         from django.shortcuts import redirect
         return redirect(self.success_url)
@@ -145,6 +172,12 @@ class OrganizadorDeleteView(LoginRequiredMixin, RoleRequiredMixin, DeleteView):
     success_url = reverse_lazy('organizadores:list')
     roles_requeridos = ['ADMINISTRADOR']
 
+    def get_object(self, queryset=None):
+        try:
+            return super().get_object(queryset)
+        except Exception:
+            return None
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['confirm_delete'] = True
@@ -152,6 +185,10 @@ class OrganizadorDeleteView(LoginRequiredMixin, RoleRequiredMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         obj = self.get_object()
+        if obj is None:
+            messages.warning(request, 'No se encontró el organizador.')
+            from django.shortcuts import redirect
+            return redirect(self.success_url)
         nombre = str(obj.persona)
         try:
             obj.persona.activo = False

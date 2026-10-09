@@ -21,6 +21,10 @@ from apps.personas.models import Persona
 from apps.proyectos.models import Proyecto, Aprendiz, Ficha
 from apps.instructores.models import Instructor
 from apps.invitados.models import Invitado
+try:
+    from apps.organizadores.models import Organizador as _Organizador
+except Exception:
+    _Organizador = None
 from apps.asistencia.models import AsistenciaEvento
 from apps.refrigerios.models import EntregaServicio
 from apps.certificados.models import Certificado
@@ -82,6 +86,24 @@ def _es_admin(request):
     if not request.user or not request.user.is_authenticated:
         return False
     return request.user.is_superuser or request.user.groups.filter(name__in=['ADMINISTRADOR', 'REGISTRO']).exists()
+
+
+def _organizadores_count_safe() -> int:
+    if _Organizador is None:
+        return 0
+    try:
+        return int(_Organizador.objects.count())
+    except Exception:
+        return 0
+
+
+def _organizadores_qs_safe():
+    if _Organizador is None:
+        return []
+    try:
+        return list(_Organizador.objects.select_related('persona').order_by('persona__apellidos').all())
+    except Exception:
+        return []
 
 
 def _operador_para_guardar(request):
@@ -246,8 +268,7 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
         c['programas'] = ProgramaTecnico.objects.count()
         c['programas_activos'] = ProgramaTecnico.objects.filter(activo=True).count()
         c['instructores'] = Instructor.objects.count()
-        from apps.organizadores.models import Organizador
-        c['organizadores'] = Organizador.objects.count()
+        c['organizadores'] = _organizadores_count_safe()
         c['invitados'] = Invitado.objects.count()
         c['fichas'] = Ficha.objects.count()
         c['fichas_activas'] = Ficha.objects.filter(activo=True).count()
@@ -1076,9 +1097,8 @@ class ListadoUnicosView(LoginRequiredMixin, View):
             titulo = 'Invitados (únicos)'
             data = Invitado.objects.select_related('persona').order_by('persona__apellidos').all()
         elif que == 'organizadores':
-            from apps.organizadores.models import Organizador
             titulo = 'Organizadores (únicos)'
-            data = Organizador.objects.select_related('persona').order_by('persona__apellidos').all()
+            data = _organizadores_qs_safe()
         elif que == 'proyectos':
             titulo = 'Proyectos registrados'
             data = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo').all()
@@ -1136,8 +1156,7 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
             for i in Invitado.objects.select_related('persona').order_by('persona__apellidos').all():
                 items.append((i.persona, None))
         elif grupo == 'organizadores':
-            from apps.organizadores.models import Organizador
-            for o in Organizador.objects.select_related('persona').order_by('persona__apellidos').all():
+            for o in _organizadores_qs_safe():
                 items.append((o.persona, None))
         elif grupo == 'asistentes':
             asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
@@ -1290,8 +1309,7 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
             for i in Invitado.objects.select_related('persona').order_by('persona__apellidos').all():
                 lista.append((i.persona, None))
         elif grupo == 'organizadores':
-            from apps.organizadores.models import Organizador
-            for o in Organizador.objects.select_related('persona').order_by('persona__apellidos').all():
+            for o in _organizadores_qs_safe():
                 lista.append((o.persona, None))
 
         if not lista:

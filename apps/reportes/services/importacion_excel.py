@@ -1215,11 +1215,16 @@ class ImportacionExcelService:
                 elif datos['tipo_persona'] == 'INSTRUCTOR':
                     Instructor.objects.get_or_create(persona=persona)
                 elif datos['tipo_persona'] == 'ORGANIZADOR':
-                    from apps.organizadores.models import Organizador
-                    Organizador.objects.get_or_create(persona=persona, defaults={
-                        'cargo': (datos.get('cargo') or '')[:150] or None,
-                        'area_responsabilidad': (datos.get('entidad') or '')[:200] or None,
-                    })
+                    try:
+                        from apps.organizadores.models import Organizador as _Org
+                        _Org.objects.get_or_create(persona=persona, defaults={
+                            'cargo': (datos.get('cargo') or '')[:150] or None,
+                            'area_responsabilidad': (datos.get('entidad') or '')[:200] or None,
+                        })
+                    except Exception as err:
+                        logger.warning(
+                            f'[importar_participante] Perfil ORG no creado {persona.numero_identificacion}: {err}'
+                        )
 
                 info_fila['accion'] = 'CREATE' if p_created else 'UPDATE'
                 if p_created:
