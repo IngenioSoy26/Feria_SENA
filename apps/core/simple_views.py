@@ -67,6 +67,8 @@ class RegistroPersonasPublicoForm(_forms.Form):
         queryset=TipoIdentificacion.objects.filter(activo=True).order_by('codigo'),
         widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
         required=True,
+        empty_label='----- Seleccione una opción -----',
+        initial=None,
     )
     numero_identificacion = _forms.CharField(
         label='Número de Identificación',
@@ -98,20 +100,20 @@ class RegistroPersonasPublicoForm(_forms.Form):
         label='Entidad · Empresa · Institución · SENA',
         max_length=200,
         required=False,
-        help_text='Ej: Alcaldía de Soacha · Colegio San José · SENA · UIS · Indeportes',
+        help_text='Obligatorio para Invitados y Organizadores.',
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
-            'placeholder':'Entidad · Obligatorio para Invitados y Organizadores',
+            'placeholder':'',
             'autocomplete':'organization'}),
     )
     cargo = _forms.CharField(
         label='Cargo · Función · Rol en la entidad',
         max_length=150,
         required=False,
-        help_text='Ej: Rector · Invitado especial · Coordinador de evento · Instructor',
+        help_text='Obligatorio para Invitados y Organizadores.',
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
-            'placeholder':'Cargo · Obligatorio para Invitados y Organizadores',
+            'placeholder':'',
             'autocomplete':'organization-title'}),
     )
     correo = _forms.EmailField(
@@ -129,10 +131,16 @@ class RegistroPersonasPublicoForm(_forms.Form):
         required=False,
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
-            'placeholder':'3001234567 · opcional',
+            'placeholder':'',
             'autocomplete':'tel',
             'inputmode':'tel'}),
     )
+
+    def clean_tipo_identificacion(self):
+        ti = self.cleaned_data.get('tipo_identificacion')
+        if ti is None:
+            raise _forms.ValidationError('❌ Selecciona un TIPO DE DOCUMENTO válido (no dejes la opción -----).')
+        return ti
 
     def clean_numero_identificacion(self):
         v = (self.cleaned_data.get('numero_identificacion') or '').strip()
@@ -163,11 +171,11 @@ class RegistroPersonasPublicoForm(_forms.Form):
         if rol in {'INVITADO', 'ORGANIZADOR'}:
             if not entidad_raw:
                 self.add_error('entidad',
-                    f'❌ La ENTIDAD es OBLIGATORIA para los {rol}. (Ej: Alcaldía, Colegio, SENA, Gobernación…).'
+                    '❌ La ENTIDAD es OBLIGATORIA para Invitados y Organizadores.'
                 )
             if not cargo_raw:
                 self.add_error('cargo',
-                    f'❌ El CARGO es OBLIGATORIO para los {rol}. (Ej: Rector, Coordinador, Invitado Especial…).'
+                    '❌ El CARGO es OBLIGATORIO para Invitados y Organizadores.'
                 )
         if rol == 'INSTRUCTOR':
             if not entidad_raw:
@@ -184,6 +192,8 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         queryset=TipoIdentificacion.objects.filter(activo=True).order_by('codigo'),
         widget=_forms.Select(attrs={'class':'form-select form-select-lg'}),
         required=True,
+        empty_label='----- Seleccione una opción -----',
+        initial=None,
     )
     numero_identificacion = _forms.CharField(
         label='Número de Identificación',
@@ -219,20 +229,20 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         label='Entidad ⚑ OBLIGATORIA · Empresa / Institución / Organismo',
         max_length=200,
         required=True,
-        help_text='¿De dónde viene? Ej: Alcaldía · Gobernación · Colegio · Universidad · SENA · Empresa',
+        help_text='De dónde proviene el Invitado.',
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
-            'placeholder':'Alcaldía de Soacha · Colegio INEM · Universidad Nacional · SENA CBA',
+            'placeholder':'',
             'autocomplete':'organization'}),
     )
     cargo = _forms.CharField(
         label='Cargo ⚑ OBLIGATORIO · Función / Rol en la entidad',
         max_length=150,
         required=True,
-        help_text='¿Cuál es su cargo? Ej: Rector · Invitado especial · Gerente · Coordinador · Presidente',
+        help_text='¿Cuál es su cargo o función?',
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
-            'placeholder':'Rector · Invitado Especial · Coordinador General · Docente',
+            'placeholder':'',
             'autocomplete':'organization-title'}),
     )
     correo = _forms.EmailField(
@@ -250,10 +260,16 @@ class RegistroInvitadosPublicoForm(_forms.Form):
         required=True,
         widget=_forms.TextInput(attrs={
             'class':'form-control form-control-lg',
-            'placeholder':'3001234567 · OBLIGATORIO · 10 dígitos',
+            'placeholder':'',
             'autocomplete':'tel',
             'inputmode':'tel'}),
     )
+
+    def clean_tipo_identificacion(self):
+        ti = self.cleaned_data.get('tipo_identificacion')
+        if ti is None:
+            raise _forms.ValidationError('❌ Selecciona un TIPO DE DOCUMENTO válido (no dejes la opción -----).')
+        return ti
 
     def clean_numero_identificacion(self):
         v = (self.cleaned_data.get('numero_identificacion') or '').strip()

@@ -10,13 +10,7 @@
     </div>
     <div class="flex-grow-1">
       <h3 class="card-title mb-0">Registro de Invitados</h3>
-      <small class="muted-small">
-        🎟️ Solo rol Invitado · pre-definido · 1 paso · Todos los campos obligatorios
-      </small>
     </div>
-    <span class="badge text-white px-3 py-2 rounded-pill" style="background:#0ea5e9;">
-      🛡️ Rol bloqueado · Invitado
-    </span>
   </div>
 
   {% if form.non_field_errors %}
@@ -58,15 +52,7 @@
         </div>
 
         <div class="col-12 col-md-4">
-          <label class="form-label">Rol en el evento <span class="req">*</span></label>
-          {{ form.tipo_rol }}
           <input type="hidden" name="tipo_rol" value="INVITADO">
-          {% if form.tipo_rol.errors %}
-            <div class="text-danger mt-1 small">{% for err in form.tipo_rol.errors %}{{ err }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
-          {% endif %}
-          <div class="muted-small mt-1">⚠️ Este campo no es modificable</div>
-        </div>
-        <div class="col-12 col-md-4">
           <label class="form-label">
             Entidad · Institución / Empresa
             <span class="req">*</span>
