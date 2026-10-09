@@ -2404,6 +2404,16 @@ class RegistroInvitadosGraciasView(View):
                 if v: cargo_mostrar = v
             except Exception:
                 pass
+        if entidad_mostrar:
+            try:
+                entidad_mostrar = str(entidad_mostrar).strip().upper()
+            except Exception:
+                pass
+        if cargo_mostrar:
+            try:
+                cargo_mostrar = str(cargo_mostrar).strip().upper()
+            except Exception:
+                pass
         return render(request, 'simple/registro_invitados_gracias.html', {
             'evento': evento,
             'persona': persona,
