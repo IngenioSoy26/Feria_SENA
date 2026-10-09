@@ -4,7 +4,9 @@
 
 {% block navegacion %}{% endblock %}
 
-<header class="nav-sena navbar text-white sticky-top">
+{% block contenido %}
+
+<header class="nav-sena navbar text-white sticky-top mb-4">
   <div class="container-fluid">
     <div class="navbar-brand text-white fw-bold d-flex align-items-center gap-3" style="cursor:default;">
       <span class="logo-sena-pill" aria-hidden="true" style="background:#fff;">
@@ -17,8 +19,6 @@
     </div>
   </div>
 </header>
-
-{% block contenido %}
 
 <style>
   #form-registro-invitados input.form-control:invalid:not(:placeholder-shown),
