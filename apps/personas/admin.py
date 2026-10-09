@@ -7,7 +7,7 @@ class PersonaAdmin(admin.ModelAdmin):
     list_display = [
         'numero_identificacion', 'nombre_completo_display',
         'tipo_identificacion', 'tipo_persona',
-        'correo', 'telefono', 'activo', 'fecha_creacion',
+        'correo', 'correo_sena', 'correo_personal', 'telefono', 'activo', 'fecha_creacion',
     ]
     list_filter = [
         'tipo_persona', 'tipo_identificacion', 'activo',
@@ -15,7 +15,8 @@ class PersonaAdmin(admin.ModelAdmin):
     ]
     search_fields = [
         'nombres', 'apellidos', 'numero_identificacion',
-        'correo', 'telefono', 'qr_token',
+        'correo', 'correo_sena', 'correo_personal',
+        'telefono', 'qr_token',
     ]
     autocomplete_fields = ['tipo_identificacion', 'creado_por']
     readonly_fields = ['fecha_creacion', 'qr_token']
@@ -36,7 +37,7 @@ class PersonaAdmin(admin.ModelAdmin):
             'fields': ('tipo_identificacion', 'numero_identificacion'),
         }),
         ('Datos Personales', {
-            'fields': ('nombres', 'apellidos', 'correo', 'telefono'),
+            'fields': ('nombres', 'apellidos', 'correo', 'correo_sena', 'correo_personal', 'telefono', 'fecha_nacimiento'),
         }),
         ('Clasificación', {
             'fields': ('tipo_persona', 'activo', 'creado_por'),

@@ -1083,6 +1083,7 @@ class ImportacionExcelService:
                     'telefono': datos.get('telefono') or None,
                     'correo_sena': datos.get('correo_sena') or None,
                     'correo_personal': datos.get('correo_personal') or None,
+                    'correo': (datos.get('correo_sena') or datos.get('correo_personal') or None),
                     'fecha_nacimiento': datos.get('fecha_nacimiento') or None,
                     'tipo_persona': 'INSTRUCTOR',
                     'activo': True,

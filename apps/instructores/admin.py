@@ -13,7 +13,8 @@ class InstructorAdmin(admin.ModelAdmin):
     ]
     search_fields = [
         'persona__nombres', 'persona__apellidos',
-        'persona__numero_identificacion', 'persona__correo',
+        'persona__numero_identificacion',
+        'persona__correo', 'persona__correo_sena', 'persona__correo_personal',
     ]
     autocomplete_fields = ['persona', 'programas']
     readonly_fields = []
