@@ -1,6 +1,7 @@
 import re
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -163,6 +164,39 @@ class Aprendiz(models.Model):
 
     class Meta:
         ordering = ['persona__apellidos', 'persona__nombres']
+
+    def clean(self):
+        super().clean()
+        if self.persona_id and self.proyecto_id:
+            qs = Aprendiz.objects.select_related('persona', 'proyecto').exclude(pk=self.pk)
+            # Bloqueo 1: Misma PERSONA PK (OneToOne ya lo impide, doble check)
+            ya_tiene = qs.filter(persona_id=self.persona_id).first()
+            if not ya_tiene and self.persona.numero_identificacion:
+                # Bloqueo 2: Mismo NÚMERO DE DOCUMENTO aunque sea con TIPO DE DOCUMENTO diferente
+                # (ej: TI vs CC pero mismo número = misma persona)
+                num = re.sub(r'\D', '', self.persona.numero_identificacion or '')
+                if num:
+                    otra_persona = qs.filter(
+                        persona__numero_identificacion__regex=rf'^0*{num}0*$'
+                    ).first()
+                    if otra_persona:
+                        ya_tiene = otra_persona
+            if ya_tiene:
+                nombre_proy = getattr(getattr(ya_tiene, 'proyecto', None), 'nombre', '') or ''
+                codigo_proy = getattr(getattr(ya_tiene, 'proyecto', None), 'codigo', '') or ''
+                ficha_num = ''
+                if ya_tiene.proyecto and ya_tiene.proyecto.ficha_id:
+                    ficha_num = f' · Ficha #{ya_tiene.proyecto.ficha.numero}'
+                raise ValidationError({
+                    'persona': (
+                        f'❌ El aprendiz "{ya_tiene.persona.nombre_completo}" '
+                        f'({ya_tiene.persona.tipo_identificacion.codigo} {ya_tiene.persona.numero_identificacion}) '
+                        f'YA SE ENCUENTRA INSCRITO EN OTRO PROYECTO: '
+                        f'"{nombre_proy}" (Código {codigo_proy}{ficha_num}). '
+                        f'❕ CADA APRENDIZ SÓLO PUEDE PERTENECER A 1 (UN) PROYECTO. '
+                        f'Si necesitas cambiarlo, elimina el aprendiz del proyecto original primero.'
+                    )
+                })
 
     def __str__(self):
         return str(self.persona)

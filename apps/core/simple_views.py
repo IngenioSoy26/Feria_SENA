@@ -1209,6 +1209,59 @@ class WizardRegistroView(View):
 
                 tuplas.append((t, nd, nm, co, tl))
 
+            # ================ NUEVO v31: BLOQUEO SI EL APRENDIZ YA ESTÁ EN OTRO PROYECTO (ANTES DE CREAR NADA) ================
+            numeros_en_submision = set()
+            for i, (t, nd, nm, co, tl) in enumerate(tuplas):
+                if nd in numeros_en_submision:
+                    messages.error(
+                        request,
+                        f'❌ DUPLICADO EN EL FORMULARIO: El aprendiz #{i+1} "{nm}" (Documento {nd}) '
+                        'ya está incluido varias veces en este mismo registro. '
+                        'Por favor elimina las filas repetidas.'
+                    )
+                    return redirect('simple:wizard')
+                numeros_en_submision.add(nd)
+                # Búsqueda transversal: Mismo número de documento (INDEPENDIENTEMENTE DE TIPO DOC) en BD
+                num_solo_dig = re.sub(r'\D', '', nd) or None
+                if not num_solo_dig:
+                    continue
+                qs_personas_con_este_num = Persona.objects.filter(
+                    numero_identificacion__regex=rf'^0*{num_solo_dig}0*$'
+                ).exclude(tipo_persona='APRENDIZ')
+                # Busca específicamente en APRENDICES (incluyendo si originalmente no era tipo_persona APRENDIZ pero sí Aprendiz)
+                qs_aprendiz_duplicado = (
+                    Aprendiz.objects
+                    .select_related('persona', 'proyecto', 'proyecto__ficha')
+                    .filter(persona__numero_identificacion__regex=rf'^0*{num_solo_dig}0*$')
+                )
+                existente = qs_aprendiz_duplicado.first()
+                if existente:
+                    p_repetida = existente.persona
+                    nombre_completo_bd = p_repetida.nombre_completo or nm
+                    nombre_proy_original = (getattr(getattr(existente, 'proyecto', None), 'nombre', '') or '') or 'Proyecto sin nombre'
+                    codigo_proy_original = (getattr(getattr(existente, 'proyecto', None), 'codigo', '') or '') or 'sin código'
+                    ficha_num = ''
+                    if existente.proyecto and existente.proyecto.ficha_id:
+                        ficha_num = f' · Ficha #{existente.proyecto.ficha.numero}'
+                    ie_original = ''
+                    if existente.proyecto and existente.proyecto.institucion_id:
+                        ie_original = f' · IE: {existente.proyecto.institucion.nombre}'
+                    messages.error(
+                        request,
+                        f'🚫 ESTE APRENDIZ YA ESTÁ INSCRITO EN OTRO PROYECTO (regla 1 aprendiz = 1 proyecto):\n'
+                        f'  • Aprendiz #{i+1}: "{nm}"\n'
+                        f'  • Documento: {p_repetida.tipo_identificacion.codigo} {p_repetida.numero_identificacion}\n'
+                        f'  • Ya registrado como: "{nombre_completo_bd}"\n'
+                        f'  • PROYECTO ACTUAL: "{nombre_proy_original}" (Código {codigo_proy_original}{ficha_num}{ie_original})\n'
+                        f'  • Nombre de proyecto nuevo que intentaste inscribirlo: "{nombre_proyecto}"\n'
+                        f'❕ Cómo solucionarlo: (1) Ve al listado de Proyectos y elimina al aprendiz del proyecto original, '
+                        f'o (2) Usa el proyecto original, o (3) Contacta al Administrador.'
+                    )
+                    return redirect('simple:wizard')
+                # También bloqueamos si existe Persona con ese mismo #DOC como INVITADO/INSTRUCTOR/ORGANIZADOR PERO CON tipo_persona != APRENDIZ pero queremos pasarlo a Aprendiz
+                # — NADA: permitimos que la misma persona cambie de rol (ej: persona era Invitado y ahora es Aprendiz, es válido).
+                # Lo único que NO se permite es 2 Aprendices del MISMO #DOC = regla anterior.
+
             # Capo MAX por configuración
             if len(tuplas) > max_ap:
                 messages.warning(request, f'⚠ Máximo permitido {max_ap} aprendices por ficha. Se guardaron sólo los primeros {max_ap}.')
@@ -1217,45 +1270,95 @@ class WizardRegistroView(View):
             if len(tuplas) == 0:
                 messages.warning(request, 'ℹ No se incluyeron aprendices. Puedes agregarlos después editando la ficha.')
 
-            aprendices_guardados = 0
-            for t, nd, nm, co, tl in tuplas:
-                nombres_a, apellidos_a = self._separar_nombres_apellidos(nm)
-                persona_a, _ = Persona.objects.get_or_create(
-                    tipo_identificacion=_obtener_tipo_id(t),
-                    numero_identificacion=nd,
-                    defaults={
-                        'nombres': (nombres_a or '').upper(),
-                        'apellidos': (apellidos_a or '').upper(),
-                        'correo': co,
-                        'telefono': tl or None,
-                        'tipo_persona': 'APRENDIZ',
-                    },
+            # ================ TRANSACCIÓN ATÓMICA: O TODO SE GUARDA, O NADA SE GUARDA (ROLLBACK SI ALGO FALLA) ================
+            try:
+                with transaction.atomic():
+                    proyecto = Proyecto(
+                        evento=evento,
+                        nombre=nombre_proyecto,
+                        descripcion=f'{nombre_proyecto} - {colegio.nombre}',
+                        institucion=colegio,
+                        programa=programa,
+                        instructor_responsable=instructor_obj,
+                        estado='APROBADO',
+                    )
+                    if ficha_obj:
+                        proyecto.ficha = ficha_obj
+                    proyecto.save()  # save() genera el código secuencial único por evento+ficha
+
+                    aprendices_guardados = 0
+                    for t, nd, nm, co, tl in tuplas:
+                        nombres_a, apellidos_a = self._separar_nombres_apellidos(nm)
+                        persona_a, _ = Persona.objects.get_or_create(
+                            tipo_identificacion=_obtener_tipo_id(t),
+                            numero_identificacion=nd,
+                            defaults={
+                                'nombres': (nombres_a or '').upper(),
+                                'apellidos': (apellidos_a or '').upper(),
+                                'correo': co,
+                                'telefono': tl or None,
+                                'tipo_persona': 'APRENDIZ',
+                            },
+                        )
+                        # Actualizar correo / teléfono si cambió (y hay valor nuevo no vacío para correo)
+                        need_save = False
+                        upd_fields = []
+                        if persona_a.correo != co and co:
+                            persona_a.correo = co
+                            upd_fields.append('correo')
+                            need_save = True
+                        if tl and persona_a.telefono != tl:
+                            persona_a.telefono = tl
+                            upd_fields.append('telefono')
+                            need_save = True
+                        nombres_up = (nombres_a or '').upper()
+                        apellidos_up = (apellidos_a or '').upper()
+                        if persona_a.nombres != nombres_up:
+                            persona_a.nombres = nombres_up
+                            upd_fields.append('nombres')
+                            need_save = True
+                        if persona_a.apellidos != apellidos_up:
+                            persona_a.apellidos = apellidos_up
+                            upd_fields.append('apellidos')
+                            need_save = True
+                        # Si la persona no era APRENDIZ aún, actualízala a APRENDIZ
+                        if persona_a.tipo_persona != 'APRENDIZ':
+                            persona_a.tipo_persona = 'APRENDIZ'
+                            upd_fields.append('tipo_persona')
+                            need_save = True
+                        if need_save and upd_fields:
+                            persona_a.save(update_fields=upd_fields)
+
+                        # NUEVO v31: NO usamos get_or_create con defaults, porque si ya existía perfil_aprendiz
+                        # (OneToOne) debe fallar. En su lugar usamos el patrón seguro:
+                        # --- Bloqueo double check final + full_clean() para forzar validación del modelo clean() ---
+                        tiene_perfil = bool(getattr(persona_a, 'perfil_aprendiz_id', None))
+                        if tiene_perfil:
+                            # CASO IMPOSIBLE por la validación anterior, pero por si acaso (race conditions 2 usuarios concurrentes):
+                            perfil_viejo = Aprendiz.objects.select_related('proyecto').get(pk=persona_a.perfil_aprendiz_id)
+                            viejo_proy = f'"{perfil_viejo.proyecto.nombre}" (Código {perfil_viejo.proyecto.codigo})' if perfil_viejo.proyecto else 'otro proyecto'
+                            raise Exception(
+                                f'⚠ Concurrencia: "{persona_a.nombre_completo}" ya fue inscrito en otro proyecto en este mismo instante: {viejo_proy}.'
+                            )
+                        # Creamos PERFIL DE APRENDIZ NUEVO
+                        entidad_auto = (str(colegio.nombre) or '').upper() or None
+                        nuevo_aprendiz = Aprendiz(
+                            persona=persona_a,
+                            proyecto=proyecto,
+                            grado='11',
+                            entidad=entidad_auto,
+                            cargo='Aprendiz',
+                        )
+                        # === EJECUTA LAS VALIDACIONES DEL MODELO (clean()): NO 2 proyectos, NO mismo #DOC ===
+                        nuevo_aprendiz.full_clean()
+                        nuevo_aprendiz.save(force_insert=True)
+                        aprendices_guardados += 1
+            except Exception as e_err:
+                messages.error(
+                    request,
+                    f'❌ NO SE PUDO GUARDAR EL PROYECTO (se deshizo todo): {e_err}'
                 )
-                # Actualizar correo / teléfono si cambió (y hay valor nuevo no vacío para correo)
-                need_save = False
-                upd_fields = []
-                if persona_a.correo != co and co:
-                    persona_a.correo = co
-                    upd_fields.append('correo')
-                    need_save = True
-                if tl and persona_a.telefono != tl:
-                    persona_a.telefono = tl
-                    upd_fields.append('telefono')
-                    need_save = True
-                nombres_up = (nombres_a or '').upper()
-                apellidos_up = (apellidos_a or '').upper()
-                if persona_a.nombres != nombres_up:
-                    persona_a.nombres = nombres_up
-                    upd_fields.append('nombres')
-                    need_save = True
-                if persona_a.apellidos != apellidos_up:
-                    persona_a.apellidos = apellidos_up
-                    upd_fields.append('apellidos')
-                    need_save = True
-                if need_save and upd_fields:
-                    persona_a.save(update_fields=upd_fields)
-                Aprendiz.objects.get_or_create(persona=persona_a, defaults={'proyecto': proyecto, 'grado': '11'})
-                aprendices_guardados += 1
+                return redirect('simple:wizard')
 
             total_proyectos_ficha = 0
             if ficha_obj:
