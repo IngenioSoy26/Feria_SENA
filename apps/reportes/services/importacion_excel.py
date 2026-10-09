@@ -1215,6 +1215,7 @@ class ImportacionExcelService:
                 elif datos['tipo_persona'] == 'INSTRUCTOR':
                     Instructor.objects.get_or_create(persona=persona)
                 elif datos['tipo_persona'] == 'ORGANIZADOR':
+                    from django.db import connection as _conn_db
                     try:
                         from apps.organizadores.models import Organizador as _Org
                         _Org.objects.get_or_create(persona=persona, defaults={
@@ -1222,6 +1223,10 @@ class ImportacionExcelService:
                             'area_responsabilidad': (datos.get('entidad') or '')[:200] or None,
                         })
                     except Exception as err:
+                        try: _conn_db.rollback()
+                        except Exception: pass
+                        try: _conn_db.close()
+                        except Exception: pass
                         logger.warning(
                             f'[importar_participante] Perfil ORG no creado {persona.numero_identificacion}: {err}'
                         )

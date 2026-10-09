@@ -102,6 +102,7 @@ class PersonaCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
         elif tipo == 'ORGANIZADOR' and _Organizador_cls is not None:
             cargo = form.cleaned_data.get('cargo_organizador') or None
             area = form.cleaned_data.get('area_organizador') or None
+            from django.db import connection as _conn_db
             try:
                 _Organizador_cls.objects.update_or_create(
                     persona=self.object,
@@ -109,6 +110,10 @@ class PersonaCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
                 )
                 messages.info(self.request, 'Perfil de Organizador creado correctamente.')
             except Exception as err:
+                try: _conn_db.rollback()
+                except Exception: pass
+                try: _conn_db.close()
+                except Exception: pass
                 messages.warning(
                     self.request,
                     f'Perfil Organizador: no se pudo crear (¿migración pendiente?). Detalle: {err}',
@@ -208,6 +213,7 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
             )
 
         elif tipo == 'ORGANIZADOR' and _Organizador_cls is not None:
+            from django.db import connection as _conn_db
             try:
                 _Organizador_cls.objects.update_or_create(
                     persona=self.object,
@@ -218,6 +224,10 @@ class PersonaUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
                     },
                 )
             except Exception as err:
+                try: _conn_db.rollback()
+                except Exception: pass
+                try: _conn_db.close()
+                except Exception: pass
                 messages.warning(
                     self.request,
                     f'Perfil Organizador: no se pudo actualizar (¿migración pendiente?). Detalle: {err}',

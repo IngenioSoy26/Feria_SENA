@@ -93,6 +93,7 @@ class OrganizadorCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
         return redirect(self.success_url)
 
     def _crear_perfil_organizador(self, form):
+        from django.db import connection as _conn_db
         try:
             Organizador.objects.get_or_create(
                 persona=self.object,
@@ -102,6 +103,10 @@ class OrganizadorCreateView(LoginRequiredMixin, RoleRequiredMixin, CreateView):
                 },
             )
         except Exception as err:
+            try: _conn_db.rollback()
+            except Exception: pass
+            try: _conn_db.close()
+            except Exception: pass
             messages.warning(
                 self.request,
                 f'Perfil Organizador: no se pudo crear (¿migración pendiente?). Detalle: {err}',
@@ -147,6 +152,7 @@ class OrganizadorUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
         form.instance.tipo_persona = 'ORGANIZADOR'
         self.object = form.save()
         if form.cleaned_data.get('crear_perfil'):
+            from django.db import connection as _conn_db
             try:
                 Organizador.objects.update_or_create(
                     persona=self.object,
@@ -157,6 +163,10 @@ class OrganizadorUpdateView(LoginRequiredMixin, RoleRequiredMixin, UpdateView):
                     },
                 )
             except Exception as err:
+                try: _conn_db.rollback()
+                except Exception: pass
+                try: _conn_db.close()
+                except Exception: pass
                 messages.warning(
                     self.request,
                     f'Perfil Organizador: no se pudo actualizar (¿migración pendiente?). Detalle: {err}',

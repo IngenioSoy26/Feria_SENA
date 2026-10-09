@@ -91,18 +91,36 @@ def _es_admin(request):
 def _organizadores_count_safe() -> int:
     if _Organizador is None:
         return 0
+    from django.db import connection as _conn
     try:
         return int(_Organizador.objects.count())
     except Exception:
+        try:
+            _conn.rollback()
+        except Exception:
+            pass
+        try:
+            _conn.close()
+        except Exception:
+            pass
         return 0
 
 
 def _organizadores_qs_safe():
     if _Organizador is None:
         return []
+    from django.db import connection as _conn
     try:
         return list(_Organizador.objects.select_related('persona').order_by('persona__apellidos').all())
     except Exception:
+        try:
+            _conn.rollback()
+        except Exception:
+            pass
+        try:
+            _conn.close()
+        except Exception:
+            pass
         return []
 
 
