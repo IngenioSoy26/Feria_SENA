@@ -636,94 +636,99 @@ def _organizadores_qs_safe():
 
 def _qs_perfiles_o_fallback(ModeloPerfil, rol_tipo_persona, extra_annotate=None, extra_order=None):
     """
-    Devuelve lista de objetos perfil, con FALLBACK SI perfil == 0 pero Personas.tipo_persona=rol SÍ existen.
-    Razón (bug screenshot invitados/organizadores): se crea Persona con tipo_persona=INVITADO pero NO
-    se crea perfil Invitado asociado (OneToOne). El listado queda vacío de mentira. Solución:
-      (1) Intentar perfil normal; si hay >=1 fila se retorna.
-      (2) Si 0 filas, se consulta Persona.filter(tipo_persona=rol) y se CREA perfil faltante
-          (sincroniza BD - repair on read) + después retorna perfil QS normal para que template use
-          sus campos entidad/cargo/area_responsabilidad etc. sin cambios.
+    ROBUSTO v2:
+      (1) SIEMPRE sincroniza perfiles faltantes (get_or_create idempotente) contra Personas con tipo_persona=rol
+          SIN depender de que el perfil inicial esté vacío. Usa Persona.entidad/cargo REALES (no canonico).
+      (2) SIEMPRE retorna list(ModeloPerfil) si es posible.
+      (3) SI hay ProgrammingError / Exception / data sigue vacia PERO Personas con tipo_persona existen
+          → RETORNA LISTA DE DICCIONARIOS (fallback visual):
+              [{ 'pk': persona.pk, '_es_fallback': True,
+                 'persona': persona, 'entidad': persona.entidad, 'cargo': persona.cargo,
+                 'area_responsabilidad': persona.entidad, 'proyecto': None }]
+          El template usa getattr(fila, 'campo', fila.get('campo')) para mostrarlo igual.
+          De esta manera NUNCA se muestra "No hay registros aun" de mentira.
     """
     from django.db import connection as _conn
-    _ok = False
-    try:
-        _order = extra_order or 'persona__apellidos'
-        if ModeloPerfil is None:
-            filas_perfil = []
-        else:
-            qs = ModeloPerfil.objects.select_related('persona').order_by(_order).all()
-            if extra_annotate:
-                qs = qs.annotate(**extra_annotate)
-            filas_perfil = list(qs)
-        _ok = True
-    except Exception:
-        filas_perfil = []
-        try: _conn.rollback()
-        except Exception: pass
-        try: _conn.close()
-        except Exception: pass
 
-    personas_rol = Persona.objects.filter(tipo_persona=rol_tipo_persona).order_by('apellidos', 'nombres').all()
-    total_personas = personas_rol.count() if hasattr(personas_rol, 'count') else len(list(personas_rol))
-
-    if (not filas_perfil) and total_personas > 0:
-        personas_list = list(personas_rol)
+    def _personas_del_rol():
         try:
-            with transaction.atomic():
-                for p in personas_list:
-                    if ModeloPerfil is None:
-                        continue
-                    try:
-                        kwargs_crear = {}
-                        if ModeloPerfil._meta.get_field('entidad'):
-                            try:
-                                _ent = (p.entidad or p.entidad_canonica or '').strip()
-                                kwargs_crear['entidad'] = (_ent[:200]) if _ent else ''
-                            except Exception:
-                                kwargs_crear['entidad'] = ''
-                        if ModeloPerfil._meta.get_field('cargo'):
-                            try:
-                                _car = (p.cargo or p.cargo_canonico or '').strip()
-                                if rol_tipo_persona == 'INSTRUCTOR':
-                                    kwargs_crear['cargo'] = (_car[:150] or 'Instructor')
-                                elif rol_tipo_persona == 'APRENDIZ':
-                                    kwargs_crear['cargo'] = (_car[:150] or 'Aprendiz')
-                                else:
-                                    kwargs_crear['cargo'] = (_car[:150] if _car else '')
-                            except Exception:
-                                kwargs_crear['cargo'] = ''
-                        if ModeloPerfil._meta.get_field('area_responsabilidad'):
-                            try:
-                                _area = (p.entidad or p.entidad_canonica or '').strip()
-                                kwargs_crear['area_responsabilidad'] = (_area[:200] if _area else '')
-                            except Exception:
-                                kwargs_crear['area_responsabilidad'] = ''
-                        ModeloPerfil.objects.get_or_create(
-                            persona=p,
-                            defaults=kwargs_crear,
-                        )
-                    except Exception:
-                        pass
+            return list(Persona.objects.filter(tipo_persona=rol_tipo_persona).order_by('apellidos', 'nombres').all())
         except Exception:
             try: _conn.rollback()
-            except Exception: pass
-
-        try:
-            _order2 = extra_order or 'persona__apellidos'
-            if ModeloPerfil is None:
-                return []
-            qs2 = ModeloPerfil.objects.select_related('persona').order_by(_order2).all()
-            if extra_annotate:
-                qs2 = qs2.annotate(**extra_annotate)
-            return list(qs2)
-        except Exception:
-            try: _conn.rollback()
-            except Exception: pass
-            try: _conn.close()
             except Exception: pass
             return []
 
-    return filas_perfil
+    personas_list = _personas_del_rol()
+
+    if ModeloPerfil is not None:
+        try:
+            for p in personas_list:
+                try:
+                    kwargs_crear = {}
+                    try:
+                        ModeloPerfil._meta.get_field('entidad')
+                        kwargs_crear['entidad'] = (getattr(p, 'entidad', None) or '')[:200]
+                    except Exception:
+                        pass
+                    try:
+                        ModeloPerfil._meta.get_field('cargo')
+                        _c = (getattr(p, 'cargo', None) or '')
+                        if not _c:
+                            if rol_tipo_persona == 'INSTRUCTOR': _c = 'Instructor'
+                            elif rol_tipo_persona == 'APRENDIZ': _c = 'Aprendiz'
+                            elif rol_tipo_persona == 'ORGANIZADOR': _c = 'Organizador'
+                            elif rol_tipo_persona == 'INVITADO': _c = 'Invitado'
+                        kwargs_crear['cargo'] = (_c or '')[:150]
+                    except Exception:
+                        pass
+                    try:
+                        ModeloPerfil._meta.get_field('area_responsabilidad')
+                        kwargs_crear['area_responsabilidad'] = (getattr(p, 'entidad', None) or '')[:200]
+                    except Exception:
+                        pass
+                    try:
+                        ModeloPerfil._meta.get_field('activo')
+                        kwargs_crear['activo'] = True
+                    except Exception:
+                        pass
+                    ModeloPerfil.objects.get_or_create(persona=p, defaults=kwargs_crear)
+                except Exception:
+                    continue
+        except Exception:
+            try: _conn.rollback()
+            except Exception: pass
+
+    if ModeloPerfil is not None:
+        _order = extra_order or 'persona__apellidos'
+        try:
+            qs = ModeloPerfil.objects.select_related('persona').order_by(_order).all()
+            if extra_annotate:
+                qs = qs.annotate(**extra_annotate)
+            filas = list(qs)
+            if filas:
+                return filas
+        except Exception:
+            try: _conn.rollback()
+            except Exception: pass
+
+    if not personas_list:
+        return []
+
+    fallback = []
+    for p in personas_list:
+        _entidad = (getattr(p, 'entidad', None) or '')
+        _cargo = (getattr(p, 'cargo', None) or '')
+        if not _cargo:
+            if rol_tipo_persona == 'INSTRUCTOR': _cargo = 'Instructor'
+            elif rol_tipo_persona == 'APRENDIZ': _cargo = 'Aprendiz'
+            elif rol_tipo_persona == 'ORGANIZADOR': _cargo = 'Organizador'
+            elif rol_tipo_persona == 'INVITADO': _cargo = 'Invitado'
+        fallback.append({
+            'pk': p.pk, '_es_fallback': True,
+            'persona': p, 'entidad': _entidad, 'cargo': _cargo,
+            'area_responsabilidad': _entidad, 'proyecto': None,
+        })
+    return fallback
 
 
 def _operador_para_guardar(request):
@@ -2324,33 +2329,42 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
                 except Exception:
                     pass
                 items.append((p, proy))
-        elif grupo == 'aprendices':
-            for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
-                items.append((a.persona, a.proyecto))
-        elif grupo == 'instructores':
-            for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
-                items.append((i.persona, None))
-        elif grupo == 'invitados':
-            for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
-                items.append((i.persona, None))
-        elif grupo == 'organizadores':
-            for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
-                items.append((o.persona, None))
-        elif grupo == 'asistentes':
-            asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
-            seen = set()
-            for a in asistencias:
-                if a.persona_id in seen:
-                    continue
-                seen.add(a.persona_id)
-                proy = None
-                try:
-                    if hasattr(a.persona, 'perfil_aprendiz') and a.persona.perfil_aprendiz:
-                        proy = a.persona.perfil_aprendiz.proyecto
-                except Exception:
-                    pass
-                items.append((a.persona, proy))
-        else:
+    elif grupo == 'aprendices':
+        for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
+            _proy = getattr(a, 'proyecto', None) or (a.get('proyecto') if isinstance(a, dict) else None)
+            _per = getattr(a, 'persona', None) or (a.get('persona') if isinstance(a, dict) else None)
+            if _per:
+                items.append((_per, _proy))
+    elif grupo == 'instructores':
+        for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
+            _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+            if _per:
+                items.append((_per, None))
+    elif grupo == 'invitados':
+        for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
+            _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+            if _per:
+                items.append((_per, None))
+    elif grupo == 'organizadores':
+        for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
+            _per = getattr(o, 'persona', None) or (o.get('persona') if isinstance(o, dict) else None)
+            if _per:
+                items.append((_per, None))
+    elif grupo == 'asistentes':
+        asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
+        seen = set()
+        for a in asistencias:
+            if a.persona_id in seen:
+                continue
+            seen.add(a.persona_id)
+            proy = None
+            try:
+                if hasattr(a.persona, 'perfil_aprendiz') and a.persona.perfil_aprendiz:
+                    proy = a.persona.perfil_aprendiz.proyecto
+            except Exception:
+                pass
+            items.append((a.persona, proy))
+    else:
             try:
                 pk = int(grupo)
                 institucion = get_object_or_404(InstitucionEducativa, pk=pk)
@@ -2479,16 +2493,25 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
                 lista.append((p, proy))
         elif grupo == 'aprendices':
             for a in _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ'):
-                lista.append((a.persona, a.proyecto))
+                _proy = getattr(a, 'proyecto', None) or (a.get('proyecto') if isinstance(a, dict) else None)
+                _per = getattr(a, 'persona', None) or (a.get('persona') if isinstance(a, dict) else None)
+                if _per:
+                    lista.append((_per, _proy))
         elif grupo == 'instructores':
             for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
-                lista.append((i.persona, None))
+                _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+                if _per:
+                    lista.append((_per, None))
         elif grupo == 'invitados':
             for i in _qs_perfiles_o_fallback(Invitado, 'INVITADO'):
-                lista.append((i.persona, None))
+                _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+                if _per:
+                    lista.append((_per, None))
         elif grupo == 'organizadores':
             for o in _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR'):
-                lista.append((o.persona, None))
+                _per = getattr(o, 'persona', None) or (o.get('persona') if isinstance(o, dict) else None)
+                if _per:
+                    lista.append((_per, None))
 
         if not lista:
             messages.warning(request, 'No hay certificados para generar.')
