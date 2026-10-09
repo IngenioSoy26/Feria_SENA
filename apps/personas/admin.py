@@ -7,7 +7,7 @@ class PersonaAdmin(admin.ModelAdmin):
     list_display = [
         'numero_identificacion', 'nombre_completo_display',
         'tipo_identificacion', 'tipo_persona',
-        'correo', 'correo_sena', 'correo_personal', 'telefono', 'activo', 'fecha_creacion',
+        'correo', 'telefono', 'activo', 'fecha_creacion',
     ]
     list_filter = [
         'tipo_persona', 'tipo_identificacion', 'activo',
