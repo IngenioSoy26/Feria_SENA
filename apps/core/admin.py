@@ -12,3 +12,5 @@ try:
     admin.site._registry = admin.site._registry
 except Exception:
     pass
+
+from . import admin_panel_ops  # noqa: E402  (registra AsistenciaEventoAdmin + EntregaServicioAdmin)
