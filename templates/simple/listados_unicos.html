@@ -73,6 +73,8 @@
                 <th>Instructor</th><th>Cédula</th><th>Correo</th><th>Programas</th><th>Acciones</th>
               {% elif que == 'invitados' %}
                 <th>Invitado</th><th>Entidad</th><th>Cargo</th><th>Acciones</th>
+              {% elif que == 'organizadores' %}
+                <th>Organizador</th><th>Cédula</th><th>Área / Responsabilidad</th><th>Cargo</th><th>Acciones</th>
               {% elif que == 'proyectos' %}
                 <th>Código</th><th>Proyecto</th><th>Colegio</th><th>Programa</th><th>Municipio</th><th>Instructor</th><th>Aprendices</th><th>Acciones</th>
               {% elif que == 'aprendices' %}
@@ -175,6 +177,16 @@
                 <td>
                   <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
                   <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
+                </td>
+              {% elif que == 'organizadores' %}
+                <td><b>{{ fila.persona.get_full_name }}</b></td>
+                <td>{{ fila.persona.numero_identificacion }}</td>
+                <td>{{ fila.area_responsabilidad|default:"-" }}</td>
+                <td>{{ fila.cargo|default:"-" }}</td>
+                <td>
+                  <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'PARTICIPACION' %}">🏆 Participación</a>
                 </td>
               {% elif que == 'proyectos' %}
                 <td><span class="badge badge-sena">{{ fila.codigo }}</span></td>
