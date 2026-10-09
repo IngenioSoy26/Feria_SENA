@@ -783,7 +783,7 @@ class HomeSimpleView(LoginRequiredMixin, View):
             'es_op_refrigerio': _tiene_rol_usuario(request, 'OPERADOR_REFRIGERIO'),
             'es_op_certificado': _tiene_rol_usuario(request, 'OPERADOR_CERTIFICADO'),
             'es_consulta': _tiene_rol_usuario(request, 'CONSULTA'),
-            '_mostrar_menu_completo': (
+            'mostrar_menu_completo': (
                 es_admin_bool
                 or (not tiene_rol_operador)
                 or (_tiene_rol_usuario(request, 'GERENTE'))
