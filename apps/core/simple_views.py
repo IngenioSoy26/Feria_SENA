@@ -1874,8 +1874,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         ausentes = max(total_personas - asistentes_total, 0)
         pct_asistencia = (asistentes_total * 100 // total_personas) if total_personas else 0
 
-        servicio = _servicio_almuerzo(evento)
-        qs_refrigerios = EntregaServicio.objects.filter(evento=evento, tipo_servicio=servicio).select_related('persona', 'operador') if servicio else EntregaServicio.objects.none()
+        qs_refrigerios = EntregaServicio.objects.filter(evento=evento).select_related('persona', 'operador', 'tipo_servicio')
         refrigerios_entregados = qs_refrigerios.count()
         refri_por_rol = dict(qs_refrigerios.values_list('persona__tipo_persona').annotate(c=Count('id')))
         refri_aprendices = refri_por_rol.get('APRENDIZ', 0)
@@ -1886,6 +1885,10 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         refri_manual = qs_refrigerios.filter(medio='MANUAL').count()
         refrigerios_pendientes = max(asistentes_total - refrigerios_entregados, 0)
         pct_refrigerios = (refrigerios_entregados * 100 // asistentes_total) if asistentes_total else 0
+        _por_tipo_qs = list(qs_refrigerios.values_list('tipo_servicio__nombre').annotate(c=Count('id')).order_by('tipo_servicio__orden', '-c'))
+        refrigerios_por_tipo = [(str(n or 'Sin definir'), int(c)) for n, c in _por_tipo_qs]
+        _tipos_activos_qs = list(TipoServicio.objects.filter(evento=evento, activo=True).order_by('orden', 'nombre').values_list('nombre', flat=True))
+        tipos_servicio_activos = [str(x) for x in _tipos_activos_qs if x]
 
         qs_certificados = Certificado.objects.filter(evento=evento).select_related('persona', 'operador')
         certificados_entregados = qs_certificados.count()
@@ -2023,6 +2026,8 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             'refri_organizadores': refri_organizadores,
             'refri_qr': refri_qr,
             'refri_manual': refri_manual,
+            'refrigerios_por_tipo': refrigerios_por_tipo,
+            'tipos_servicio_activos': tipos_servicio_activos,
 
             'certificados_entregados': certificados_entregados,
             'certificados_pendientes': certificados_pendientes,
