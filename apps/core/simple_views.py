@@ -2170,8 +2170,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         except Exception:
             total_programas_unicos = 0
         try:
-            qs_ficha_ids = Aprendiz.objects.filter(
-                proyecto__evento=evento,
+            qs_ficha_ids = qs_proy_evento.filter(
                 ficha_id__isnull=False,
             ).values('ficha_id')
             total_fichas_unicas = Ficha.objects.filter(id__in=qs_ficha_ids).values('id').distinct().count()
