@@ -7,7 +7,7 @@ class PersonaAdmin(admin.ModelAdmin):
     list_display = [
         'numero_identificacion', 'nombre_completo_display',
         'tipo_identificacion', 'tipo_persona',
-        'correo', 'telefono', 'activo', 'fecha_creacion',
+        '_correo_fallback', 'telefono', 'activo', 'fecha_creacion',
     ]
     list_filter = [
         'tipo_persona', 'tipo_identificacion', 'activo',
@@ -31,6 +31,16 @@ class PersonaAdmin(admin.ModelAdmin):
         return obj.nombre_completo
     nombre_completo_display.short_description = 'Nombre Completo'
     nombre_completo_display.admin_order_field = 'apellidos'
+
+    def _correo_fallback(self, obj):
+        valor = (
+            (obj.correo or '').strip()
+            or (obj.correo_sena or '').strip()
+            or (obj.correo_personal or '').strip()
+        )
+        return valor or '-'
+    _correo_fallback.short_description = 'Correo'
+    _correo_fallback.admin_order_field = 'correo'
 
     fieldsets = (
         ('Identificación', {
