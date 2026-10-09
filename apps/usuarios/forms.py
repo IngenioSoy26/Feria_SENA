@@ -95,9 +95,9 @@ class UsuarioGestionForm(forms.ModelForm):
         # Al editar: el password NO es obligatorio. Ocultamos autogenerar por default, mostramos reset en botón aparte
         if self.es_edicion:
             self.fields['password_auto'].initial = False
-            self.fields['password_auto'].label = 'Sobrescribir contraseña (opcional)'
+            self.fields['password_auto'].label = '🔑 Resetear / Sobrescribir contraseña (la NUEVA se mostrará al guardar — CÓPIALA para dársela a la persona)'
             self.fields['password_manual'].required = False
-            self.fields['password_manual'].label = 'Nueva contraseña (8 caracteres mín.)'
+            self.fields['password_manual'].label = 'Nueva contraseña (8 caracteres mín.) · Dejar vacío = generar automáticamente'
 
     def clean_username(self):
         v = (self.cleaned_data.get('username') or '').strip().lower()

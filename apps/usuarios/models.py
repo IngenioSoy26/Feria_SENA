@@ -32,3 +32,14 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return self.nombre_completo
+
+    def save(self, *args, **kwargs):
+        self.nombres = (self.nombres or '').strip().upper()
+        self.apellidos = (self.apellidos or '').strip().upper()
+        self.username = (self.username or '').strip().lower()
+        self.email = (self.email or '').strip().lower()
+        # Sincronizamos SIEMPRE campos nativos AbstractUser con nuestros campos custom
+        self.first_name = self.nombres or ''
+        self.last_name = self.apellidos or ''
+        self.is_active = bool(self.activo)
+        return super().save(*args, **kwargs)

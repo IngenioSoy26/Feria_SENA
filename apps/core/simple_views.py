@@ -2411,7 +2411,13 @@ class CrearEditarUsuarioView(LoginRequiredMixin, RoleRequiredMixin, View):
                     'form': form, 'usuario': usuario, 'es_nuevo': not usuario,
                 })
             if usuario:
-                messages.success(request, f'✅ Usuario actualizado correctamente: @{user_guardado.username}')
+                if pwd_generada:
+                    messages.success(
+                        request,
+                        f'✅ Usuario actualizado: @{user_guardado.username} · 🔐 <b>NUEVA Contraseña</b>: <span class="badge text-bg-success px-3 py-2" style="font-size:1.02rem;">{pwd_generada}</span> · <b class="text-danger">CÓPIALA y PÁSALA a la persona</b>'
+                    )
+                else:
+                    messages.success(request, f'✅ Usuario actualizado correctamente: @{user_guardado.username}')
             else:
                 msgs = [f'✅ Usuario creado correctamente: @{user_guardado.username}']
                 if pwd_generada:
