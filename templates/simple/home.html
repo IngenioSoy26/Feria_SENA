@@ -50,10 +50,13 @@
         <input id="lnk-registro" readonly class="form-control pub-input"
                value="{{ enlaces_publicos.registro|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
         <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-registro"
-                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;"
                 {% if not enlaces_publicos.registro %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-registro" data-titulo="Registro de Proyectos"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;"
+                {% if not enlaces_publicos.registro %}disabled{% endif %}>⬇ QR</button>
       </div>
-      <div class="qr-block" data-input-id="lnk-registro" data-titulo="Registro de Proyectos" data-qr-id="qr-registro"></div>
     </div>
     <div class="col-12 col-md-6">
       <label class="form-label" style="font-size:.84rem;">✅ Operador Asistencia</label>
@@ -61,10 +64,13 @@
         <input id="lnk-asistencia" readonly class="form-control pub-input"
                value="{{ enlaces_publicos.op_asistencia|default:'⚠ Desactivado · TOKEN_OPERADORES vacío en .env' }}">
         <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-asistencia"
-                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;"
                 {% if not enlaces_publicos.op_asistencia %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-asistencia" data-titulo="Operador Asistencia"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;"
+                {% if not enlaces_publicos.op_asistencia %}disabled{% endif %}>⬇ QR</button>
       </div>
-      <div class="qr-block" data-input-id="lnk-asistencia" data-titulo="Operador Asistencia" data-qr-id="qr-asistencia"></div>
     </div>
     <div class="col-12 col-md-6">
       <label class="form-label" style="font-size:.84rem;">🍱 Operador Refrigerios</label>
@@ -72,10 +78,13 @@
         <input id="lnk-refrigerios" readonly class="form-control pub-input"
                value="{{ enlaces_publicos.op_refrigerios|default:'⚠ Desactivado · TOKEN_OPERADORES vacío en .env' }}">
         <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-refrigerios"
-                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;"
                 {% if not enlaces_publicos.op_refrigerios %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-refrigerios" data-titulo="Operador Refrigerios"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;"
+                {% if not enlaces_publicos.op_refrigerios %}disabled{% endif %}>⬇ QR</button>
       </div>
-      <div class="qr-block" data-input-id="lnk-refrigerios" data-titulo="Operador Refrigerios" data-qr-id="qr-refrigerios"></div>
     </div>
     <div class="col-12 col-md-6">
       <label class="form-label" style="font-size:.84rem;">📜 Operador Certificados</label>
@@ -83,10 +92,13 @@
         <input id="lnk-certificados" readonly class="form-control pub-input"
                value="{{ enlaces_publicos.op_certificados|default:'⚠ Desactivado · TOKEN_OPERADORES vacío en .env' }}">
         <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-certificados"
-                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;"
                 {% if not enlaces_publicos.op_certificados %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-certificados" data-titulo="Operador Certificados"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;"
+                {% if not enlaces_publicos.op_certificados %}disabled{% endif %}>⬇ QR</button>
       </div>
-      <div class="qr-block" data-input-id="lnk-certificados" data-titulo="Operador Certificados" data-qr-id="qr-certificados"></div>
     </div>
     <div class="col-12 col-md-6">
       <label class="form-label" style="font-size:.84rem;">👥 Registro Personas · Invit · Inst · Org</label>
@@ -94,10 +106,13 @@
         <input id="lnk-personas" readonly class="form-control pub-input"
                value="{{ enlaces_publicos.registro_personas|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
         <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-personas"
-                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;border-color:#0891b2;"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;border-color:#0891b2;"
                 {% if not enlaces_publicos.registro_personas %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-personas" data-titulo="Registro de Personas"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;background:#0891b2;color:#fff;border-color:#0891b2;"
+                {% if not enlaces_publicos.registro_personas %}disabled{% endif %}>⬇ QR</button>
       </div>
-      <div class="qr-block" data-input-id="lnk-personas" data-titulo="Registro de Personas" data-qr-id="qr-personas"></div>
     </div>
     <div class="col-12 col-md-6">
       <label class="form-label" style="font-size:.84rem;">🎟️ Registro SOLO Invitados · rol BLOQUEADO · correo + teléfono OBLIGATORIOS</label>
@@ -106,118 +121,116 @@
                style="background:linear-gradient(180deg,#eff6ff,#ffffff);border-color:#93c5fd;"
                value="{{ enlaces_publicos.registro_invitados|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
         <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-invitados"
-                style="min-height:50px;padding:0 18px;border-top-left-radius:0;border-bottom-left-radius:0;background:#1d4ed8;color:white;border-color:#1d4ed8;"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;background:#1d4ed8;color:white;border-color:#1d4ed8;"
                 {% if not enlaces_publicos.registro_invitados %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-invitados" data-titulo="Registro de Invitados"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;background:#1d4ed8;color:#fff;border-color:#1d4ed8;"
+                {% if not enlaces_publicos.registro_invitados %}disabled{% endif %}>⬇ QR</button>
       </div>
       <div class="muted-small mt-1">⚠️ Por este enlace solo se pueden registrar Invitados. No permite elegir otro rol.</div>
-      <div class="qr-block" data-input-id="lnk-invitados" data-titulo="Registro de Invitados" data-qr-id="qr-invitados"></div>
     </div>
   </div>
   <style>
-    .qr-block{
-      margin-top:14px;
-      display:none;
-      padding:18px 14px 10px;
-      border-radius:18px;
-      background:linear-gradient(180deg,#ffffff,#f8fafc);
-      border:1px solid #e2e8f0;
-      text-align:center;
-      box-shadow:0 4px 18px rgba(15,23,42,.04);
+    .btn-qr-dl{
+      display:inline-flex; align-items:center; justify-content:center; gap:4px;
+      font-weight:700; letter-spacing:.02em; border:1px solid #cbd5e1;
+      background:linear-gradient(180deg,#ffffff,#f8fafc); color:#0f172a; cursor:pointer;
+      transition: all .18s ease;
     }
-    .qr-block.qr-active{ display:block; }
-    .qr-canvas{
-      display:inline-block;
-      padding:10px;
-      background:#fff;
-      border-radius:14px;
-      border:1px solid #e5e7eb;
+    .btn-qr-dl:hover:not(:disabled){ filter:brightness(1.03); transform: translateY(-1px); box-shadow:0 4px 10px rgba(15,23,42,.08); }
+    .btn-qr-dl:disabled{ opacity:.55; cursor:not-allowed; }
+    .btn-copiar + .btn-qr-dl{ border-left: 1px dashed rgba(148,163,184,.35); }
+    .btn-qr-toast{
+      position:fixed; right:20px; bottom:24px; z-index:9999; background:#065f46; color:white;
+      padding:10px 16px; border-radius:14px; font-size:.86rem; font-weight:600;
+      box-shadow:0 14px 40px rgba(22,163,74,.3);
+      opacity:0; transform: translateY(10px); transition: all .25s ease; pointer-events:none;
     }
-    .qr-canvas canvas, .qr-canvas img{
-      display:block;
-      image-rendering: crisp-edges;
-    }
-    .qr-titulo{
-      margin-top:10px;
-      font-weight:700;
-      font-size:1rem;
-      color:#0f172a;
-      letter-spacing:.01em;
-    }
-    .qr-download{
-      margin-top:8px;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 12px;
-      border-radius:999px;
-      border:1px solid #c7d2fe;
-      background:#eef2ff;
-      color:#3730a3;
-      font-size:.78rem;
-      font-weight:600;
-      cursor:pointer;
-      user-select:none;
-    }
-    .qr-download:hover{ background:#e0e7ff; }
+    .btn-qr-toast.show{ opacity:1; transform: translateY(0); }
   </style>
+  <div id="toastQr" class="btn-qr-toast" aria-live="polite"></div>
   <script>
   (function(){
     function cargarScript(src, cb){
       if (window.QRCode) return cb();
       var s = document.createElement('script');
       s.src = src;
-      s.onload = cb; s.onerror = cb;
+      s.onload = cb; s.onerror = function(){
+        var toast = document.getElementById('toastQr');
+        if (toast){ toast.textContent = '⚠ Sin red: no se pudo cargar librería QR'; toast.classList.add('show'); setTimeout(function(){toast.classList.remove('show');}, 2200); }
+      };
       document.head.appendChild(s);
     }
-    function initQrs(){
-      var bloques = document.querySelectorAll('.qr-block');
-      var qrInstances = {};
-      bloques.forEach(function(bl){
-        var inputId = bl.getAttribute('data-input-id');
-        var titulo  = bl.getAttribute('data-titulo') || '';
-        var qrWrapId = bl.getAttribute('data-qr-id');
-        var inp = document.getElementById(inputId);
-        if (!inp) return;
-        var v = (inp.value || '').trim();
-        if (!v || v.indexOf('http') !== 0 || v.indexOf('⚠') !== -1) return;
-        bl.classList.add('qr-active');
-        var wrap = document.createElement('div');
-        wrap.className = 'qr-canvas';
-        wrap.id = qrWrapId;
-        bl.appendChild(wrap);
-        var t = document.createElement('div');
-        t.className = 'qr-titulo';
-        t.textContent = titulo;
-        bl.appendChild(t);
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'qr-download';
-        btn.innerHTML = '⬇ Descargar PNG';
-        bl.appendChild(btn);
-        try {
-          qrInstances[qrWrapId] = new QRCode(wrap, {
-            text: v,
-            width: 180,
-            height: 180,
-            colorDark: '#0f172a',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
+    var toastTimer = null;
+    function showToast(msg){
+      var t = document.getElementById('toastQr'); if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+    }
+    function descargarQr(btn){
+      var inputId = btn.getAttribute('data-input-id');
+      var titulo  = btn.getAttribute('data-titulo') || 'QR-SENA';
+      var inp = document.getElementById(inputId);
+      if (!inp){ return showToast('⚠ No se encontró la URL'); }
+      var v = (inp.value || '').trim();
+      if (!v || v.indexOf('http') !== 0 || v.indexOf('⚠') !== -1){
+        return showToast('⚠ Enlace desactivado');
+      }
+      var hostId = '__qr_host_offscreen__';
+      var host = document.getElementById(hostId);
+      if (!host){
+        host = document.createElement('div');
+        host.id = hostId;
+        host.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:360px;height:360px;background:#fff;pointer-events:none;opacity:0;overflow:hidden;';
+        document.body.appendChild(host);
+      } else {
+        while (host.firstChild) host.removeChild(host.firstChild);
+      }
+      try {
+        new QRCode(host, {
+          text: v,
+          width: 340,
+          height: 340,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } catch(e){
+        return showToast('⚠ Error al generar QR');
+      }
+      function intentarDescargar(intentos){
+        var canvas = host.querySelector('canvas');
+        var img = host.querySelector('img');
+        var url = null;
+        if (canvas){ try { url = canvas.toDataURL('image/png'); } catch(e){ url = null; } }
+        if (!url && img && img.src && img.src.indexOf('data:image') === 0){ url = img.src; }
+        if (!url && intentos > 0){ setTimeout(function(){ intentarDescargar(intentos - 1); }, 60); return; }
+        if (!url){ return showToast('⚠ No se pudo descargar'); }
+        var a = document.createElement('a');
+        a.href = url; a.download = titulo + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        showToast('⬇ ' + titulo + '.png');
+      }
+      setTimeout(function(){ intentarDescargar(6); }, 30);
+    }
+    function vincularBotones(){
+      var botones = document.querySelectorAll('.btn-qr-dl');
+      botones.forEach(function(b){
+        if (b.dataset.qrBound === '1') return;
+        b.dataset.qrBound = '1';
+        b.addEventListener('click', function(e){
+          e.preventDefault(); e.stopPropagation();
+          cargarScript('https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js', function(){
+            descargarQr(b);
           });
-        } catch(e){ wrap.textContent = '⚠ No se pudo generar QR: ' + String(e); }
-        btn.addEventListener('click', function(){
-          var canvas = wrap.querySelector('canvas');
-          var img = wrap.querySelector('img');
-          var url = null, fname = titulo + '.png';
-          if (canvas) url = canvas.toDataURL('image/png');
-          else if (img && img.src) url = img.src;
-          if (!url) return;
-          var a = document.createElement('a');
-          a.href = url; a.download = fname;
-          document.body.appendChild(a); a.click(); a.remove();
         });
       });
     }
-    cargarScript('https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js', initQrs);
+    document.addEventListener('DOMContentLoaded', vincularBotones);
+    if (document.readyState === 'interactive' || document.readyState === 'complete'){ vincularBotones(); }
   })();
   </script>
   <div class="muted-small mt-3">
@@ -232,7 +245,7 @@
   <span class="muted-small">Toca una tarjeta · funciona perfecto en móvil</span>
 </div>
 
-{% if es_op_asistencia %}
+{% if es_op_asistencia and not _mostrar_menu_completo %}
 <div class="menu-hero mb-5">
   <a class="mh mh-verde-claro" href="{% url 'simple:operador' 'asistencia' %}">
     <div class="mh-ico">✅</div>
@@ -242,7 +255,7 @@
     </div>
   </a>
 </div>
-{% elif es_op_refrigerio %}
+{% elif es_op_refrigerio and not _mostrar_menu_completo %}
 <div class="menu-hero mb-5">
   <a class="mh mh-naranja" href="{% url 'simple:operador' 'refrigerios' %}">
     <div class="mh-ico">🍱</div>
@@ -252,7 +265,7 @@
     </div>
   </a>
 </div>
-{% elif es_op_certificado %}
+{% elif es_op_certificado and not _mostrar_menu_completo %}
 <div class="menu-hero mb-5">
   <a class="mh mh-azul-o" href="{% url 'simple:operador' 'certificados' %}">
     <div class="mh-ico">📜</div>
@@ -262,7 +275,7 @@
     </div>
   </a>
 </div>
-{% elif es_gerente %}
+{% elif es_gerente and _mostrar_menu_completo %}
 <div class="menu-hero mb-5">
   <a class="mh mh-purpura" href="{% url 'simple:listados' 'proyectos' %}">
     <div class="mh-ico">🎯</div>

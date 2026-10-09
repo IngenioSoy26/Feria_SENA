@@ -765,10 +765,16 @@ class HomeSimpleView(LoginRequiredMixin, View):
             'op_certificados': f"{base}/o/{t_o}/certificados/" if t_o else None,
         }
         rol_usuario = str(getattr(request.user, 'rol_sistema', '') or '').strip().upper()
+        es_admin_bool = bool(es_admin)
+        tiene_rol_operador = bool(
+            _tiene_rol_usuario(request, 'OPERADOR_ASISTENCIA')
+            or _tiene_rol_usuario(request, 'OPERADOR_REFRIGERIO')
+            or _tiene_rol_usuario(request, 'OPERADOR_CERTIFICADO')
+        )
         return render(request, 'simple/home.html', {
             'evento': evento,
             'es_admin': es_admin,
-            'enlaces_publicos': enlaces,
+            'enlaces_publicos': enlaces if es_admin_bool else None,
             'rol_usuario': rol_usuario,
             'es_admin_full': _tiene_rol_usuario(request, 'ADMINISTRADOR'),
             'es_registro': _tiene_rol_usuario(request, 'REGISTRO'),
@@ -777,6 +783,13 @@ class HomeSimpleView(LoginRequiredMixin, View):
             'es_op_refrigerio': _tiene_rol_usuario(request, 'OPERADOR_REFRIGERIO'),
             'es_op_certificado': _tiene_rol_usuario(request, 'OPERADOR_CERTIFICADO'),
             'es_consulta': _tiene_rol_usuario(request, 'CONSULTA'),
+            '_mostrar_menu_completo': (
+                es_admin_bool
+                or (not tiene_rol_operador)
+                or (_tiene_rol_usuario(request, 'GERENTE'))
+                or (_tiene_rol_usuario(request, 'REGISTRO'))
+                or (_tiene_rol_usuario(request, 'CONSULTA'))
+            ),
         })
 
 
