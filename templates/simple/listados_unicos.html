@@ -1,11 +1,18 @@
 {% extends "simple/base_simple.html" %}
+{% load static %}
 {% block titulo %}{{ titulo }}{% endblock %}
 {% block contenido %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
   <h2 class="text-sena mb-0">📋 {{ titulo }}</h2>
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'simple:home' %}">← Inicio</a>
-    {% if que == 'colegios' %}
+    {% if columnas_especiales == 'asistencia' %}
+      <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/asistencia/asistenciaevento/">🛠️ Admin Asistencias</a>
+    {% elif columnas_especiales == 'entrega' %}
+      <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/refrigerios/entregaservicio/">🛠️ Admin Refrigerios</a>
+    {% elif columnas_especiales == 'certificado' %}
+      <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/certificados/certificado/">🛠️ Admin Certificados</a>
+    {% elif que == 'colegios' %}
       <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'todos' %}">🖨️ Todas escarapelas</a>
     {% elif que == 'aprendices' %}
       <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'aprendices' %}">🖨️ Escarapelas aprendices</a>
@@ -29,88 +36,178 @@
       <p class="mb-0">Ve al inicio y registra datos → <a class="btn btn-sena btn-sm ms-2" href="{% url 'simple:wizard' %}">➕ Empezar</a></p>
     </div>
   {% else %}
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-success">
-          <tr>
-            <th>#</th>
-            {% if que == 'colegios' %}
-              <th>Institución Educativa</th><th>Municipio</th><th>Proyectos</th><th>Acciones</th>
-            {% elif que == 'programas' %}
-              <th>Programa Técnico</th><th>Código</th><th>Proyectos que lo usan</th>
-            {% elif que == 'instructores' %}
-              <th>Instructor</th><th>Cédula</th><th>Correo</th><th>Programas</th><th>Acciones</th>
-            {% elif que == 'invitados' %}
-              <th>Invitado</th><th>Entidad</th><th>Cargo</th><th>Acciones</th>
-            {% elif que == 'proyectos' %}
-              <th>Código</th><th>Proyecto</th><th>Colegio</th><th>Programa</th><th>Municipio</th><th>Instructor</th><th>Aprendices</th><th>Acciones</th>
-            {% elif que == 'aprendices' %}
-              <th>Ficha</th><th>Aprendiz</th><th>Proyecto</th><th>Colegio</th><th>Grado</th><th>Acciones</th>
-            {% endif %}
-          </tr>
-        </thead>
-        <tbody>
-        {% for fila in filas %}
-          <tr>
-            <td>{{ forloop.counter }}</td>
-            {% if que == 'colegios' %}
-              <td><b>{{ fila.nombre }}</b></td>
-              <td>{{ fila.municipio|default:"-" }}</td>
-              <td><span class="badge badge-sena">{{ fila.proyecto_set.all|length }}</span></td>
-              <td><a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.id %}">🖨️ Escarapelas IE</a></td>
-            {% elif que == 'programas' %}
-              <td><b>{{ fila.nombre }}</b></td>
-              <td><code>{{ fila.codigo }}</code></td>
-              <td>{{ fila.proyecto_set.all|length }}</td>
-            {% elif que == 'instructores' %}
-              <td><b>{{ fila.persona.get_full_name }}</b></td>
-              <td>{{ fila.persona.numero_identificacion }}</td>
-              <td>{{ fila.persona.correo|default:"-" }}</td>
-              <td>{% for pr in fila.programas.all|slice:":3" %}<span class="tag">{{ pr.nombre }}</span>{% endfor %}</td>
-              <td>
-                <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'PARTICIPACION' %}">🏆 Participación</a>
-              </td>
-            {% elif que == 'invitados' %}
-              <td><b>{{ fila.persona.get_full_name }}</b></td>
-              <td>{{ fila.entidad|default:"-" }}</td>
-              <td>{{ fila.cargo|default:"-" }}</td>
-              <td>
-                <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
-              </td>
-            {% elif que == 'proyectos' %}
-              <td><span class="badge badge-sena">{{ fila.codigo }}</span></td>
-              <td><b>{{ fila.nombre }}</b></td>
-              <td>{{ fila.institucion.nombre|default:"-" }}</td>
-              <td>{{ fila.programa.nombre|default:"-" }}</td>
-              <td>{{ fila.institucion.municipio|default:"-" }}</td>
-              <td>{{ fila.instructor_responsable.persona.get_full_name|default:"-" }}</td>
-              <td><span class="badge badge-azul">{{ fila.aprendiz_set.all|length }}</span></td>
-              <td>
-                {% if fila.institucion_id %}
-                  <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.institucion.id %}">🖨️ IE</a>
-                {% endif %}
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">🏆 Lote apr.</a>
-              </td>
-            {% elif que == 'aprendices' %}
-              <td><span class="badge badge-sena">{{ fila.proyecto.codigo|default:"-" }}</span></td>
-              <td><b>{{ fila.persona.get_full_name }}</b></td>
-              <td>{{ fila.proyecto.nombre|default:"-" }}</td>
-              <td>{{ fila.proyecto.institucion.nombre|default:"-" }}</td>
-              <td>{{ fila.grado|default:"-" }}</td>
-              <td>
-                <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'PARTICIPACION' %}">🏆 Participación</a>
-              </td>
-            {% endif %}
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <form method="POST" onsubmit="if(this.accion.value==='eliminar'){return confirm('¿Eliminar definitivamente los registros seleccionados? Esta acción NO se puede deshacer.');}return true;">
+      {% csrf_token %}
+      {% if columnas_especiales %}
+        <div class="px-3 pt-3 pb-2 d-flex flex-wrap align-items-center gap-2 bg-body-tertiary border-bottom">
+          <label class="m-0" style="font-size:.86rem;font-weight:600;">Acciones en lote:</label>
+          <select class="form-select form-select-sm" name="accion" style="width:auto;min-width:180px;">
+            <option value="">-- Selecciona una acción --</option>
+            <option value="eliminar">🗑️ Eliminar seleccionados</option>
+          </select>
+          <button type="submit" class="btn btn-outline-danger btn-sm">Aplicar</button>
+          <div class="ms-auto text-muted" style="font-size:.82rem;">
+            Registros visibles: <b>{{ filas|length }}</b>
+          </div>
+        </div>
+      {% endif %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-success">
+            <tr>
+              <th style="width:44px;">#</th>
+              {% if columnas_especiales == 'asistencia' %}
+                <th style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>
+                <th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo marcó?</th><th style="width:150px;">Acciones</th>
+              {% elif columnas_especiales == 'entrega' %}
+                <th style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>
+                <th>Servicio</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo entregó?</th><th style="width:150px;">Acciones</th>
+              {% elif columnas_especiales == 'certificado' %}
+                <th style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>
+                <th>Código</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Entregado</th><th>Medio</th><th>¿Quién lo entregó?</th><th style="width:150px;">Acciones</th>
+              {% elif que == 'colegios' %}
+                <th>Institución Educativa</th><th>Municipio</th><th>Proyectos</th><th>Acciones</th>
+              {% elif que == 'programas' %}
+                <th>Programa Técnico</th><th>Código</th><th>Proyectos que lo usan</th>
+              {% elif que == 'instructores' %}
+                <th>Instructor</th><th>Cédula</th><th>Correo</th><th>Programas</th><th>Acciones</th>
+              {% elif que == 'invitados' %}
+                <th>Invitado</th><th>Entidad</th><th>Cargo</th><th>Acciones</th>
+              {% elif que == 'proyectos' %}
+                <th>Código</th><th>Proyecto</th><th>Colegio</th><th>Programa</th><th>Municipio</th><th>Instructor</th><th>Aprendices</th><th>Acciones</th>
+              {% elif que == 'aprendices' %}
+                <th>Ficha</th><th>Aprendiz</th><th>Proyecto</th><th>Colegio</th><th>Grado</th><th>Acciones</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+          {% for fila in filas %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              {% if columnas_especiales == 'asistencia' %}
+                <td><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>
+                <td><b>{{ fila.persona.numero_identificacion }}</b></td>
+                <td>{{ fila.persona.nombre_completo }}</td>
+                <td>
+                  {% if fila.persona.tipo_persona == 'APRENDIZ' %}<span class="badge" style="background:#16a34a;">APRENDIZ</span>
+                  {% elif fila.persona.tipo_persona == 'INSTRUCTOR' %}<span class="badge" style="background:#0ea5e9;">INSTRUCTOR</span>
+                  {% elif fila.persona.tipo_persona == 'INVITADO' %}<span class="badge" style="background:#a855f7;">INVITADO</span>
+                  {% elif fila.persona.tipo_persona == 'ORGANIZADOR' %}<span class="badge" style="background:#f59e0b;">ORGANIZADOR</span>
+                  {% else %}{{ fila.persona.tipo_persona|default:"-" }}{% endif %}
+                </td>
+                <td style="white-space:nowrap;">{{ fila.fecha_hora|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge{% if fila.medio == 'QR' %} text-bg-primary{% else %} text-bg-secondary{% endif %}">{{ fila.medio }}</span></td>
+                <td style="font-size:.85rem;">
+                  {{ fila.operador.get_full_name|default:fila.operador.username }}
+                  {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
+                </td>
+                <td>
+                  <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
+                          onclick="return confirm('¿Quitar esta asistencia?');return true;">🗑️ Quitar</button>
+                </td>
+              {% elif columnas_especiales == 'entrega' %}
+                <td><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>
+                <td><span class="badge text-bg-warning">{{ fila.tipo_servicio.nombre|default:"Refrigerio" }}</span></td>
+                <td><b>{{ fila.persona.numero_identificacion }}</b></td>
+                <td>{{ fila.persona.nombre_completo }}</td>
+                <td>
+                  {% if fila.persona.tipo_persona == 'APRENDIZ' %}<span class="badge" style="background:#16a34a;">APRENDIZ</span>
+                  {% elif fila.persona.tipo_persona == 'INSTRUCTOR' %}<span class="badge" style="background:#0ea5e9;">INSTRUCTOR</span>
+                  {% elif fila.persona.tipo_persona == 'INVITADO' %}<span class="badge" style="background:#a855f7;">INVITADO</span>
+                  {% elif fila.persona.tipo_persona == 'ORGANIZADOR' %}<span class="badge" style="background:#f59e0b;">ORGANIZADOR</span>
+                  {% else %}{{ fila.persona.tipo_persona|default:"-" }}{% endif %}
+                </td>
+                <td style="white-space:nowrap;">{{ fila.fecha_hora|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge{% if fila.medio == 'QR' %} text-bg-primary{% else %} text-bg-secondary{% endif %}">{{ fila.medio }}</span></td>
+                <td style="font-size:.85rem;">
+                  {{ fila.operador.get_full_name|default:fila.operador.username }}
+                  {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
+                </td>
+                <td>
+                  <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
+                          onclick="return confirm('¿Quitar esta entrega de refrigerio?');return true;">🗑️ Quitar</button>
+                </td>
+              {% elif columnas_especiales == 'certificado' %}
+                <td><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>
+                <td><code style="background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:6px;">{{ fila.codigo_unico }}</code></td>
+                <td><b>{{ fila.persona.numero_identificacion }}</b></td>
+                <td>{{ fila.persona.nombre_completo }}</td>
+                <td>
+                  {% if fila.persona.tipo_persona == 'APRENDIZ' %}<span class="badge" style="background:#16a34a;">APRENDIZ</span>
+                  {% elif fila.persona.tipo_persona == 'INSTRUCTOR' %}<span class="badge" style="background:#0ea5e9;">INSTRUCTOR</span>
+                  {% elif fila.persona.tipo_persona == 'INVITADO' %}<span class="badge" style="background:#a855f7;">INVITADO</span>
+                  {% elif fila.persona.tipo_persona == 'ORGANIZADOR' %}<span class="badge" style="background:#f59e0b;">ORGANIZADOR</span>
+                  {% else %}{{ fila.persona.tipo_persona|default:"-" }}{% endif %}
+                </td>
+                <td style="white-space:nowrap;">{{ fila.fecha_hora_entrega|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge{% if fila.medio == 'QR' %} text-bg-primary{% else %} text-bg-secondary{% endif %}">{{ fila.medio }}</span></td>
+                <td style="font-size:.85rem;">
+                  {{ fila.operador.get_full_name|default:fila.operador.username }}
+                  {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
+                </td>
+                <td>
+                  <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
+                          onclick="return confirm('¿Quitar este certificado entregado?');return true;">🗑️ Quitar</button>
+                </td>
+              {% elif que == 'colegios' %}
+                <td><b>{{ fila.nombre }}</b></td>
+                <td>{{ fila.municipio|default:"-" }}</td>
+                <td><span class="badge badge-sena">{{ fila.proyecto_set.all|length }}</span></td>
+                <td><a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.id %}">🖨️ Escarapelas IE</a></td>
+              {% elif que == 'programas' %}
+                <td><b>{{ fila.nombre }}</b></td>
+                <td><code>{{ fila.codigo }}</code></td>
+                <td>{{ fila.proyecto_set.all|length }}</td>
+              {% elif que == 'instructores' %}
+                <td><b>{{ fila.persona.get_full_name }}</b></td>
+                <td>{{ fila.persona.numero_identificacion }}</td>
+                <td>{{ fila.persona.correo|default:"-" }}</td>
+                <td>{% for pr in fila.programas.all|slice:":3" %}<span class="tag">{{ pr.nombre }}</span>{% endfor %}</td>
+                <td>
+                  <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'PARTICIPACION' %}">🏆 Participación</a>
+                </td>
+              {% elif que == 'invitados' %}
+                <td><b>{{ fila.persona.get_full_name }}</b></td>
+                <td>{{ fila.entidad|default:"-" }}</td>
+                <td>{{ fila.cargo|default:"-" }}</td>
+                <td>
+                  <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
+                </td>
+              {% elif que == 'proyectos' %}
+                <td><span class="badge badge-sena">{{ fila.codigo }}</span></td>
+                <td><b>{{ fila.nombre }}</b></td>
+                <td>{{ fila.institucion.nombre|default:"-" }}</td>
+                <td>{{ fila.programa.nombre|default:"-" }}</td>
+                <td>{{ fila.institucion.municipio|default:"-" }}</td>
+                <td>{{ fila.instructor_responsable.persona.get_full_name|default:"-" }}</td>
+                <td><span class="badge badge-azul">{{ fila.aprendiz_set.all|length }}</span></td>
+                <td>
+                  {% if fila.institucion_id %}
+                    <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.institucion.id %}">🖨️ IE</a>
+                  {% endif %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">🏆 Lote apr.</a>
+                </td>
+              {% elif que == 'aprendices' %}
+                <td><span class="badge badge-sena">{{ fila.proyecto.codigo|default:"-" }}</span></td>
+                <td><b>{{ fila.persona.get_full_name }}</b></td>
+                <td>{{ fila.proyecto.nombre|default:"-" }}</td>
+                <td>{{ fila.proyecto.institucion.nombre|default:"-" }}</td>
+                <td>{{ fila.grado|default:"-" }}</td>
+                <td>
+                  <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'PARTICIPACION' %}">🏆 Participación</a>
+                </td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
   {% endif %}
 </div>
 {% endblock %}

@@ -305,6 +305,27 @@
       <small>Informe completo del evento</small>
     </div>
   </a>
+  <a class="mh" style="background:linear-gradient(180deg,#dcfce7,#bbf7d0);" href="{% url 'simple:listados' 'asistencia' %}">
+    <div class="mh-ico">📋</div>
+    <div>
+      Lista Asistencias<br/>
+      <small>Ver · quitar · editar registros</small>
+    </div>
+  </a>
+  <a class="mh" style="background:linear-gradient(180deg,#ffedd5,#fed7aa);" href="{% url 'simple:listados' 'refrigerios' %}">
+    <div class="mh-ico">🍱</div>
+    <div>
+      Lista Refrigerios<br/>
+      <small>Ver · quitar entregas de almuerzo</small>
+    </div>
+  </a>
+  <a class="mh" style="background:linear-gradient(180deg,#ede9fe,#ddd6fe);" href="{% url 'simple:listados' 'certificados' %}">
+    <div class="mh-ico">🏆</div>
+    <div>
+      Lista Certificados<br/>
+      <small>Ver · quitar entregas de certificado</small>
+    </div>
+  </a>
 </div>
 {% else %}
 <div class="menu-hero mb-5">
@@ -371,6 +392,27 @@
       <small>Informe del evento</small>
     </div>
   </a>
+  <a class="mh" style="background:linear-gradient(180deg,#dcfce7,#bbf7d0);" href="{% url 'simple:listados' 'asistencia' %}">
+    <div class="mh-ico">📋</div>
+    <div>
+      Lista Asistencias<br/>
+      <small>Ver · quitar · editar registros</small>
+    </div>
+  </a>
+  <a class="mh" style="background:linear-gradient(180deg,#ffedd5,#fed7aa);" href="{% url 'simple:listados' 'refrigerios' %}">
+    <div class="mh-ico">🍱</div>
+    <div>
+      Lista Refrigerios<br/>
+      <small>Ver · quitar entregas de almuerzo</small>
+    </div>
+  </a>
+  <a class="mh" style="background:linear-gradient(180deg,#ede9fe,#ddd6fe);" href="{% url 'simple:listados' 'certificados' %}">
+    <div class="mh-ico">🏆</div>
+    <div>
+      Lista Certificados<br/>
+      <small>Ver · quitar entregas de certificado</small>
+    </div>
+  </a>
   {% if es_admin_full %}
   <a class="mh" style="background:linear-gradient(180deg,#fee2e2,#fecaca);" href="{% url 'simple:gestion_usuarios' %}">
     <div class="mh-ico">👥</div>
@@ -418,6 +460,11 @@
         <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'todos' %}">📜 Asistencia · todos</a>
         <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:certificados_lote' 'PARTICIPACION' 'aprendices' %}">🏆 Participación · aprendices</a>
         <a target="_blank" class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'instructores' %}">📜 Asistencia · instructores</a>
+        <hr class="soft my-2">
+        <p class="small mb-1 text-muted fw-semibold">📊 Control operativo · listas editables:</p>
+        <a class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;border-color:#059669;color:#065f46;" href="{% url 'simple:listados' 'asistencia' %}">📋 Asistencias del evento</a>
+        <a class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;border-color:#f59e0b;color:#92400e;" href="{% url 'simple:listados' 'refrigerios' %}">🍱 Refrigerios entregados</a>
+        <a class="btn-outline-sena" style="min-height:48px;text-align:left;justify-content:flex-start;border-radius:14px;border-color:#7c3aed;color:#5b21b6;" href="{% url 'simple:listados' 'certificados' %}">🏆 Certificados entregados</a>
       </div>
     </div>
   </div>

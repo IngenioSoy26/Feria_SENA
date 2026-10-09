@@ -1887,32 +1887,132 @@ class DashboardSimpleView(LoginRequiredMixin, View):
 # LISTADOS: COLEGIOS, PROGRAMAS, INSTRUCTORES, INVITADOS (ÚNICOS, SIN REPETICIONES)
 # ============================================================
 class ListadoUnicosView(LoginRequiredMixin, View):
+    @transaction.atomic
+    def post(self, request, que='colegios', **_ignorado):
+        from django.shortcuts import redirect
+        from django.http import Http404
+        que_normalizado = (que or '').strip().lower()
+        evento = _evento_activo()
+        ids = request.POST.getlist('ids')
+        accion = (request.POST.get('accion') or '').strip()
+        eliminar_sencillo = (request.POST.get('eliminar') or '').strip()
+        pk_sencillo = None
+        try:
+            if eliminar_sencillo:
+                pk_sencillo = int(eliminar_sencillo)
+        except (ValueError, TypeError):
+            pk_sencillo = None
+        if que_normalizado == 'asistencia':
+            qs_total = AsistenciaEvento.objects.all()
+            if evento:
+                qs_total = qs_total.filter(evento=evento)
+            if pk_sencillo:
+                qs = qs_total.filter(pk=pk_sencillo)
+                n = qs.count()
+                qs.delete()
+                messages.success(request, f'✅ Se eliminó 1 asistencia.')
+            elif accion == 'eliminar' and ids:
+                qs = qs_total.filter(pk__in=ids)
+                n = qs.count()
+                qs.delete()
+                messages.success(request, f'✅ Se eliminaron {n} asistencia(s).')
+            else:
+                messages.warning(request, '⚠ Selecciona asistencias para eliminar.')
+            return redirect('simple:listados', que='asistencia')
+        if que_normalizado == 'refrigerios':
+            svc = _servicio_almuerzo(evento) if evento else None
+            qs_total = EntregaServicio.objects.all()
+            if evento:
+                qs_total = qs_total.filter(evento=evento)
+            if svc:
+                qs_total = qs_total.filter(tipo_servicio=svc)
+            if pk_sencillo:
+                qs = qs_total.filter(pk=pk_sencillo)
+                qs.delete()
+                messages.success(request, f'✅ Se eliminó 1 entrega de refrigerio.')
+            elif accion == 'eliminar' and ids:
+                qs = qs_total.filter(pk__in=ids)
+                n = qs.count()
+                qs.delete()
+                messages.success(request, f'✅ Se eliminaron {n} entrega(s) de refrigerio.')
+            else:
+                messages.warning(request, '⚠ Selecciona entregas para eliminar.')
+            return redirect('simple:listados', que='refrigerios')
+        if que_normalizado == 'certificados':
+            qs_total = Certificado.objects.all()
+            if evento:
+                qs_total = qs_total.filter(evento=evento)
+            if pk_sencillo:
+                qs = qs_total.filter(pk=pk_sencillo)
+                qs.delete()
+                messages.success(request, f'✅ Se eliminó 1 certificado entregado.')
+            elif accion == 'eliminar' and ids:
+                qs = qs_total.filter(pk__in=ids)
+                n = qs.count()
+                qs.delete()
+                messages.success(request, f'✅ Se eliminaron {n} certificado(s) entregado(s).')
+            else:
+                messages.warning(request, '⚠ Selecciona certificados para eliminar.')
+            return redirect('simple:listados', que='certificados')
+        raise Http404('Acción no soportada para este listado.')
+
     def get(self, request, que='colegios', **_ignorado):
         data = None
         titulo = ''
-        if que == 'colegios':
+        columnas_especiales = None
+        que_normalizado = (que or '').strip().lower()
+        evento = _evento_activo()
+        if que_normalizado == 'colegios':
             titulo = 'Instituciones Educativas (únicas)'
             data = InstitucionEducativa.objects.order_by('nombre').all()
-        elif que == 'programas':
+        elif que_normalizado == 'programas':
             titulo = 'Programas Técnicos (únicos)'
             data = ProgramaTecnico.objects.order_by('nombre').all()
-        elif que == 'instructores':
+        elif que_normalizado == 'instructores':
             titulo = 'Instructores (únicos)'
             data = Instructor.objects.select_related('persona').order_by('persona__apellidos').all()
-        elif que == 'invitados':
+        elif que_normalizado == 'invitados':
             titulo = 'Invitados (únicos)'
             data = Invitado.objects.select_related('persona').order_by('persona__apellidos').all()
-        elif que == 'organizadores':
+        elif que_normalizado == 'organizadores':
             titulo = 'Organizadores (únicos)'
             data = _organizadores_qs_safe()
-        elif que == 'proyectos':
+        elif que_normalizado == 'proyectos':
             titulo = 'Proyectos registrados'
             data = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo').all()
-        elif que == 'aprendices':
+        elif que_normalizado == 'aprendices':
             titulo = 'Aprendices por proyecto'
             data = Aprendiz.objects.select_related('persona', 'proyecto').order_by('proyecto__codigo').all()
+        elif que_normalizado in ('asistencia', 'asistencias'):
+            titulo = 'Lista de Asistencias'
+            qs = AsistenciaEvento.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora')
+            if evento:
+                qs = qs.filter(evento=evento)
+            data = qs
+            columnas_especiales = 'asistencia'
+        elif que_normalizado in ('refrigerios', 'entregas', 'almuerzos'):
+            svc = _servicio_almuerzo(evento) if evento else None
+            if svc:
+                titulo = f'Entregas de {svc.nombre}'
+            else:
+                titulo = 'Entregas de Refrigerios'
+            qs = EntregaServicio.objects.select_related('persona', 'evento', 'operador', 'tipo_servicio').order_by('-fecha_hora')
+            if evento:
+                qs = qs.filter(evento=evento)
+            if svc:
+                qs = qs.filter(tipo_servicio=svc)
+            data = qs
+            columnas_especiales = 'entrega'
+        elif que_normalizado in ('certificados', 'certificados_entregados'):
+            titulo = 'Certificados Entregados'
+            qs = Certificado.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora_entrega')
+            if evento:
+                qs = qs.filter(evento=evento)
+            data = qs
+            columnas_especiales = 'certificado'
         return render(request, 'simple/listados_unicos.html', {
-            'que': que, 'titulo': titulo, 'filas': data,
+            'que': que_normalizado, 'titulo': titulo, 'filas': data,
+            'columnas_especiales': columnas_especiales,
         })
 
 
