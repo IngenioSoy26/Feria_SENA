@@ -43,6 +43,22 @@
   .section-title{font-size:.98rem;font-weight:800;color:#0f172a;letter-spacing:-.01em;}
   .section-sub{font-size:.8rem;color:#64748b;margin-bottom:.75rem;line-height:1.45;}
   .role-card{padding:.85rem 1rem;border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;}
+  .ausente-card{padding:1rem 1.1rem;border-radius:14px;border:2px solid #e2e8f0;background:#ffffff;transition:all .18s ease;user-select:none;touch-action:manipulation;min-height:92px;}
+  .ausente-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,23,42,.12),0 2px 6px rgba(15,23,42,.08);}
+  .ausente-card:active{transform:translateY(0);}
+  .ausente-apr{border-left:5px solid #16a34a;}
+  .ausente-apr:hover{border-color:#bbf7d0;border-left-color:#16a34a;background:#f0fdf4;}
+  .ausente-ins{border-left:5px solid #0ea5e9;}
+  .ausente-ins:hover{border-color:#7dd3fc;border-left-color:#0ea5e9;background:#f0f9ff;}
+  .ausente-inv{border-left:5px solid #7c3aed;}
+  .ausente-inv:hover{border-color:#c4b5fd;border-left-color:#7c3aed;background:#f5f3ff;}
+  .ausente-org{border-left:5px solid #f59e0b;}
+  .ausente-org:hover{border-color:#fcd34d;border-left-color:#f59e0b;background:#fffbeb;}
+  .badge-count{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:30px;padding:0 .75rem;border-radius:999px;background:#fef2f2;color:#b91c1c;font-size:.95rem;font-weight:800;border:1.5px solid #fecaca;}
+  .ausente-hint{font-size:.64rem;opacity:.72;letter-spacing:.08em;}
+  .modal-backdrop{background:rgba(15,23,42,.55);backdrop-filter:blur(2px);}
+  .modal-content{border:none;border-radius:16px;box-shadow:0 25px 50px rgba(15,23,42,.35),0 12px 24px rgba(15,23,42,.18);}
+  .btn-pill{padding:.65rem 1.5rem;}
 </style>
 {% endblock %}
 
@@ -390,6 +406,228 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <div class="section-title">🚫 AUSENTES POR ROL</div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-6 col-xl-3">
+            <div class="ausente-card ausente-apr" data-bs-toggle="modal" data-bs-target="#modalAusentesAprendices" style="cursor:pointer;">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="chip chip-apr">APRENDIZ</span>
+                <span class="badge-count">{{ ausentes_aprendices }}</span>
+              </div>
+              <div class="kpi-label ausente-hint">Haz clic para ver lista →</div>
+            </div>
+          </div>
+          <div class="col-6 col-xl-3">
+            <div class="ausente-card ausente-ins" data-bs-toggle="modal" data-bs-target="#modalAusentesInstructores" style="cursor:pointer;">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="chip chip-ins">INSTRUCTOR</span>
+                <span class="badge-count">{{ ausentes_instructores }}</span>
+              </div>
+              <div class="kpi-label ausente-hint">Haz clic para ver lista →</div>
+            </div>
+          </div>
+          <div class="col-6 col-xl-3">
+            <div class="ausente-card ausente-inv" data-bs-toggle="modal" data-bs-target="#modalAusentesInvitados" style="cursor:pointer;">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="chip chip-inv">INVITADO</span>
+                <span class="badge-count">{{ ausentes_invitados }}</span>
+              </div>
+              <div class="kpi-label ausente-hint">Haz clic para ver lista →</div>
+            </div>
+          </div>
+          <div class="col-6 col-xl-3">
+            <div class="ausente-card ausente-org" data-bs-toggle="modal" data-bs-target="#modalAusentesOrganizadores" style="cursor:pointer;">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="chip chip-org">ORGANIZADOR</span>
+                <span class="badge-count">{{ ausentes_organizadores }}</span>
+              </div>
+              <div class="kpi-label ausente-hint">Haz clic para ver lista →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAusentesAprendices" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;">
+        <h5 class="modal-title fw-bold">🚫 AUSENTES — APRENDICES</h5>
+        <span class="badge rounded-pill bg-white text-success ms-2 fs-6">{{ ausentes_aprendices }} ausentes</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="padding-left:1.25rem;">Nombre completo</th>
+                <th>Documento</th>
+                <th>Institución</th>
+                <th style="padding-right:1.25rem;">Ficha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if lista_ausentes_aprendices %}
+                {% for p in lista_ausentes_aprendices %}
+                <tr>
+                  <td style="padding-left:1.25rem;font-weight:600;">{{ p.nombre }}</td>
+                  <td class="txt-mono">{{ p.documento }}</td>
+                  <td>{{ p.entidad }}</td>
+                  <td style="padding-right:1.25rem;" class="txt-mono">{{ p.extra }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4" class="text-center py-4 text-success fw-bold" style="padding-left:1.25rem;padding-right:1.25rem;">✅ NO hay aprendices ausentes. Todos asistieron.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-pill btn-success fw-bold" data-bs-dismiss="modal" style="border-radius:999px;color:#fff!important;">Cerrar y volver al Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAusentesInstructores" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;">
+        <h5 class="modal-title fw-bold">🚫 AUSENTES — INSTRUCTORES</h5>
+        <span class="badge rounded-pill bg-white text-info ms-2 fs-6">{{ ausentes_instructores }} ausentes</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="padding-left:1.25rem;">Nombre completo</th>
+                <th>Documento</th>
+                <th>Entidad</th>
+                <th style="padding-right:1.25rem;">Especialidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if lista_ausentes_instructores %}
+                {% for p in lista_ausentes_instructores %}
+                <tr>
+                  <td style="padding-left:1.25rem;font-weight:600;">{{ p.nombre }}</td>
+                  <td class="txt-mono">{{ p.documento }}</td>
+                  <td>{{ p.entidad }}</td>
+                  <td style="padding-right:1.25rem;">{{ p.extra }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4" class="text-center py-4 text-success fw-bold" style="padding-left:1.25rem;padding-right:1.25rem;">✅ NO hay instructores ausentes. Todos asistieron.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-pill btn-info fw-bold" data-bs-dismiss="modal" style="border-radius:999px;color:#fff!important;">Cerrar y volver al Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAusentesInvitados" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;">
+        <h5 class="modal-title fw-bold">🚫 AUSENTES — INVITADOS</h5>
+        <span class="badge rounded-pill bg-white text-primary ms-2 fs-6">{{ ausentes_invitados }} ausentes</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="padding-left:1.25rem;">Nombre completo</th>
+                <th>Documento</th>
+                <th>Entidad</th>
+                <th style="padding-right:1.25rem;">Cargo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if lista_ausentes_invitados %}
+                {% for p in lista_ausentes_invitados %}
+                <tr>
+                  <td style="padding-left:1.25rem;font-weight:600;">{{ p.nombre }}</td>
+                  <td class="txt-mono">{{ p.documento }}</td>
+                  <td>{{ p.entidad }}</td>
+                  <td style="padding-right:1.25rem;">{{ p.extra }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4" class="text-center py-4 text-success fw-bold" style="padding-left:1.25rem;padding-right:1.25rem;">✅ NO hay invitados ausentes. Todos asistieron.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-pill fw-bold" style="background:#7c3aed;border-radius:999px;color:#fff!important;border:none;" data-bs-dismiss="modal">Cerrar y volver al Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAusentesOrganizadores" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;">
+        <h5 class="modal-title fw-bold">🚫 AUSENTES — ORGANIZADORES</h5>
+        <span class="badge rounded-pill bg-white text-warning ms-2 fs-6">{{ ausentes_organizadores }} ausentes</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="padding-left:1.25rem;">Nombre completo</th>
+                <th>Documento</th>
+                <th>Área / Responsabilidad</th>
+                <th style="padding-right:1.25rem;">Cargo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if lista_ausentes_organizadores %}
+                {% for p in lista_ausentes_organizadores %}
+                <tr>
+                  <td style="padding-left:1.25rem;font-weight:600;">{{ p.nombre }}</td>
+                  <td class="txt-mono">{{ p.documento }}</td>
+                  <td>{{ p.entidad }}</td>
+                  <td style="padding-right:1.25rem;">{{ p.extra }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4" class="text-center py-4 text-success fw-bold" style="padding-left:1.25rem;padding-right:1.25rem;">✅ NO hay organizadores ausentes. Todos asistieron.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-pill btn-warning fw-bold" data-bs-dismiss="modal" style="border-radius:999px;color:#fff!important;">Cerrar y volver al Dashboard</button>
       </div>
     </div>
   </div>

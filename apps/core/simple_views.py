@@ -2190,6 +2190,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
 
         qs_asistencia = AsistenciaEvento.objects.filter(evento=evento).select_related('persona', 'operador')
         asistentes_total = qs_asistencia.count()
+        ids_asistieron = list(qs_asistencia.values_list('persona_id', flat=True))
         asistentes_por_rol = dict(qs_asistencia.values_list('persona__tipo_persona').annotate(c=Count('id')))
         asistentes_aprendices = asistentes_por_rol.get('APRENDIZ', 0)
         asistentes_instructores = asistentes_por_rol.get('INSTRUCTOR', 0)
@@ -2204,6 +2205,60 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         ausentes_invitados = max(total_invitados - asistentes_invitados, 0)
         ausentes_organizadores = max(total_organizadores - asistentes_organizadores, 0)
         ausentes = max(total_personas - asistentes_total, 0)
+
+        def _build_ausentes(tipo):
+            qs = Persona.objects.filter(tipo_persona=tipo, activo=True).exclude(id__in=ids_asistieron)
+            lista = []
+            for p in qs:
+                try:
+                    tipo_doc_cod = (getattr(getattr(p, 'tipo_identificacion', None), 'codigo', None) or '').strip()
+                except Exception:
+                    tipo_doc_cod = ''
+                num_doc = (getattr(p, 'numero_identificacion', '') or '').strip()
+                doc_label = f"{tipo_doc_cod} {num_doc}".strip() if tipo_doc_cod else num_doc
+                entidad = ''
+                extra = ''
+                try:
+                    if tipo == 'APRENDIZ':
+                        perfil = getattr(p, 'perfil_aprendiz', None)
+                        if perfil:
+                            try:
+                                entidad = (str(getattr(getattr(perfil, 'proyecto', None), 'institucion', '')) or '').upper()
+                            except Exception:
+                                entidad = ''
+                            try:
+                                extra = (str(getattr(getattr(perfil, 'proyecto', None), 'ficha', '')) or '').strip()
+                            except Exception:
+                                extra = ''
+                    elif tipo == 'INVITADO':
+                        perfil = getattr(p, 'perfil_invitado', None)
+                        if perfil:
+                            entidad = (getattr(perfil, 'entidad', '') or '').strip().upper()
+                            extra = (getattr(perfil, 'cargo', '') or '').strip().title()
+                    elif tipo == 'ORGANIZADOR':
+                        perfil = getattr(p, 'perfil_organizador', None)
+                        if perfil:
+                            entidad = (getattr(perfil, 'area_responsabilidad', '') or '').strip().upper()
+                            extra = (getattr(perfil, 'cargo', '') or '').strip().title()
+                    elif tipo == 'INSTRUCTOR':
+                        entidad = 'SENA'
+                        perfil = getattr(p, 'perfil_instructor', None)
+                        if perfil:
+                            extra = (getattr(perfil, 'especialidad', '') or '').strip().title()
+                except Exception:
+                    pass
+                lista.append({
+                    'nombre': p.nombre_completo,
+                    'documento': doc_label,
+                    'entidad': entidad or '—',
+                    'extra': extra or '—',
+                })
+            return lista
+
+        lista_ausentes_aprendices = _build_ausentes('APRENDIZ')
+        lista_ausentes_instructores = _build_ausentes('INSTRUCTOR')
+        lista_ausentes_invitados = _build_ausentes('INVITADO')
+        lista_ausentes_organizadores = _build_ausentes('ORGANIZADOR')
         pct_asistencia = (asistentes_total * 100 // total_personas) if total_personas else 0
 
         qs_refrigerios = EntregaServicio.objects.filter(evento=evento).select_related('persona', 'operador', 'tipo_servicio')
@@ -2348,6 +2403,10 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             'ausentes_instructores': ausentes_instructores,
             'ausentes_invitados': ausentes_invitados,
             'ausentes_organizadores': ausentes_organizadores,
+            'lista_ausentes_aprendices': lista_ausentes_aprendices,
+            'lista_ausentes_instructores': lista_ausentes_instructores,
+            'lista_ausentes_invitados': lista_ausentes_invitados,
+            'lista_ausentes_organizadores': lista_ausentes_organizadores,
             'asist_qr': asist_qr,
             'asist_manual': asist_manual,
 
