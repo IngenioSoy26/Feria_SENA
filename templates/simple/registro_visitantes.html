@@ -6,19 +6,15 @@
 
 {% block contenido %}
 
-<header class="nav-sena navbar text-white sticky-top mb-4">
-  <div class="container-fluid">
-    <div class="navbar-brand text-white fw-bold d-flex align-items-center gap-3" style="cursor:default;">
-      <span class="logo-sena-pill" aria-hidden="true" style="background:#fff;">
-        <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:32px;height:32px;object-fit:contain;display:block;">
-      </span>
-      <div class="lh-sm text-start">
-        <div class="fs-5 mb-0">SENA</div>
-        <small class="fw-normal opacity-90" style="font-size:.78rem;letter-spacing:.01em;">{{ evento.nombre|default:"Feria Proyectos Productivos 2026" }}</small>
-      </div>
-    </div>
-  </div>
-</header>
+<div class="text-center mb-4 p-4 p-md-5 rounded-4" style="background:linear-gradient(135deg,#0f6b34 0%,#16803e 100%);color:#fff;box-shadow:0 10px 30px rgba(15,107,52,.28);">
+  <img src="{% static 'img/logo-sena-blanco.png' %}" alt="Logo SENA" style="width:72px;height:72px;object-fit:contain;" class="mb-3" onerror="this.style.display='none'">
+  <h1 class="fw-bold mb-2" style="font-size:calc(1.35rem + .6vw);letter-spacing:.02em;">REGISTRO DE VISITANTES</h1>
+  <p class="mb-0 opacity-92" style="font-size:1rem;">
+    Kiosco Público · Recepción<br>
+    <strong>SENA REGIONAL GUAJIRA</strong><br>
+    <small style="opacity:.85;">{{ evento.nombre|default:"Feria Proyectos Productivos 2026" }}</small>
+  </p>
+</div>
 
 <style>
   #form-registro-visitantes input.form-control:invalid:not(:placeholder-shown),

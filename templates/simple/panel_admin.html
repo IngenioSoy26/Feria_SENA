@@ -179,6 +179,14 @@
           <div class="muted-small mt-1">⚠️ Las personas que entren por este enlace quedan registradas SIEMPRE como Invitado. No pueden cambiar de rol.</div>
         </div>
         <div class="mt-2">
+          <label class="form-label mb-1" style="font-size:.82rem;">🚶 Enlace Registro · SOLO VISITANTES (rol bloqueado · entidad + cargo obligatorios · kiosco recepción)</label>
+          <div class="d-flex gap-2">
+            <input readonly type="text" class="pub-input flex-grow-1" id="pub-reg-visitantes" value="{{ enlaces_publicos.registro_visitantes|default:'⚠ TOKEN_REGISTRO no está en el .env — configúralo para habilitar registro sin login.' }}" style="background:linear-gradient(180deg,#f0fdf4,#ffffff);border:1.5px solid #86efac;">
+            <button class="btn-copiar btn-ghost" style="min-height:42px;padding:8px 14px;background:#166534;color:white;border-color:#166534;" data-target="pub-reg-visitantes" type="button">📋 Copiar</button>
+          </div>
+          <div class="muted-small mt-1">🎫 Solo Visitantes. Ideal para pantallas kiosco / recepción del evento. Genera constancia con QR.</div>
+        </div>
+        <div class="mt-2">
           <label class="form-label mb-1" style="font-size:.82rem;">🛠 Enlace Operadores (QR móvil)</label>
           <div class="d-flex gap-2">
             <input readonly type="text" class="pub-input flex-grow-1" id="pub-op" value="{{ enlaces_publicos.op_asistencia|default:'⚠ TOKEN_OPERADORES no configurado en .env.' }}">

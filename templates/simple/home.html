@@ -130,6 +130,22 @@
       </div>
       <div class="muted-small mt-1">⚠️ Por este enlace solo se pueden registrar Invitados. No permite elegir otro rol.</div>
     </div>
+    <div class="col-12 col-md-6">
+      <label class="form-label" style="font-size:.84rem;">🚶 Registro SOLO Visitantes · Kiosko público · entidad + cargo OBLIGATORIOS</label>
+      <div class="input-group">
+        <input id="lnk-visitantes" readonly class="form-control pub-input"
+               style="background:linear-gradient(180deg,#f0fdf4,#ffffff);border-color:#86efac;"
+               value="{{ enlaces_publicos.registro_visitantes|default:'⚠ Desactivado · TOKEN_REGISTRO vacío en .env' }}">
+        <button class="btn-outline-sena btn-copiar" type="button" data-target="lnk-visitantes"
+                style="min-height:50px;padding:0 18px;border-radius:0;border-left:0;background:#166534;color:white;border-color:#166534;"
+                {% if not enlaces_publicos.registro_visitantes %}disabled{% endif %}>📋 Copiar</button>
+        <button class="btn-qr-dl" type="button"
+                data-input-id="lnk-visitantes" data-titulo="Registro de Visitantes"
+                style="min-height:50px;padding:0 18px;border-top-right-radius:14px;border-bottom-right-radius:14px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;background:#166534;color:#fff;border-color:#166534;"
+                {% if not enlaces_publicos.registro_visitantes %}disabled{% endif %}>⬇ QR</button>
+      </div>
+      <div class="muted-small mt-1">🎫 Solo se registran Visitantes. Ideal para pantallas kiosco / recepción. Genera constancia con QR.</div>
+    </div>
   </div>
   <style>
     .btn-qr-dl{
