@@ -413,6 +413,7 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% block navegacion %}
+  {% if not es_ruta_publica_v40 and request.user.is_authenticated %}
 <nav class="nav-sena navbar navbar-expand-lg text-white sticky-top">
   <div class="container-fluid">
     {% load static %}
@@ -487,6 +488,20 @@
     </div>
   </div>
 </nav>
+  {% elif not request.user.is_authenticated %}
+<div class="cabecera-publica-minima" style="background:linear-gradient(135deg,#0f6b34 0%,#16803e 100%);color:#fff;padding:1.2rem 1rem;border-bottom:4px solid #ffd200;">
+  <div class="container d-flex align-items-center gap-3">
+    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+      {% load static %}
+      <img src="{% static 'img/logo-sena-verde.png' %}" alt="Logo SENA" style="width:30px;height:30px;object-fit:contain;display:block;">
+    </div>
+    <div>
+      <div class="fw-bold fs-6 mb-0 lh-sm">SERVICIO NACIONAL DE APRENDIZAJE</div>
+      <div class="small opacity-90 lh-sm">Regional Guajira · Feria de Proyectos Productivos</div>
+    </div>
+  </div>
+</div>
+  {% endif %}
 {% endblock %}
 
 <main class="{% block main_class %}container py-4{% endblock %}">

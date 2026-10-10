@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{% block title %}SENA - REGIONAL GUAJIRA{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/sena.css' %}">
+    <style>
+        body { background-color: #f6f7fb; font-family: 'Work Sans', sans-serif; }
+        .cabecera-publica {
+            background: linear-gradient(135deg, #0f6b34 0%, #16803e 100%);
+            color: #ffffff;
+            padding: 1.5rem 1rem;
+            border-bottom: 4px solid #ffd200;
+        }
+        .cabecera-publica .logo-sena {
+            width: 48px; height: 48px; color: #ffffff;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="cabecera-publica">
+        <div class="container d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <svg class="logo-sena" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="currentColor" aria-label="SENA">
+                    <path d="M20 10 L5 20 L20 30 L35 20 Z M60 8 Q50 8 50 20 Q50 32 60 32 Q70 32 70 24 Q70 18 60 18 Q64 18 64 22 L58 22 L58 18 L76 18 Q76 8 60 8 Z M90 8 L90 32 L96 32 L96 22 L106 32 L112 32 L122 22 L122 32 L128 32 L128 8 L122 8 L109 22 L96 8 Z M140 8 Q130 8 130 20 Q130 32 140 32 L152 32 L152 28 L142 28 Q138 28 138 22 L154 22 Q154 8 140 8 Z M142 18 Q146 18 146 20 L138 20 Q138 18 142 18 Z M162 8 L162 20 L154 8 L148 8 L148 32 L154 32 L154 18 L162 32 L168 32 L168 8 Z M180 8 Q170 8 170 20 Q170 32 180 32 L192 32 L192 28 L182 28 Q178 28 178 22 L194 22 Q194 8 180 8 Z M182 18 Q186 18 186 20 L178 20 Q178 18 182 18 Z"/>
+                </svg>
+                <div>
+                    <div class="fw-bold fs-5 mb-0 lh-sm">SERVICIO NACIONAL DE APRENDIZAJE</div>
+                    <div class="small opacity-90 lh-sm">Regional Guajira · Feria de Proyectos Productivos</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container py-4">
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show auto-dismiss" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-sena-verde text-white py-4 mt-5">
+        <div class="container text-center small opacity-90">
+            <p class="mb-1 fw-semibold">SENA — Feria de Proyectos Productivos · Regional Guajira</p>
+            <p class="mb-0 opacity-80">Página de acceso público · No se requiere inicio de sesión</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

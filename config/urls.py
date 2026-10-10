@@ -6,7 +6,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 
-from apps.usuarios.views import CustomLoginView
+from apps.usuarios.views import CustomLoginView, PerfilView, CambiarClaveView
 
 DJANGO_ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin/')
 
@@ -34,6 +34,8 @@ urlpatterns = [
 
     path('accounts/login/', CustomLoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/profile/', PerfilView.as_view(), name='profile'),
+    path('accounts/password_change/', CambiarClaveView.as_view(), name='password_change'),
 ]
 
 if settings.DEBUG:

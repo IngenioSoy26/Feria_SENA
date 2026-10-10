@@ -52,8 +52,16 @@
                         <dd class="col-sm-8 fw-semibold">{{ usuario.date_joined|date:"Y-m-d H:i:s"|default:"—" }}</dd>
                     </dl>
                 </div>
-                <div class="card-footer bg-white d-flex justify-content-end gap-2">
-                    <a href="{% url 'logout' %}" class="btn btn-outline-sena fw-semibold">Cerrar sesión</a>
+                <div class="card-footer bg-white d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <div class="small text-sena-gris-medio opacity-80">
+                        🔒 Tu contraseña es privada. Nadie (incluido el Administrador) la puede ver en texto plano.
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ cambiar_clave_url|default:'/accounts/password_change/' }}" class="btn btn-sena-verde fw-semibold">
+                            <i class="bi bi-key me-1"></i>Cambiar mi contraseña
+                        </a>
+                        <a href="{% url 'logout' %}" class="btn btn-outline-sena fw-semibold">Cerrar sesión</a>
+                    </div>
                 </div>
             </div>
         </div>

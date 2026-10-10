@@ -21,7 +21,7 @@ from apps.certificados.models import Certificado
 from apps.usuarios.models import Usuario
 
 
-ROLES_DASHBOARD = ['ADMINISTRADOR', 'REGISTRO', 'CONSULTA']
+ROLES_DASHBOARD = ['ADMINISTRADOR', 'REGISTRO', 'CONSULTA', 'GERENTE']
 
 COLORES_SENA = {
     'verde': '#39A900',
