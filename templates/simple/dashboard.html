@@ -2,7 +2,6 @@
 {% load static %}
 {% block titulo %}Dashboard Gerencial · {{ evento.nombre|default:"Evento" }}{% endblock %}
 {% block contenido_extra_head %}
-<meta http-equiv="refresh" content="5">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -79,7 +78,7 @@
           <span style="color:#94a3b8;margin:0 .25rem 0 .65rem;opacity:.7;">|</span>
           <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🕒 Actualizado: <span class="txt-mono" style="color:#334155;font-weight:700;">{{ hora_actual }}</span></span>
           <span style="color:#94a3b8;margin:0 .4rem;opacity:.7;">|</span>
-          <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🔄 Auto-refresh cada 5s</span>
+          <span style="color:#64748b;font-size:.85rem;letter-spacing:.01em;">🔄 <span id="autorefreshLabel">Auto-refresh cada 5s</span></span>
         </div>
         <h1 class="h5 mb-1" style="color:#0f172a;font-weight:800;">📊 {{ evento.nombre|default:"Dashboard Gerencial" }}</h1>
         <div style="color:#64748b;font-size:.85rem;">📅 {{ evento.fecha_inicio|default:"" }} al {{ evento.fecha_fin|default:"" }} · 📍 {{ evento.lugar|default:"" }}, {{ evento.municipio|default:"" }}</div>
@@ -639,19 +638,40 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
   (function(){
-    // MECANISMO 1 (fallback): <meta refresh="5"> declarado en el head.
-    // MECANISMO 2 (activo, bypass cache): setTimeout + window.location.reload(true).
-    // Este segundomecanismo NO depende de heurísticas del navegador
-    // y funciona incluso si la pestaña estaba en segundo plano.
+    // MECANISMO UNICO DE AUTO-REFRESH (INTELIGENTE):
+    // - Antes disparaba <meta refresh> cada 5s (no pausable).
+    // - Ahora SOLO usa JS setTimeout (pausable).
+    // - REGLAS:
+    //   * Si HAY UN MODAL ABIERTO (.modal.show > 0) → SALTAR reload.
+    //     Reprograma el setTimeout en 2s para re-chequear cuando cierren modal.
+    //     Actualiza el label superior a "PAUSADO" con badge rojo.
+    //   * Si NO hay modal → reload(true) normal (loop infinito).
     var _REFRESH_MS = 5000;
-    function _recargarEnTiempoReal(){
+    var _CHECK_PAUSE_MS = 2000;
+    function _hayModalAbierto(){
+      try{ return document.querySelectorAll('.modal.show').length > 0; }catch(e){ return false; }
+    }
+    function _setLabelAutorefresh(estaPausado){
       try{
-        var _sep = (window.location.search.indexOf('?') >= 0) ? '&' : '?';
-        var _nocache = '_t=' + Date.now();
+        var el = document.getElementById('autorefreshLabel');
+        if(!el) return;
+        if(estaPausado){
+          el.innerHTML = '<span class="pill" style="background:#dc2626;color:#fff;margin-left:.25rem;">⏸️ PAUSADO · modal abierto · se reanudará al cerrar</span>';
+        }else{
+          el.innerText = 'Auto-refresh cada 5s';
+        }
+      }catch(e){}
+    }
+    function _recargarEnTiempoReal(){
+      if(_hayModalAbierto()){
+        // NO recargar. Re-chequear en breve para reanudar en cuanto el usuario cierre.
+        _setLabelAutorefresh(true);
+        window.setTimeout(_recargarEnTiempoReal, _CHECK_PAUSE_MS);
+        return;
+      }
+      _setLabelAutorefresh(false);
+      try{
         // reload(true) = forzar desde el servidor, NO usar disco/memoria caché.
-        // Aun así agregamos query param aleatorio como capa extra anti-caché Railway/CDN.
-        // Sin embargo: NO redirigir con location.href porque haría scroll arriba
-        // cada 5s molesto en modo gerencial presentando. En su lugar usar reload(true).
         window.location.reload(true);
       }catch(_e){
         // Si reload() falla (extensiones), forzar con hash-less redirect.
@@ -659,9 +679,20 @@
         window.location.href = window.location.href.split('#')[0] + _sep + '_t=' + Date.now();
       }
     }
-    // setTimeout SIEMPRE corre 1 vez; la página al recargar volvera a setearlo = loop infinito 5s.
+    // Listeners Bootstrap 5 modal (shown/hidden) → actualizar label instantaneamente.
+    try{
+      if(window.bootstrap && window.bootstrap.Modal){
+        document.addEventListener('shown.bs.modal', function(){ _setLabelAutorefresh(true); });
+        document.addEventListener('hidden.bs.modal', function(){ _setLabelAutorefresh(false); });
+      }else{
+        // Fallback si Bootstrap aún no cargó: reintentar cada 500ms.
+        (function _bindBs(c){ c=c||0; if(window.bootstrap && window.bootstrap.Modal){
+          document.addEventListener('shown.bs.modal', function(){ _setLabelAutorefresh(true); });
+          document.addEventListener('hidden.bs.modal', function(){ _setLabelAutorefresh(false); });
+        }else if(c<30){ setTimeout(function(){_bindBs(c+1);},500); } })(0);
+      }
+    }catch(_e2){}
     window.setTimeout(_recargarEnTiempoReal, _REFRESH_MS);
-    // Señal visible para auditoria (no obligatorio, debug friendly):
     window.__dashboardAutorefreshAt = new Date().toISOString();
   })();
   function esperarChart(cb,i){i=i||0;if(typeof window.Chart==='function')return cb();if(i>120)return;setTimeout(()=>esperarChart(cb,i+1),80);}
