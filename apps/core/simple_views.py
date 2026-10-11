@@ -2518,14 +2518,14 @@ class ListadoUnicosView(LoginRequiredMixin, View):
             # Solo IE que tienen proyectos en el evento activo
             qs_colegios = InstitucionEducativa.objects.order_by('nombre')
             if evento:
-                qs_colegios = qs_colegios.filter(proyecto__evento=evento).distinct()
+                qs_colegios = qs_colegios.filter(proyectos__evento=evento).distinct()
             data = qs_colegios
         elif que_normalizado == 'programas':
             titulo = 'Programas Técnicos'
             # Solo programas usados en proyectos del evento activo
             qs_programas = ProgramaTecnico.objects.order_by('nombre')
             if evento:
-                qs_programas = qs_programas.filter(proyecto__evento=evento).distinct()
+                qs_programas = qs_programas.filter(proyectos__evento=evento).distinct()
             data = qs_programas
         elif que_normalizado == 'instructores':
             titulo = 'Instructores'
