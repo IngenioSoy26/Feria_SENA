@@ -998,12 +998,8 @@ def _solicitar_login_o_token(request, tipo='registro'):
         # CASO 1: Railway SÍ tiene la variable configurada → comparación estricta
         if token_publico and tok_recibido == token_publico:
             return None
-        # CASO 2 (FIJO, MÁS IMPORTANTE HOY): La ruta /o/<TOKEN>/... SÍ trae token. Si el recibido COINCIDE
-        # con el token extraído de la ruta (kwargs o fallback del path), SE AUTORIZA SIEMPRE — sin importar
-        # la variable Railway TOKEN_OPERADORES que pudo cambiar / desincronizar después de generar el enlace.
-        if tok_desde_kwargs and tok_recibido == tok_desde_kwargs:
-            return None
-        # CASO 3: Railway variable NO configurada (vacía). Token recibido de header/cookie/query.
+        # CASO 2 (seguridad): Railway variable NO configurada (vacía) y el token viene de la URL.
+        # Solo se permite si no hay token configurado; si sí lo hay, cualquier token que no coincida es rechazado.
         if not token_publico:
             return None
         # Error ESPECÍFICO
