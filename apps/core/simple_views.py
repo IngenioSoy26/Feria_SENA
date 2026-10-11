@@ -2183,7 +2183,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             ('Instructores', total_instructores, 'chip-ins',),
             ('Invitados', total_invitados, 'chip-inv',),
             ('Organizadores', total_organizadores, 'chip-org',),
-            ('Visitantes (form. futuro)', total_visitantes, 'chip-manual',),
+            ('Visitantes', total_visitantes, 'chip-vis',),
         ]
 
         qs_asistencia = AsistenciaEvento.objects.filter(evento=evento).select_related('persona', 'operador')
