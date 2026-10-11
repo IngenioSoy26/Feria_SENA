@@ -2520,7 +2520,7 @@ class ListadoUnicosView(LoginRequiredMixin, View):
             titulo = 'Programas Técnicos (únicos)'
             data = ProgramaTecnico.objects.order_by('nombre').all()
         elif que_normalizado == 'instructores':
-            titulo = 'Instructores (únicos)'
+            titulo = 'Instructores'
             data = _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR')
         elif que_normalizado == 'invitados':
             titulo = 'Invitados (únicos)'
