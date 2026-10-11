@@ -2568,9 +2568,17 @@ class ListadoUnicosView(LoginRequiredMixin, View):
                 qs = qs.filter(evento=evento)
             data = qs
             columnas_especiales = 'certificado'
+        # IDs de personas que asistieron al evento (para columna "Asistió")
+        ids_asistieron = set()
+        if evento:
+            ids_asistieron = set(
+                AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True)
+            )
         return render(request, 'simple/listados_unicos.html', {
             'que': que_normalizado, 'titulo': titulo, 'filas': data,
             'columnas_especiales': columnas_especiales,
+            'ids_asistieron': ids_asistieron,
+            'evento': evento,
         })
 
 
