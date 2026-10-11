@@ -2514,22 +2514,22 @@ class ListadoUnicosView(LoginRequiredMixin, View):
         que_normalizado = (que or '').strip().lower()
         evento = _evento_activo()
         if que_normalizado == 'colegios':
-            titulo = 'Instituciones Educativas (únicas)'
+            titulo = 'Instituciones Educativas'
             data = InstitucionEducativa.objects.order_by('nombre').all()
         elif que_normalizado == 'programas':
-            titulo = 'Programas Técnicos (únicos)'
+            titulo = 'Programas Técnicos'
             data = ProgramaTecnico.objects.order_by('nombre').all()
         elif que_normalizado == 'instructores':
             titulo = 'Instructores'
             data = _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR')
         elif que_normalizado == 'invitados':
-            titulo = 'Invitados (únicos)'
+            titulo = 'Invitados'
             data = _qs_perfiles_o_fallback(Invitado, 'INVITADO')
         elif que_normalizado == 'organizadores':
-            titulo = 'Organizadores (únicos)'
+            titulo = 'Organizadores'
             data = _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR')
         elif que_normalizado == 'visitantes':
-            titulo = 'Visitantes (únicos)'
+            titulo = 'Visitantes'
             try:
                 from apps.visitantes.models import Visitante as _VisMod
                 data = _qs_perfiles_o_fallback(_VisMod, 'VISITANTE')
