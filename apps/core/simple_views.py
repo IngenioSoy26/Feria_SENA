@@ -3197,6 +3197,17 @@ class RegistroVisitantesPublicView(View):
             })
         for w in warns:
             messages.warning(request, w)
+        # Auto-marcar asistencia: el visitante ya está en el evento
+        if evento:
+            try:
+                operador_vis = _operador_para_guardar(request)
+                if operador_vis:
+                    AsistenciaEvento.objects.get_or_create(
+                        evento=evento, persona=persona,
+                        defaults={'operador': operador_vis, 'medio': 'MANUAL'},
+                    )
+            except Exception:
+                pass
         if created:
             messages.success(request, f'✅ Visitante registrado correctamente. ¡Gracias por asistir!')
         else:

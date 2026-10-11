@@ -1,10 +1,38 @@
 {% extends "simple/base_simple.html" %}
 {% load static %}
 {% block titulo %}{{ titulo }}{% endblock %}
+{% block extra_css %}
+{% if que == 'visitantes' %}
+<style>
+  @media print {
+    body { background: #fff !important; }
+    .navbar, .no-print, .sidebar, footer { display: none !important; }
+    .print-header { display: block !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .table { font-size: 11px; }
+    .table thead { background: #0f6b34 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .table td, .table th { border-color: #ccc !important; padding: 6px 8px; }
+    .badge-print { background: #dcfce7 !important; color: #166534 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    a { color: #000 !important; text-decoration: none !important; }
+    .btn { display: none !important; }
+    form { display: block !important; }
+  }
+  .print-header { display: none; }
+</style>
+{% endif %}
+{% endblock %}
 {% block contenido %}
+{% if que == 'visitantes' %}
+<div class="print-header mb-4" style="text-align:center;border-bottom:2px solid #0f6b34;padding-bottom:12px;">
+  <h2 style="color:#0f6b34;margin:0;">SENA REGIONAL GUAJIRA</h2>
+  <h3 style="color:#16a34a;margin:4px 0;">VI Feria de Proyectos Productivos</h3>
+  <h4 style="margin:4px 0;">Informe de Visitantes Registrados</h4>
+  <p style="margin:4px 0;color:#666;font-size:13px;">Fecha de impresión: {% now "d/m/Y H:i" %}</p>
+</div>
+{% endif %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
   <h2 class="text-sena mb-0">📋 {{ titulo }}</h2>
-  <div class="d-flex gap-2 flex-wrap">
+  <div class="d-flex gap-2 flex-wrap no-print">
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'simple:home' %}">← Inicio</a>
     {% if columnas_especiales == 'asistencia' %}
       <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/asistencia/asistenciaevento/">🛠️ Admin Asistencias</a>
@@ -24,8 +52,8 @@
       <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'invitados' %}">🖨️ Escarapelas invitados</a>
       <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'invitados' %}">📜 Certificados asistencia</a>
     {% elif que == 'visitantes' %}
-      <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'visitantes' %}">🖨️ Escarapelas visitantes</a>
-      <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'visitantes' %}">📜 Certificados asistencia</a>
+      <button type="button" class="btn btn-sena btn-sm" onclick="window.print()">🖨️ Imprimir informe</button>
+      <a class="btn btn-outline-danger btn-sm" href="/admin/personas/persona/add/?next={% url 'simple:listados' 'visitantes' %}">➕ Nuevo visitante</a>
     {% elif que == 'proyectos' %}
       <a class="btn btn-sena btn-sm" href="{% url 'simple:wizard' %}">➕ Nuevo proyecto</a>
     {% endif %}
@@ -79,7 +107,7 @@
               {% elif que == 'organizadores' %}
                 <th>Organizador</th><th>Cédula</th><th>Área / Responsabilidad</th><th>Cargo</th><th>Acciones</th>
               {% elif que == 'visitantes' %}
-                <th>Visitante</th><th>Cédula</th><th>Entidad</th><th>Cargo</th><th>Acciones</th>
+                <th>Visitante</th><th>Cédula</th><th>Entidad</th><th>Cargo</th><th class="no-print">Acciones</th>
               {% elif que == 'proyectos' %}
                 <th>Código</th><th>Proyecto</th><th>Colegio</th><th>Programa</th><th>Municipio</th><th>Instructor</th><th>Aprendices</th><th>Acciones</th>
               {% elif que == 'aprendices' %}
@@ -198,9 +226,7 @@
                 <td>{{ fila.persona.numero_identificacion }}</td>
                 <td>{{ fila.entidad|default:"-" }}</td>
                 <td>{{ fila.cargo|default:"-" }}</td>
-                <td>
-                  <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapela_persona' fila.persona.id %}">🎫 Escarapela</a>
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'simple:certificado_editar' fila.persona.id 'ASISTENCIA' %}">📜 Asistencia</a>
+                <td class="no-print">
                   <a class="btn btn-sm btn-outline-danger" href="/admin/personas/persona/{{ fila.persona.id }}/delete/?next={% url 'simple:listados' 'visitantes' %}">🗑️ Eliminar</a>
                 </td>
               {% elif que == 'proyectos' %}
