@@ -2515,10 +2515,18 @@ class ListadoUnicosView(LoginRequiredMixin, View):
         evento = _evento_activo()
         if que_normalizado == 'colegios':
             titulo = 'Instituciones Educativas'
-            data = InstitucionEducativa.objects.order_by('nombre').all()
+            # Solo IE que tienen proyectos en el evento activo
+            qs_colegios = InstitucionEducativa.objects.order_by('nombre')
+            if evento:
+                qs_colegios = qs_colegios.filter(proyecto__evento=evento).distinct()
+            data = qs_colegios
         elif que_normalizado == 'programas':
             titulo = 'Programas Técnicos'
-            data = ProgramaTecnico.objects.order_by('nombre').all()
+            # Solo programas usados en proyectos del evento activo
+            qs_programas = ProgramaTecnico.objects.order_by('nombre')
+            if evento:
+                qs_programas = qs_programas.filter(proyecto__evento=evento).distinct()
+            data = qs_programas
         elif que_normalizado == 'instructores':
             titulo = 'Instructores'
             data = _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR')
@@ -2537,7 +2545,10 @@ class ListadoUnicosView(LoginRequiredMixin, View):
                 data = _qs_perfiles_o_fallback(None, 'VISITANTE')
         elif que_normalizado == 'proyectos':
             titulo = 'Proyectos registrados'
-            data = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo').all()
+            qs_proyectos = Proyecto.objects.select_related('institucion', 'programa', 'instructor_responsable__persona').order_by('codigo')
+            if evento:
+                qs_proyectos = qs_proyectos.filter(evento=evento)
+            data = qs_proyectos
         elif que_normalizado == 'aprendices':
             titulo = 'Aprendices por proyecto'
             data = _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ', extra_order='proyecto__codigo')
