@@ -189,19 +189,23 @@
         </div>
         <div class="row g-3 mt-1">
           <div class="col-12">
-            <div class="role-card" style="border-color:#86efac;background:#dcfce7;">
-              <div class="row align-items-center g-3">
-                <div class="col-12 col-md-4">
-                  <div class="kpi-label mb-2">👥 TOTAL PERSONAS</div>
-                  <div class="kpi-big" style="color:#16a34a;font-size:clamp(1.8rem,3.2vw,2.8rem);" class="txt-mono">{{ total_personas_estructura }}</div>
+            <div class="role-card p-3 p-md-4" style="border:2px solid #86efac;background:linear-gradient(135deg,#dcfce7 0%,#f0fdf4 100%);box-shadow:0 4px 20px rgba(22,163,74,.12);">
+              <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span style="font-size:1.5rem;">👥</span>
+                  <span class="kpi-label mb-0" style="font-size:1rem;">TOTAL PERSONAS</span>
                 </div>
-                <div class="col-12 col-md-8">
-                  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end">
-                    {% for nombre, n, clase in personas_estructura_desglose %}
-                      <span class="chip {{ clase }}" style="font-size:.78rem;padding:.45rem .85rem;">{{ nombre }} · <b style="font-size:.9rem;">{{ n }}</b></span>
-                    {% endfor %}
+                <div class="txt-mono fw-bold" style="font-size:clamp(2rem,4vw,3.2rem);color:#16a34a;line-height:1;">{{ total_personas_estructura }}</div>
+              </div>
+              <div class="row g-2">
+                {% for nombre, n, clase in personas_estructura_desglose %}
+                  <div class="col-6 col-md">
+                    <div class="h-100 rounded-3 d-flex flex-column justify-content-center align-items-center text-center p-2 p-md-3 {{ clase }}" style="border:1.5px solid rgba(0,0,0,.06);min-height:88px;">
+                      <div class="txt-mono fw-bold" style="font-size:clamp(1.3rem,2.2vw,1.9rem);line-height:1.1;">{{ n }}</div>
+                      <div class="mt-1" style="font-size:.72rem;font-weight:700;letter-spacing:.02em;opacity:.85;">{{ nombre|upper }}</div>
+                    </div>
                   </div>
-                </div>
+                {% endfor %}
               </div>
             </div>
           </div>
