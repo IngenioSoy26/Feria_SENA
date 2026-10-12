@@ -401,6 +401,21 @@
        ======================================================= */
     .container-fluid{max-width: 1140px;}
     main.py-4{padding-top: clamp(12px,3vw,24px) !important; padding-bottom: clamp(20px, 5vh, 60px) !important;}
+    /* =======================================================
+       NAVBAR SCROLLABLE · mobile-first
+       ======================================================= */
+    .nav-sena .navbar-nav{
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      overflow-y:hidden;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;
+      scrollbar-color: rgba(255,255,255,.25) transparent;
+    }
+    .nav-sena .navbar-nav::-webkit-scrollbar{height:4px;}
+    .nav-sena .navbar-nav::-webkit-scrollbar-track{background:transparent;}
+    .nav-sena .navbar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:999px;}
+    .nav-sena .navbar-nav .nav-item{flex:0 0 auto;white-space:nowrap;}
     @media (max-width:640px){
       .glass-card{padding:16px;}
       .btn-sena.btn-big{width:100%;}

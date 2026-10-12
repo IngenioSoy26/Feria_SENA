@@ -377,6 +377,35 @@ input[type="radio"].form-check-input {
   min-height: calc(100vh - 140px);
 }
 
+/* ============================================================
+   NAVBAR SCROLLABLE · mobile-first
+   Evita que el menú superior se desborde cuando hay muchos items.
+   En móvil se mantiene el menú hamburguesa; en desktop los items
+   pueden desplazarse horizontalmente si no caben.
+   ============================================================ */
+.navbar .navbar-nav {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+.navbar .navbar-nav::-webkit-scrollbar {
+  height: 4px;
+}
+.navbar .navbar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.navbar .navbar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+.navbar .navbar-nav .nav-item {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 @media print {
   @page {
     size: A4;
