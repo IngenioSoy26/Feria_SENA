@@ -1034,6 +1034,9 @@ def _solicitar_login_o_token(request, tipo='registro'):
 # ============================================================
 class HomeSimpleView(LoginRequiredMixin, View):
     def get(self, request, **_):
+        # El GERENTE NO ve el Inicio: se redirige directamente al Dashboard
+        if _tiene_rol_usuario(request, 'GERENTE') and not _es_admin(request):
+            return redirect('simple:dashboard')
         evento = _evento_activo()
         es_admin = _es_admin(request)
         base = request.build_absolute_uri('/').rstrip('/')

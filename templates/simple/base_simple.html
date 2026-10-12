@@ -428,7 +428,9 @@
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navSena">
       <ul class="navbar-nav gap-1 py-2 py-lg-0">
+        {% if not request.user.rol_sistema == 'GERENTE' %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:home' %}">🏠 Inicio</a></li>
+        {% endif %}
         {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:panel_admin' %}">⚙ Panel Admin</a></li>
         {% endif %}
