@@ -293,7 +293,7 @@
 </div>
 {% elif es_gerente and mostrar_menu_completo %}
 <div class="menu-hero mb-5">
-  <a class="mh mh-purpura" href="{% url 'simple:listados' 'proyectos' %}">
+  <a class="mh mh-purpura" href="/proyectos/">
     <div class="mh-ico">🎯</div>
     <div>
       Proyectos<br/>
@@ -314,34 +314,106 @@
       <small>Participación aprendices</small>
     </div>
   </a>
-  <a class="mh mh-gris" href="{% url 'simple:dashboard' %}">
+  <a class="mh mh-gris" href="/reportes/">
     <div class="mh-ico">📊</div>
     <div>
-      Dashboard y Reportes<br/>
-      <small>Informe completo del evento</small>
+      Reportes<br/>
+      <small>Informes del evento</small>
+    </div>
+  </a>
+  <a class="mh mh-rosa" href="/eventos/">
+    <div class="mh-ico">📅</div>
+    <div>
+      Eventos<br/>
+      <small>Gestionar eventos</small>
+    </div>
+  </a>
+  <a class="mh mh-indigo" href="/instituciones/">
+    <div class="mh-ico">🏫</div>
+    <div>
+      Instituciones<br/>
+      <small>Colegios · entidades</small>
+    </div>
+  </a>
+  <a class="mh mh-teal" href="/programas/">
+    <div class="mh-ico">📚</div>
+    <div>
+      Programas<br/>
+      <small>Programas técnicos</small>
+    </div>
+  </a>
+  <a class="mh mh-ambar" href="/instructores/">
+    <div class="mh-ico">👨‍🏫</div>
+    <div>
+      Instructores<br/>
+      <small>Lista de instructores</small>
+    </div>
+  </a>
+  <a class="mh mh-lima" href="/personas/">
+    <div class="mh-ico">🙋</div>
+    <div>
+      Participantes<br/>
+      <small>Aprendices · personas</small>
+    </div>
+  </a>
+  <a class="mh mh-fucsia" href="/invitados/">
+    <div class="mh-ico">🎟️</div>
+    <div>
+      Invitados<br/>
+      <small>Lista de invitados</small>
+    </div>
+  </a>
+  <a class="mh mh-esmeralda" href="/auditoria/">
+    <div class="mh-ico">🔍</div>
+    <div>
+      Auditoría<br/>
+      <small>Registro de acciones</small>
     </div>
   </a>
   <a class="mh" style="background:linear-gradient(180deg,#4ade80,#16a34a);color:#fff;" href="{% url 'simple:listados' 'asistencia' %}">
     <div class="mh-ico">📋</div>
     <div>
       Lista Asistencias<br/>
-      <small>Ver · quitar · editar registros</small>
+      <small>Ver · quitar · editar</small>
     </div>
   </a>
   <a class="mh" style="background:linear-gradient(180deg,#fb923c,#ea580c);color:#fff;" href="{% url 'simple:listados' 'refrigerios' %}">
     <div class="mh-ico">🍱</div>
     <div>
       Lista Refrigerios<br/>
-      <small>Ver · quitar entregas de almuerzo</small>
+      <small>Ver · quitar entregas</small>
     </div>
   </a>
   <a class="mh" style="background:linear-gradient(180deg,#a78bfa,#7c3aed);color:#fff;" href="{% url 'simple:listados' 'certificados' %}">
     <div class="mh-ico">🏆</div>
     <div>
       Lista Certificados<br/>
-      <small>Ver · quitar entregas de certificado</small>
+      <small>Ver · quitar entregas</small>
     </div>
   </a>
+  <a class="mh" style="background:linear-gradient(180deg,#38bdf8,#0284c7);color:#fff;" href="{% url 'simple:listados' 'proyectos' %}">
+    <div class="mh-ico">📋</div>
+    <div>
+      Listados<br/>
+      <small>Proyectos · personas</small>
+    </div>
+  </a>
+  {% if es_admin_full %}
+  <a class="mh mh-rosa" href="{% url 'simple:gestion_usuarios' %}">
+    <div class="mh-ico">👥</div>
+    <div>
+      Gestión Usuarios<br/>
+      <small>Roles · contraseñas · activar</small>
+    </div>
+  </a>
+  <a class="mh mh-indigo" href="/usuarios/roles/">
+    <div class="mh-ico">🔐</div>
+    <div>
+      Roles y Permisos<br/>
+      <small>Crear · editar roles</small>
+    </div>
+  </a>
+  {% endif %}
 </div>
 {% else %}
 <div class="menu-hero mb-5">
