@@ -4,22 +4,25 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.auth import views as auth_views
+from django.contrib.auth import logout as django_logout
+from django.shortcuts import redirect
+from django.views.decorators.csrf import csrf_exempt
 
 from apps.usuarios.views import CustomLoginView, PerfilView, CambiarClaveView
 
 
-class _GetLogoutView(auth_views.LogoutView):
+@csrf_exempt
+def logout_view(request):
     """Logout que acepta GET y POST.
 
     GET es necesario para los enlaces de "Cerrar sesión" que aparecen en
     páginas de error (403/404/500), donde el token CSRF puede no estar
     disponible. Para el resto de la interfaz se usa POST con CSRF.
     """
-    http_method_names = ['get', 'post', 'options']
+    django_logout(request)
+    next_url = request.POST.get('next') or request.GET.get('next') or settings.LOGOUT_REDIRECT_URL
+    return redirect(next_url)
 
-    def get(self, request, *args, **kwargs):
-        return self.post(request, *args, **kwargs)
 
 DJANGO_ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin/')
 
@@ -46,7 +49,7 @@ urlpatterns = [
     path('auditoria/', include('apps.auditoria.urls', namespace='auditoria')),
 
     path('accounts/login/', CustomLoginView.as_view(), name='login'),
-    path('accounts/logout/', _GetLogoutView.as_view(), name='logout'),
+    path('accounts/logout/', logout_view, name='logout'),
     path('accounts/profile/', PerfilView.as_view(), name='profile'),
     path('accounts/password_change/', CambiarClaveView.as_view(), name='password_change'),
 ]
