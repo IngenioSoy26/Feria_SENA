@@ -18,6 +18,28 @@ def generar_password_segura(longitud=10):
             return pwd
 
 
+def obtener_roles_para_formulario():
+    """Devuelve la lista de opciones de rol leyendo de la BD (con fallback)."""
+    from apps.usuarios.authorization import obtener_meta_roles, _MATRIZ_ACCESOS
+    roles = [('', '⬇️ Selecciona un rol')]
+    meta = obtener_meta_roles()
+    # Primero los roles de BD
+    agregados = set()
+    try:
+        from apps.usuarios.models import Rol
+        for r in Rol.objects.filter(activo=True).order_by('es_sistema', 'nombre'):
+            roles.append((r.codigo, f'{r.icono} {r.nombre}'.strip()))
+            agregados.add(r.codigo)
+    except Exception:
+        pass
+    # Fallback: roles integrados que no están en BD
+    for codigo in _MATRIZ_ACCESOS:
+        if codigo not in agregados:
+            nombre = meta.get(codigo, {}).get('nombre') or codigo
+            roles.append((codigo, nombre))
+    return roles
+
+
 class UsuarioGestionForm(forms.ModelForm):
     ROLES_FORM = (
         ('', '⬇️ Selecciona un rol'),
@@ -89,8 +111,8 @@ class UsuarioGestionForm(forms.ModelForm):
         if self.es_edicion:
             kwargs.setdefault('initial', {})
         super().__init__(*args, **kwargs)
-        # Campo de choices de rol — no usamos los labels del Modelo para que aparezcan con emoji primero
-        self.fields['rol_sistema'].choices = self.ROLES_FORM
+        # Campo de choices de rol — dinámico desde BD
+        self.fields['rol_sistema'].choices = obtener_roles_para_formulario()
         self.fields['rol_sistema'].required = True
         # Al editar: el password NO es obligatorio. Ocultamos autogenerar por default, mostramos reset en botón aparte
         if self.es_edicion:
@@ -194,3 +216,75 @@ class ResetPasswordUsuarioForm(forms.Form):
         else:
             cleaned['_password_generada'] = pwd
         return cleaned
+
+
+class RolForm(forms.ModelForm):
+    """Formulario para crear/editar roles con sus áreas (permisos)."""
+
+    COLORES_DISPONIBLES = [
+        ('bg-verde text-white', 'Verde'),
+        ('bg-azul-o text-white', 'Azul'),
+        ('bg-purpura text-white', 'Púrpura'),
+        ('bg-naranja text-white', 'Naranja'),
+        ('bg-rojo text-white', 'Rojo'),
+        ('bg-gris text-white', 'Gris'),
+        ('bg-verde-claro text-white', 'Verde claro'),
+    ]
+
+    class Meta:
+        model = None  # se asigna en __init__ para evitar import circular
+        fields = ['codigo', 'nombre', 'descripcion', 'icono', 'color', 'activo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'Código único (ej: MI_ROL)',
+                'autocomplete': 'off',
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'Nombre visible del rol',
+                'autocomplete': 'off',
+            }),
+            'descripcion': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'Descripción corta (opcional)',
+                'autocomplete': 'off',
+            }),
+            'icono': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'Emoji (ej: 🔧)',
+                'maxlength': '8',
+            }),
+            'color': forms.Select(attrs={'class': 'form-select form-select-lg'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input lg-check-sena'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        from apps.usuarios.models import Rol
+        self._meta.model = Rol
+        super().__init__(*args, **kwargs)
+        self.fields['color'].choices = self.COLORES_DISPONIBLES
+        # Si es un rol del sistema, el código no se puede cambiar
+        if self.instance and self.instance.pk and self.instance.es_sistema:
+            self.fields['codigo'].disabled = True
+            self.fields['codigo'].help_text = 'Rol integrado: el código no se puede modificar.'
+
+    def clean_codigo(self):
+        codigo = (self.cleaned_data.get('codigo') or '').strip().upper()
+        if not codigo:
+            raise forms.ValidationError('❌ El código es obligatorio.')
+        if not codigo.replace('_', '').isalnum():
+            raise forms.ValidationError('❌ Solo letras, números y guion bajo (_).')
+        # Verificar unicidad (excluyendo el mismo registro)
+        qs = Rol.objects.filter(codigo=codigo)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('❌ Ya existe un rol con este código.')
+        return codigo
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 2:
+            raise forms.ValidationError('❌ El nombre debe tener al menos 2 caracteres.')
+        return nombre

@@ -433,6 +433,7 @@
         {% endif %}
         {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:panel_admin' %}">⚙ Panel Admin</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="{% url 'usuarios:lista_roles' %}">🔐 Roles</a></li>
         {% endif %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:dashboard' %}">📊 Analytics</a></li>
         {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}

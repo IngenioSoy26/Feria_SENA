@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if es_nuevo %}Nuevo Rol{% else %}Editar Rol{% endif %} | SENA Feria{% endblock %}
+
+{% block content %}
+<div class="main-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="h3 fw-bold text-sena-negro mb-0">
+            {% if es_nuevo %}➕ Nuevo Rol{% else %}✏️ Editar Rol{% endif %}
+        </h2>
+        <a href="{% url 'usuarios:lista_roles' %}" class="btn btn-outline-sena fw-semibold">
+            ← Volver a Roles
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Datos del rol -->
+            <div class="col-12 col-lg-5">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-sena-verde text-white">
+                        <h5 class="mb-0 fw-bold">📋 Datos del Rol</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.codigo.id_for_label }}" class="form-label fw-semibold">Código *</label>
+                            {{ form.codigo }}
+                            {% if form.codigo.help_text %}
+                                <div class="form-text">{{ form.codigo.help_text }}</div>
+                            {% endif %}
+                            {% if form.codigo.errors %}
+                                <div class="text-danger small">{{ form.codigo.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.nombre.id_for_label }}" class="form-label fw-semibold">Nombre *</label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="text-danger small">{{ form.nombre.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.descripcion.id_for_label }}" class="form-label fw-semibold">Descripción</label>
+                            {{ form.descripcion }}
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label for="{{ form.icono.id_for_label }}" class="form-label fw-semibold">Icono (emoji)</label>
+                                {{ form.icono }}
+                            </div>
+                            <div class="col-6">
+                                <label for="{{ form.color.id_for_label }}" class="form-label fw-semibold">Color</label>
+                                {{ form.color }}
+                            </div>
+                        </div>
+
+                        <div class="form-check mt-3">
+                            {{ form.activo }}
+                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                Rol activo
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permisos por área -->
+            <div class="col-12 col-lg-7">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-sena-verde text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">🔐 Permisos (Áreas del Sistema)</h5>
+                        <button type="button" class="btn btn-sm btn-light text-sena-verde fw-semibold" onclick="toggleAllAreas()">
+                            Marcar / Desmarcar todo
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-sena-gris-medio small mb-3">
+                            Selecciona las áreas del sistema a las que este rol tendrá acceso.
+                        </p>
+                        <div class="row g-2">
+                            {% for area_codigo, area_nombre in todas_las_areas %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-check border rounded p-2 {% if area_codigo in areas_seleccionadas %}bg-sena-verde-light{% endif %}">
+                                    <input class="form-check-input lg-check-sena area-checkbox" type="checkbox"
+                                           name="area_{{ area_codigo }}"
+                                           id="area_{{ area_codigo }}"
+                                           value="{{ area_codigo }}"
+                                           {% if area_codigo in areas_seleccionadas %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold" for="area_{{ area_codigo }}">
+                                        {{ area_nombre }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4 justify-content-end">
+            <a href="{% url 'usuarios:lista_roles' %}" class="btn btn-outline-sena fw-semibold">Cancelar</a>
+            <button type="submit" class="btn btn-sena-verde fw-semibold">
+                💾 Guardar Rol
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleAllAreas() {
+    const checkboxes = document.querySelectorAll('.area-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => { cb.checked = !allChecked; });
+}
+</script>
+{% endblock %}

@@ -1,19 +1,9 @@
 """
-AUTORIZACIÓN V40.0 · Control de Acceso estricto por rol_sistema.
+AUTORIZACIÓN V41.0 · Control de Acceso por rol_sistema con roles DINÁMICOS en BD.
 
-MATRIZ DE ACCESO EXACTA según usuario:
-┌──────────────────────────┬───────────────────────────────────────────────┐
-│ ROL                      │ ACCESOS PERMITIDOS                             │
-├──────────────────────────┼───────────────────────────────────────────────┤
-│ ADMINISTRADOR (is_staff) │ TODO (completo, sin restricciones)            │
-│ GERENTE                  │ Dashboard + Listados (solo lectura) + Perfil + Logout │
-│ OPERADOR_ASISTENCIA      │ /asistencia/ (y sus endpoints) + Perfil + Log│
-│ OPERADOR_REFRIGERIO      │ /refrigerios/ (y sus endpoints) + Perfil + Lo │
-│ OPERADOR_CERTIFICADO     │ /certificados/ (y sus endpoints) + Perfil + Lo│
-│ REGISTRO                 │ Dashboard + Eventos + Personas + Invitados + P │
-│ CONSULTA                 │ Dashboard + Listados (solo lectura) + Perfil + Logout │
-│ Usuario sin rol          │ NADA (solo login/perfil/logout si activo)     │
-└──────────────────────────┴───────────────────────────────────────────────┘
+Los roles y sus áreas permitidas se almacenan en la tabla usuarios_rol.
+La matriz _MATRIZ_ACCESOS se usa como respaldo (fallback) para los roles
+integrados que aún no existen en BD o cuando la BD no está disponible.
 
 Exports:
   · usuario_puede_acceder(request, area) → True/False
@@ -21,6 +11,8 @@ Exports:
   · rol_requerido_v40(roles_permitidos_list) decorator
   · generar_items_menu_por_rol(request) → [dict_items_navbar] para template
   · es_url_publica_permitida(path) → True si es ruta pública kiosco operador
+  · obtener_matriz_accesos() → dict {codigo_rol: set(areas)}
+  · recargar_matriz_roles() → invalida caché
 """
 from functools import wraps
 
@@ -38,6 +30,7 @@ from .models import Usuario
 AREA_DASHBOARD = 'dashboard'
 AREA_EVENTOS = 'eventos'
 AREA_USUARIOS = 'usuarios'
+AREA_ROLES = 'roles'
 AREA_INSTITUCIONES = 'instituciones'
 AREA_PROGRAMAS = 'programas'
 AREA_INSTRUCTORES = 'instructores'
@@ -55,11 +48,35 @@ AREA_PERFIL = 'perfil'
 AREA_LOGOUT = 'logout'
 AREA_PUBLICA = 'publica'
 
+# Todas las áreas disponibles (para el formulario de roles)
+TODAS_LAS_AREAS = [
+    (AREA_DASHBOARD, '📊 Dashboard'),
+    (AREA_EVENTOS, '📅 Eventos'),
+    (AREA_USUARIOS, '👥 Usuarios'),
+    (AREA_ROLES, '🔐 Roles y permisos'),
+    (AREA_INSTITUCIONES, '🏫 Instituciones'),
+    (AREA_PROGRAMAS, '📚 Programas'),
+    (AREA_INSTRUCTORES, '👨‍🏫 Instructores'),
+    (AREA_PERSONAS, '🙋 Participantes'),
+    (AREA_INVITADOS, '🎟️ Invitados'),
+    (AREA_PROYECTOS, '🛠️ Proyectos'),
+    (AREA_ESCARAPELAS, '🪪 Escarapelas'),
+    (AREA_ASISTENCIA, '✅ Asistencia'),
+    (AREA_REFRIGERIOS, '🍱 Refrigerios'),
+    (AREA_CERTIFICADOS, '📜 Certificados'),
+    (AREA_REPORTES, '📈 Reportes'),
+    (AREA_AUDITORIA, '🔍 Auditoría'),
+    (AREA_LISTADOS, '📋 Listados'),
+    (AREA_PERFIL, '👤 Perfil (cambiar contraseña)'),
+    (AREA_LOGOUT, '🚪 Cerrar sesión'),
+]
+
 # Links predeterminados por rol del menú
 _URLS_AREA = {
     AREA_DASHBOARD: '/dashboard/',
     AREA_EVENTOS: '/eventos/',
     AREA_USUARIOS: '/usuarios/',
+    AREA_ROLES: '/roles/',
     AREA_INSTITUCIONES: '/instituciones/',
     AREA_PROGRAMAS: '/programas/',
     AREA_INSTRUCTORES: '/instructores/',
@@ -78,11 +95,11 @@ _URLS_AREA = {
 }
 
 # ============================================================
-# 2) MATRIZ: para cada rol, la LISTA de areas permitidas
+# 2) MATRIZ DE RESPALDO (fallback) para roles integrados
 # ============================================================
 _MATRIZ_ACCESOS = {
     'ADMINISTRADOR': {
-        AREA_DASHBOARD, AREA_EVENTOS, AREA_USUARIOS, AREA_INSTITUCIONES,
+        AREA_DASHBOARD, AREA_EVENTOS, AREA_USUARIOS, AREA_ROLES, AREA_INSTITUCIONES,
         AREA_PROGRAMAS, AREA_INSTRUCTORES, AREA_PERSONAS, AREA_INVITADOS,
         AREA_PROYECTOS, AREA_ESCARAPELAS, AREA_ASISTENCIA, AREA_REFRIGERIOS,
         AREA_CERTIFICADOS, AREA_REPORTES, AREA_AUDITORIA, AREA_LISTADOS,
@@ -100,6 +117,10 @@ _MATRIZ_ACCESOS = {
     },
     'CONSULTA': {AREA_DASHBOARD, AREA_LISTADOS, AREA_PERFIL, AREA_LOGOUT},
 }
+
+# Caché en memoria de la matriz leída de BD
+_cache_matriz = None
+_cache_roles_meta = None  # {codigo: {'nombre':..., 'icono':..., 'color':...}}
 
 # Rutas públicas (NO requieren auth, NO muestran navbar admin)
 RUTAS_PUBLICAS_PREFIX = (
@@ -121,6 +142,63 @@ def es_url_publica_permitida(path: str) -> bool:
     if p == '/' or p.startswith('/accounts/login'):
         return True
     return any(p.startswith(pref) for pref in RUTAS_PUBLICAS_PREFIX)
+
+
+# ============================================================
+# 2.1) MATRIZ DINÁMICA desde BD (con fallback a _MATRIZ_ACCESOS)
+# ============================================================
+def recargar_matriz_roles():
+    """Invalida la caché de roles/permisos. Llamar al crear/editar/eliminar roles."""
+    global _cache_matriz, _cache_roles_meta
+    _cache_matriz = None
+    _cache_roles_meta = None
+
+
+def obtener_matriz_accesos() -> dict:
+    """Devuelve {codigo_rol: set(areas_permitidas)} leyendo de BD con caché.
+
+    Para cada rol en BD se usan sus áreas_permitidas. Si un rol integrado
+    no existe en BD, se usa el fallback _MATRIZ_ACCESOS.
+    """
+    global _cache_matriz, _cache_roles_meta
+    if _cache_matriz is not None:
+        return _cache_matriz
+    matriz = {}
+    meta = {}
+    try:
+        from .models import Rol
+        for r in Rol.objects.filter(activo=True).only('codigo', 'nombre', 'icono', 'color', 'areas_permitidas'):
+            matriz[r.codigo] = set(r.areas_permitidas or [])
+            meta[r.codigo] = {'nombre': r.nombre, 'icono': r.icono or '', 'color': r.color or ''}
+    except Exception:
+        # Si la tabla no existe o hay error, usamos solo el fallback
+        pass
+    # Fallback: roles integrados que no están en BD
+    for codigo, areas in _MATRIZ_ACCESOS.items():
+        if codigo not in matriz:
+            matriz[codigo] = set(areas)
+    _cache_matriz = matriz
+    _cache_roles_meta = meta
+    return matriz
+
+
+def obtener_meta_roles() -> dict:
+    """Devuelve {codigo: {'nombre', 'icono', 'color'}} desde BD con caché."""
+    if _cache_roles_meta is None:
+        obtener_matriz_accesos()
+    return _cache_roles_meta or {}
+
+
+def obtener_nombre_rol(codigo: str) -> str:
+    """Devuelve el nombre visible de un rol (de BD o fallback)."""
+    meta = obtener_meta_roles()
+    if codigo in meta:
+        return meta[codigo].get('nombre') or codigo
+    # Fallback a ROLES_SISTEMA del modelo
+    for cod, nombre in getattr(Usuario, 'ROLES_SISTEMA', ()):
+        if cod == codigo:
+            return nombre
+    return codigo
 
 
 def _rol_del_usuario(request) -> str:
@@ -177,7 +255,8 @@ def usuario_puede_acceder(request, area) -> bool:
     rol = _rol_del_usuario(request)
     if not rol:
         return False
-    permitidas = _MATRIZ_ACCESOS.get(rol) or set()
+    matriz = obtener_matriz_accesos()
+    permitidas = matriz.get(rol) or set()
     return any(a in permitidas for a in areas)
 
 
@@ -279,8 +358,34 @@ def rol_requerido_v40(areas_permitidas, login_required=True):
 # ============================================================
 # 5) CONTEXT PROCESSOR -> items_menu para el navbar
 # ============================================================
+# Mapa de área -> (label, icono) para generar el menú automáticamente
+_LABELS_AREA_MENU = {
+    AREA_DASHBOARD: ('Dashboard', '📊'),
+    AREA_EVENTOS: ('Eventos', '📅'),
+    AREA_USUARIOS: ('Usuarios', '👥'),
+    AREA_ROLES: ('Roles', '🔐'),
+    AREA_INSTITUCIONES: ('Instituciones', '🏫'),
+    AREA_PROGRAMAS: ('Programas', '📚'),
+    AREA_INSTRUCTORES: ('Instructores', '👨‍🏫'),
+    AREA_PERSONAS: ('Participantes', '🙋'),
+    AREA_INVITADOS: ('Invitados', '🎟️'),
+    AREA_PROYECTOS: ('Proyectos', '🛠️'),
+    AREA_ESCARAPELAS: ('Escarapelas', '🪪'),
+    AREA_ASISTENCIA: ('Asistencia', '✅'),
+    AREA_REFRIGERIOS: ('Refrigerios', '🍱'),
+    AREA_CERTIFICADOS: ('Certificados', '📜'),
+    AREA_REPORTES: ('Reportes', '📈'),
+    AREA_AUDITORIA: ('Auditoría', '🔍'),
+    AREA_LISTADOS: ('Listados', '📋'),
+}
+
+
 def generar_items_menu_por_rol(request):
-    """Devuelve lista de dicts: [{"area":..., "label":..., "href":..., "icono":...},...]"""
+    """Devuelve lista de dicts: [{"area":..., "label":..., "href":..., "icono":...},...]
+
+    Genera el menú automáticamente a partir de las áreas permitidas del rol
+    en la BD (o el fallback _MATRIZ_ACCESOS).
+    """
     items = []
     if not request or not getattr(request, 'user', None) or not request.user.is_authenticated:
         return items
@@ -293,53 +398,19 @@ def generar_items_menu_por_rol(request):
             rol = _rol_del_usuario(request)
     except Exception:
         rol = _rol_del_usuario(request)
-    permitidas = _MATRIZ_ACCESOS.get(rol) or set()
+    matriz = obtener_matriz_accesos()
+    permitidas = matriz.get(rol) or set()
 
-    def agregar_si_permite(area, label, icono=None):
+    # Iteramos en el orden definido en TODAS_LAS_AREAS para mantener consistencia
+    for area, label_completo in TODAS_LAS_AREAS:
+        if area in (AREA_PERFIL, AREA_LOGOUT, AREA_PUBLICA):
+            continue  # no van en el navbar principal
         if area in permitidas and _URLS_AREA.get(area):
+            label, icono = _LABELS_AREA_MENU.get(area, (label_completo, ''))
             items.append({
                 'area': area,
                 'label': label,
                 'href': _URLS_AREA[area],
-                'icono': icono or ''
+                'icono': icono,
             })
-
-    if rol == 'ADMINISTRADOR':
-        agregar_si_permite(AREA_DASHBOARD, 'Dashboard', '📊')
-        agregar_si_permite(AREA_EVENTOS, 'Eventos', '📅')
-        agregar_si_permite(AREA_USUARIOS, 'Usuarios', '👥')
-        agregar_si_permite(AREA_INSTITUCIONES, 'Instituciones', '🏫')
-        agregar_si_permite(AREA_PROGRAMAS, 'Programas', '📚')
-        agregar_si_permite(AREA_INSTRUCTORES, 'Instructores', '👨‍🏫')
-        agregar_si_permite(AREA_PERSONAS, 'Participantes', '🙋')
-        agregar_si_permite(AREA_INVITADOS, 'Invitados', '🎟️')
-        agregar_si_permite(AREA_PROYECTOS, 'Proyectos', '🛠️')
-        agregar_si_permite(AREA_ESCARAPELAS, 'Escarapelas', '🪪')
-        agregar_si_permite(AREA_ASISTENCIA, 'Asistencia', '✅')
-        agregar_si_permite(AREA_REFRIGERIOS, 'Refrigerios', '🍱')
-        agregar_si_permite(AREA_CERTIFICADOS, 'Certificados', '📜')
-        agregar_si_permite(AREA_REPORTES, 'Reportes', '📈')
-        agregar_si_permite(AREA_AUDITORIA, 'Auditoría', '🔍')
-    elif rol == 'GERENTE':
-        agregar_si_permite(AREA_DASHBOARD, 'Dashboard', '📊')
-        agregar_si_permite(AREA_LISTADOS, 'Listados', '📋')
-    elif rol == 'OPERADOR_ASISTENCIA':
-        agregar_si_permite(AREA_ASISTENCIA, 'Asistencia', '✅')
-    elif rol == 'OPERADOR_REFRIGERIO':
-        agregar_si_permite(AREA_REFRIGERIOS, 'Refrigerios', '🍱')
-    elif rol == 'OPERADOR_CERTIFICADO':
-        agregar_si_permite(AREA_CERTIFICADOS, 'Certificados', '📜')
-    elif rol == 'REGISTRO':
-        agregar_si_permite(AREA_DASHBOARD, 'Dashboard', '📊')
-        agregar_si_permite(AREA_EVENTOS, 'Eventos', '📅')
-        agregar_si_permite(AREA_PERSONAS, 'Participantes', '🙋')
-        agregar_si_permite(AREA_INVITADOS, 'Invitados', '🎟️')
-        agregar_si_permite(AREA_PROYECTOS, 'Proyectos', '🛠️')
-        agregar_si_permite(AREA_ESCARAPELAS, 'Escarapelas', '🪪')
-        agregar_si_permite(AREA_ASISTENCIA, 'Asistencia', '✅')
-        agregar_si_permite(AREA_REFRIGERIOS, 'Refrigerios', '🍱')
-        agregar_si_permite(AREA_CERTIFICADOS, 'Certificados', '📜')
-    elif rol == 'CONSULTA':
-        agregar_si_permite(AREA_DASHBOARD, 'Dashboard', '📊')
-        agregar_si_permite(AREA_LISTADOS, 'Listados', '📋')
     return items

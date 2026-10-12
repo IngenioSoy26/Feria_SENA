@@ -3562,15 +3562,34 @@ class GestionUsuariosView(LoginRequiredMixin, RoleRequiredMixin, View):
         total = _UsuarioSistema.objects.count()
         activos = _UsuarioSistema.objects.filter(activo=True).count()
         inactivos = max(total - activos, 0)
+
+        # Roles dinámicos desde BD (con fallback a ROLES_SISTEMA)
+        try:
+            from apps.usuarios.models import Rol
+            roles_bd = list(Rol.objects.filter(activo=True).order_by('es_sistema', 'nombre'))
+            roles_labels = {r.codigo: f'{r.icono} {r.nombre}'.strip() for r in roles_bd}
+            roles_opts = [('', 'Todos los roles')] + [(r.codigo, f'{r.icono} {r.nombre}'.strip()) for r in roles_bd]
+            rol_styles = {r.codigo: r.color for r in roles_bd}
+            rol_icon = {r.codigo: r.icono for r in roles_bd}
+        except Exception:
+            roles_labels = dict(_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else [])
+            roles_opts = [('', 'Todos los roles')] + list(
+                (_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else [])
+            )
+            rol_styles = dict(_ROL_STYLES)
+            rol_icon = dict(_ROL_ICON)
+
+        # Añadir fallback de estilos para roles integrados
+        for k, v in _ROL_STYLES.items():
+            rol_styles.setdefault(k, v)
+        for k, v in _ROL_ICON.items():
+            rol_icon.setdefault(k, v)
+
         conteo_por_rol = {}
-        for r, _ in (_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else []):
-            conteo_por_rol[r] = _UsuarioSistema.objects.filter(rol_sistema=r).count()
-        roles_labels = dict(_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else [])
-        roles_opts_base = [('', 'Todos los roles')] + list(
-            (_UsuarioSistema.ROLES_SISTEMA if hasattr(_UsuarioSistema, 'ROLES_SISTEMA') else [])
-        )
+        for codigo in roles_labels:
+            conteo_por_rol[codigo] = _UsuarioSistema.objects.filter(rol_sistema=codigo).count()
         roles_opts_con_conteo = []
-        for codigo, label in roles_opts_base:
+        for codigo, label in roles_opts:
             if codigo:
                 roles_opts_con_conteo.append((codigo, label, conteo_por_rol.get(codigo, 0)))
         ctx = {
@@ -3580,12 +3599,12 @@ class GestionUsuariosView(LoginRequiredMixin, RoleRequiredMixin, View):
             'inactivos': inactivos,
             'conteo_por_rol': conteo_por_rol,
             'roles_labels': roles_labels,
-            'roles_opts': roles_opts_base,
+            'roles_opts': roles_opts,
             'roles_opts_con_conteo': roles_opts_con_conteo,
             'filtro_rol': filtro_rol,
             'filtro_texto': filtro_texto,
-            'rol_styles': _ROL_STYLES,
-            'rol_icon': _ROL_ICON,
+            'rol_styles': rol_styles,
+            'rol_icon': rol_icon,
         }
         return render(request, self.template_name, ctx)
 
