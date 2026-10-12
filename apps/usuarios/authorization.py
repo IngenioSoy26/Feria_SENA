@@ -6,12 +6,12 @@ MATRIZ DE ACCESO EXACTA según usuario:
 │ ROL                      │ ACCESOS PERMITIDOS                             │
 ├──────────────────────────┼───────────────────────────────────────────────┤
 │ ADMINISTRADOR (is_staff) │ TODO (completo, sin restricciones)            │
-│ GERENTE                  │ Dashboard + Perfil (cambiar clave) + Logout    │
+│ GERENTE                  │ Dashboard + Listados (solo lectura) + Perfil + Logout │
 │ OPERADOR_ASISTENCIA      │ /asistencia/ (y sus endpoints) + Perfil + Log│
 │ OPERADOR_REFRIGERIO      │ /refrigerios/ (y sus endpoints) + Perfil + Lo │
 │ OPERADOR_CERTIFICADO     │ /certificados/ (y sus endpoints) + Perfil + Lo│
 │ REGISTRO                 │ Dashboard + Eventos + Personas + Invitados + P │
-│ CONSULTA                 │ Dashboard + Perfil + Logout                    │
+│ CONSULTA                 │ Dashboard + Listados (solo lectura) + Perfil + Logout │
 │ Usuario sin rol          │ NADA (solo login/perfil/logout si activo)     │
 └──────────────────────────┴───────────────────────────────────────────────┘
 
@@ -50,6 +50,7 @@ AREA_REFRIGERIOS = 'refrigerios'
 AREA_CERTIFICADOS = 'certificados'
 AREA_REPORTES = 'reportes'
 AREA_AUDITORIA = 'auditoria'
+AREA_LISTADOS = 'listados'
 AREA_PERFIL = 'perfil'
 AREA_LOGOUT = 'logout'
 AREA_PUBLICA = 'publica'
@@ -71,6 +72,7 @@ _URLS_AREA = {
     AREA_CERTIFICADOS: '/certificados/',
     AREA_REPORTES: '/reportes/',
     AREA_AUDITORIA: '/auditoria/',
+    AREA_LISTADOS: '/listados/proyectos/',
     AREA_PERFIL: '/accounts/profile/',
     AREA_LOGOUT: '/accounts/logout/',
 }
@@ -83,18 +85,20 @@ _MATRIZ_ACCESOS = {
         AREA_DASHBOARD, AREA_EVENTOS, AREA_USUARIOS, AREA_INSTITUCIONES,
         AREA_PROGRAMAS, AREA_INSTRUCTORES, AREA_PERSONAS, AREA_INVITADOS,
         AREA_PROYECTOS, AREA_ESCARAPELAS, AREA_ASISTENCIA, AREA_REFRIGERIOS,
-        AREA_CERTIFICADOS, AREA_REPORTES, AREA_AUDITORIA, AREA_PERFIL, AREA_LOGOUT
+        AREA_CERTIFICADOS, AREA_REPORTES, AREA_AUDITORIA, AREA_LISTADOS,
+        AREA_PERFIL, AREA_LOGOUT
     },
-    'GERENTE': {AREA_DASHBOARD, AREA_PERFIL, AREA_LOGOUT},
+    'GERENTE': {AREA_DASHBOARD, AREA_LISTADOS, AREA_PERFIL, AREA_LOGOUT},
     'OPERADOR_ASISTENCIA': {AREA_ASISTENCIA, AREA_PERFIL, AREA_LOGOUT},
     'OPERADOR_REFRIGERIO': {AREA_REFRIGERIOS, AREA_PERFIL, AREA_LOGOUT},
     'OPERADOR_CERTIFICADO': {AREA_CERTIFICADOS, AREA_PERFIL, AREA_LOGOUT},
     'REGISTRO': {
         AREA_DASHBOARD, AREA_EVENTOS, AREA_PERSONAS, AREA_INVITADOS,
         AREA_PROYECTOS, AREA_ESCARAPELAS, AREA_ASISTENCIA,
-        AREA_REFRIGERIOS, AREA_CERTIFICADOS, AREA_PERFIL, AREA_LOGOUT,
+        AREA_REFRIGERIOS, AREA_CERTIFICADOS, AREA_LISTADOS,
+        AREA_PERFIL, AREA_LOGOUT,
     },
-    'CONSULTA': {AREA_DASHBOARD, AREA_PERFIL, AREA_LOGOUT},
+    'CONSULTA': {AREA_DASHBOARD, AREA_LISTADOS, AREA_PERFIL, AREA_LOGOUT},
 }
 
 # Rutas públicas (NO requieren auth, NO muestran navbar admin)
@@ -318,6 +322,7 @@ def generar_items_menu_por_rol(request):
         agregar_si_permite(AREA_AUDITORIA, 'Auditoría', '🔍')
     elif rol == 'GERENTE':
         agregar_si_permite(AREA_DASHBOARD, 'Dashboard', '📊')
+        agregar_si_permite(AREA_LISTADOS, 'Listados', '📋')
     elif rol == 'OPERADOR_ASISTENCIA':
         agregar_si_permite(AREA_ASISTENCIA, 'Asistencia', '✅')
     elif rol == 'OPERADOR_REFRIGERIO':
@@ -336,4 +341,5 @@ def generar_items_menu_por_rol(request):
         agregar_si_permite(AREA_CERTIFICADOS, 'Certificados', '📜')
     elif rol == 'CONSULTA':
         agregar_si_permite(AREA_DASHBOARD, 'Dashboard', '📊')
+        agregar_si_permite(AREA_LISTADOS, 'Listados', '📋')
     return items

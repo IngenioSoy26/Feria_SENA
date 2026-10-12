@@ -429,11 +429,13 @@
     <div class="collapse navbar-collapse justify-content-end" id="navSena">
       <ul class="navbar-nav gap-1 py-2 py-lg-0">
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:home' %}">🏠 Inicio</a></li>
-        {% if request.user.is_staff %}
+        {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:panel_admin' %}">⚙ Panel Admin</a></li>
         {% endif %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:dashboard' %}">📊 Analytics</a></li>
+        {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}
         <li class="nav-item"><a class="nav-link text-white" href="{% url 'simple:wizard' %}">➕ Registro</a></li>
+        {% endif %}
         <li class="nav-item dropdown">
           <a class="nav-link text-white dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">📋 Listados</a>
           <ul class="dropdown-menu dropdown-menu-end">
@@ -447,6 +449,7 @@
             <li><a class="dropdown-item" href="{% url 'simple:listados' 'visitantes' %}">🚶 Visitantes</a></li>
           </ul>
         </li>
+        {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}
         <li class="nav-item dropdown">
           <a class="nav-link text-white dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">🎪 Operadores</a>
           <ul class="dropdown-menu dropdown-menu-end">
@@ -455,6 +458,8 @@
             <li><a class="dropdown-item" href="{% url 'simple:operador' 'certificados' %}">📜 Certificados</a></li>
           </ul>
         </li>
+        {% endif %}
+        {% if request.user.is_superuser or request.user.rol_sistema == 'ADMINISTRADOR' or request.user.is_staff %}
         <li class="nav-item dropdown">
           <a class="nav-link text-white dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">🖨️ PDF</a>
           <ul class="dropdown-menu dropdown-menu-end">
@@ -472,6 +477,7 @@
             <li><a class="dropdown-item" target="_blank" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'todos' %}">👥 Todos (Asistencia)</a></li>
           </ul>
         </li>
+        {% endif %}
         {% if request.user.is_authenticated %}
         <li class="nav-item d-none d-lg-flex align-items-center text-white-50 small mx-1">
           👤 {{ request.user.get_short_name|default:request.user.username }}</li>

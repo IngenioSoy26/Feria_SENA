@@ -15,6 +15,7 @@ from apps.core.simple_pdf import (
     generar_certificado_pdf, generar_certificados_lote, PLANTILLAS_CERTIFICADO,
 )
 from apps.core.mixins import RoleRequiredMixin
+from apps.usuarios.authorization import AREA_LISTADOS
 from apps.eventos.models import Evento, TipoIdentificacion, TipoServicio
 from apps.instituciones.models import InstitucionEducativa
 from apps.programas.models import ProgramaTecnico
@@ -2450,9 +2451,17 @@ class DashboardSimpleView(LoginRequiredMixin, View):
 # ============================================================
 # LISTADOS: COLEGIOS, PROGRAMAS, INSTRUCTORES, INVITADOS (ÚNICOS, SIN REPETICIONES)
 # ============================================================
-class ListadoUnicosView(LoginRequiredMixin, View):
+class ListadoUnicosView(LoginRequiredMixin, RoleRequiredMixin, View):
+    areas_requeridas = [AREA_LISTADOS]
+
     @transaction.atomic
     def post(self, request, que='colegios', **_ignorado):
+        # SOLO el ADMINISTRADOR puede eliminar registros de los listados.
+        # GERENTE y CONSULTA tienen acceso de solo lectura.
+        if not _tiene_rol_usuario(request, 'ADMINISTRADOR'):
+            messages.error(request, '⛔ No tienes permiso para eliminar registros. Solo el Administrador puede realizar esta acción.')
+            return redirect('simple:listados', que=que)
+
         from django.shortcuts import redirect
         from django.http import Http404
         que_normalizado = (que or '').strip().lower()
@@ -2598,11 +2607,14 @@ class ListadoUnicosView(LoginRequiredMixin, View):
             ids_asistieron = set(
                 AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True)
             )
+        # Solo el ADMINISTRADOR puede editar/eliminar. GERENTE y CONSULTA son solo lectura.
+        puede_editar = _tiene_rol_usuario(request, 'ADMINISTRADOR')
         return render(request, 'simple/listados_unicos.html', {
             'que': que_normalizado, 'titulo': titulo, 'filas': data,
             'columnas_especiales': columnas_especiales,
             'ids_asistieron': ids_asistieron,
             'evento': evento,
+            'puede_editar': puede_editar,
         })
 
 
