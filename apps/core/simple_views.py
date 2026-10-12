@@ -2040,7 +2040,8 @@ class RegistrarOperadorAjax(View):
         nombre_proyecto = ''
         ficha_codigo = ''
         try:
-            if persona.tipo_persona == 'APRENDIZ':
+            _tipo = (persona.tipo_persona or '').strip().upper()
+            if _tipo == 'APRENDIZ':
                 tipo_asistente = 'Aprendiz Con Proyecto'
                 if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz:
                     nombre_proyecto = persona.perfil_aprendiz.proyecto.nombre if persona.perfil_aprendiz.proyecto else ''
@@ -2048,12 +2049,18 @@ class RegistrarOperadorAjax(View):
                     extra = ' · Proyecto: ' + (nombre_proyecto or 'Sin asignar')
                     if ficha_codigo:
                         extra += ' · Ficha: ' + ficha_codigo
-            elif persona.tipo_persona == 'INSTRUCTOR':
+            elif _tipo == 'INSTRUCTOR':
                 tipo_asistente = 'Instructor'
                 extra = ' · Instructor SENA'
-            elif persona.tipo_persona == 'INVITADO':
+            elif _tipo == 'INVITADO':
                 tipo_asistente = 'Invitado Especial'
                 extra = ' · Invitado a la feria'
+            elif _tipo == 'ORGANIZADOR':
+                tipo_asistente = 'Organizador'
+                extra = ' · Organización Feria'
+            elif _tipo == 'VISITANTE':
+                tipo_asistente = 'Visitante'
+                extra = ' · Visitante a la feria'
         except Exception:
             pass
         tipo_doc = getattr(persona.tipo_identificacion, 'codigo', None) if persona.tipo_identificacion else ''
@@ -2102,7 +2109,13 @@ class RegistrarOperadorAjax(View):
         correo = ''
         telefono = ''
         try:
-            correo = getattr(persona, 'correo', '') or ''
+            # Fallback de correo: muchos instructores tienen el dato en
+            # correo_sena o correo_personal, no en el campo generico correo.
+            correo = (
+                (getattr(persona, 'correo', '') or '').strip()
+                or (getattr(persona, 'correo_sena', '') or '').strip()
+                or (getattr(persona, 'correo_personal', '') or '').strip()
+            )
             telefono = getattr(persona, 'telefono', '') or ''
         except Exception:
             pass

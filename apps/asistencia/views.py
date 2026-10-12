@@ -69,6 +69,13 @@ def _datos_persona_serializados(persona):
             institucion = 'SENA'
             programa = 'ORGANIZADOR'
 
+    # Fallback de correo: el dato puede estar en correo, correo_sena o correo_personal.
+    correo = (
+        (getattr(persona, 'correo', '') or '').strip()
+        or (getattr(persona, 'correo_sena', '') or '').strip()
+        or (getattr(persona, 'correo_personal', '') or '').strip()
+    )
+
     return {
         'nombre': persona.nombre_completo,
         'rol_color': ROLES_COLOR.get(persona.tipo_persona, '#424242'),
@@ -77,6 +84,8 @@ def _datos_persona_serializados(persona):
         'programa': programa,
         'proyecto': proyecto,
         'persona_id': persona.id,
+        'correo': correo,
+        'telefono': getattr(persona, 'telefono', '') or '',
     }
 
 
