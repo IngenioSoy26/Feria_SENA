@@ -29,9 +29,17 @@ class _ProximamenteView(RoleRequiredMixin, LoginRequiredMixin, View):
 
 participantes_excel_view = _ProximamenteView.as_view()
 asistentes_excel_view = _ProximamenteView.as_view()
+ausentes_excel_view = _ProximamenteView.as_view()
 certificados_excel_view = _ProximamenteView.as_view()
 refrigerios_excel_view = _ProximamenteView.as_view()
 proyectos_excel_view = _ProximamenteView.as_view()
+instituciones_excel_view = _ProximamenteView.as_view()
+programas_excel_view = _ProximamenteView.as_view()
+proyectos_detalle_excel_view = _ProximamenteView.as_view()
+instructores_consolidado_excel_view = _ProximamenteView.as_view()
+reporte_general_excel_view = _ProximamenteView.as_view()
+reporte_general_pdf_view = _ProximamenteView.as_view()
+importacion_form_view = _ProximamenteView.as_view()
 
 
 def reportes_salud(request):
