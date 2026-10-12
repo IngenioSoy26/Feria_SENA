@@ -24,7 +24,10 @@
             </div>
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
                 <a href="{% url 'core:home' %}" class="btn btn-sena px-4 py-2 fw-semibold">Continuar al inicio</a>
-                <a href="{% url 'logout' %}" class="btn btn-outline-sena px-4 py-2 fw-semibold">Cerrar sesión</a>
+                <form method="post" action="{% url 'logout' %}" class="m-0 d-grid">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-sena px-4 py-2 fw-semibold">Cerrar sesión</button>
+                </form>
             </div>
             {% else %}
             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">

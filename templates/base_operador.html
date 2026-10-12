@@ -26,9 +26,12 @@
                     <p class="mb-0 opacity-90 small text-truncate">{{ user.get_full_name|default:user.username }}</p>
                 </div>
             </div>
-            <a href="/accounts/logout/" class="btn btn-sm btn-light text-sena-verde fw-semibold px-3 py-2 flex-shrink-0">
-                Cerrar sesión
-            </a>
+            <form method="post" action="/accounts/logout/" class="m-0 flex-shrink-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-light text-sena-verde fw-semibold px-3 py-2">
+                    Cerrar sesión
+                </button>
+            </form>
         </div>
     </header>
 

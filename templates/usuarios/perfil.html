@@ -60,7 +60,10 @@
                         <a href="{{ cambiar_clave_url|default:'/accounts/password_change/' }}" class="btn btn-sena-verde fw-semibold">
                             <i class="bi bi-key me-1"></i>Cambiar mi contraseña
                         </a>
-                        <a href="{% url 'logout' %}" class="btn btn-outline-sena fw-semibold">Cerrar sesión</a>
+                        <form method="post" action="{% url 'logout' %}" class="m-0 d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-sena fw-semibold">Cerrar sesión</button>
+                        </form>
                     </div>
                 </div>
             </div>

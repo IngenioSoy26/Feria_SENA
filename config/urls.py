@@ -8,6 +8,19 @@ from django.contrib.auth import views as auth_views
 
 from apps.usuarios.views import CustomLoginView, PerfilView, CambiarClaveView
 
+
+class _GetLogoutView(auth_views.LogoutView):
+    """Logout que acepta GET y POST.
+
+    GET es necesario para los enlaces de "Cerrar sesión" que aparecen en
+    páginas de error (403/404/500), donde el token CSRF puede no estar
+    disponible. Para el resto de la interfaz se usa POST con CSRF.
+    """
+    http_method_names = ['get', 'post', 'options']
+
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
+
 DJANGO_ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin/')
 
 urlpatterns = [
@@ -33,7 +46,7 @@ urlpatterns = [
     path('auditoria/', include('apps.auditoria.urls', namespace='auditoria')),
 
     path('accounts/login/', CustomLoginView.as_view(), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/logout/', _GetLogoutView.as_view(), name='logout'),
     path('accounts/profile/', PerfilView.as_view(), name='profile'),
     path('accounts/password_change/', CambiarClaveView.as_view(), name='password_change'),
 ]
