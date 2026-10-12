@@ -480,7 +480,10 @@
         {% endif %}
         {% if request.user.is_authenticated %}
         <li class="nav-item d-none d-lg-flex align-items-center text-white-50 small mx-1">
-          👤 {{ request.user.get_short_name|default:request.user.username }}</li>
+          👤 <a class="text-white text-decoration-none" href="{% url 'profile' %}" title="Mi perfil">{{ request.user.get_short_name|default:request.user.username }}</a></li>
+        <li class="nav-item d-flex align-items-center">
+          <a class="btn btn-outline-light btn-sm ms-1" href="{% url 'profile' %}" style="min-height:38px;border-radius:10px;" title="Mi perfil · cambiar contraseña">👤 Perfil</a>
+        </li>
         <li class="nav-item d-flex align-items-center">
           <form method="post" action="{% url 'logout' %}" class="m-0 p-0">
             {% csrf_token %}<button class="btn btn-outline-light btn-sm ms-1" style="min-height:38px;border-radius:10px;" type="submit">Salir</button>
