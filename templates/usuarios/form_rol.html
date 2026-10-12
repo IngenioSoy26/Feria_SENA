@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'simple/base_simple.html' %}
 {% load static %}
 
-{% block title %}{% if es_nuevo %}Nuevo Rol{% else %}Editar Rol{% endif %} | SENA Feria{% endblock %}
+{% block titulo %}{% if es_nuevo %}Nuevo Rol{% else %}Editar Rol{% endif %} | SENA Feria{% endblock %}
 
-{% block content %}
+{% block contenido %}
 <div class="main-wrapper">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h2 class="h3 fw-bold text-sena-negro mb-0">
