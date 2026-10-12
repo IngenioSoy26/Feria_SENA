@@ -6,6 +6,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 
+from apps.usuarios.models import Rol
+
 Usuario = get_user_model()
 
 
@@ -232,7 +234,7 @@ class RolForm(forms.ModelForm):
     ]
 
     class Meta:
-        model = None  # se asigna en __init__ para evitar import circular
+        model = Rol
         fields = ['codigo', 'nombre', 'descripcion', 'icono', 'color', 'activo']
         widgets = {
             'codigo': forms.TextInput(attrs={
@@ -260,8 +262,6 @@ class RolForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        from apps.usuarios.models import Rol
-        self._meta.model = Rol
         super().__init__(*args, **kwargs)
         self.fields['color'].choices = self.COLORES_DISPONIBLES
         # Si es un rol del sistema, el código no se puede cambiar
