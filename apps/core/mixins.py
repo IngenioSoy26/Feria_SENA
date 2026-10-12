@@ -76,11 +76,11 @@ class RoleRequiredMixin(AccessMixin):
         if usuario_puede_acceder(request, AREA_DASHBOARD):
             return HttpResponseRedirect('/dashboard/')
         if usuario_puede_acceder(request, AREA_ASISTENCIA):
-            return HttpResponseRedirect('/asistencia/')
+            return HttpResponseRedirect('/asistencia/ingreso/')
         if usuario_puede_acceder(request, AREA_REFRIGERIOS):
-            return HttpResponseRedirect('/refrigerios/')
+            return HttpResponseRedirect('/refrigerios/ingreso/')
         if usuario_puede_acceder(request, AREA_CERTIFICADOS):
-            return HttpResponseRedirect('/certificados/')
+            return HttpResponseRedirect('/certificados/entrega/')
         return HttpResponseRedirect('/accounts/profile/')
 
 

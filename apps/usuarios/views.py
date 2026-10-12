@@ -47,11 +47,11 @@ class PerfilView(LoginRequiredMixin, View):
             if usuario_puede_acceder(request, AREA_DASHBOARD):
                 return redirect('/dashboard/')
             if usuario_puede_acceder(request, AREA_ASISTENCIA):
-                return redirect('/asistencia/')
+                return redirect('/asistencia/ingreso/')
             if usuario_puede_acceder(request, AREA_REFRIGERIOS):
-                return redirect('/refrigerios/')
+                return redirect('/refrigerios/ingreso/')
             if usuario_puede_acceder(request, AREA_CERTIFICADOS):
-                return redirect('/certificados/')
+                return redirect('/certificados/entrega/')
             return redirect('/accounts/logout/')
         return super().dispatch(request, *args, **kwargs)
 

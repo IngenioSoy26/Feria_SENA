@@ -84,9 +84,9 @@ _URLS_AREA = {
     AREA_INVITADOS: '/invitados/',
     AREA_PROYECTOS: '/proyectos/',
     AREA_ESCARAPELAS: '/escarapelas/',
-    AREA_ASISTENCIA: '/asistencia/',
-    AREA_REFRIGERIOS: '/refrigerios/',
-    AREA_CERTIFICADOS: '/certificados/',
+    AREA_ASISTENCIA: '/asistencia/ingreso/',
+    AREA_REFRIGERIOS: '/refrigerios/ingreso/',
+    AREA_CERTIFICADOS: '/certificados/entrega/',
     AREA_REPORTES: '/reportes/',
     AREA_AUDITORIA: '/auditoria/',
     AREA_LISTADOS: '/listados/proyectos/',
@@ -342,11 +342,11 @@ def rol_requerido_v40(areas_permitidas, login_required=True):
                         if usuario_puede_acceder(request, AREA_DASHBOARD):
                             return HttpResponseRedirect('/dashboard/')
                         if usuario_puede_acceder(request, AREA_ASISTENCIA):
-                            return HttpResponseRedirect('/asistencia/')
+                            return HttpResponseRedirect('/asistencia/ingreso/')
                         if usuario_puede_acceder(request, AREA_REFRIGERIOS):
-                            return HttpResponseRedirect('/refrigerios/')
+                            return HttpResponseRedirect('/refrigerios/ingreso/')
                         if usuario_puede_acceder(request, AREA_CERTIFICADOS):
-                            return HttpResponseRedirect('/certificados/')
+                            return HttpResponseRedirect('/certificados/entrega/')
                     except Exception:
                         pass
                 return HttpResponseRedirect('/accounts/profile/')
