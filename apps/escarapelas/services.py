@@ -77,7 +77,7 @@ BADGE_ROL_TEXTO = {
 
 POS_BADGE = {
     "x": 19.0 * mm,
-    "y": 69.8 * mm,
+    "y": 58.0 * mm,
     "w": 69.0 * mm,
     "h": 8.2 * mm,
     "r": 4.1 * mm,
@@ -87,7 +87,7 @@ POS_BADGE = {
 
 POS_CAJA_NOMBRE = {
     "x": 7.0 * mm,
-    "y": 54.4 * mm,
+    "y": 42.5 * mm,
     "w": 93.0 * mm,
     "h": 12.0 * mm,
     "r": 5.8 * mm,
@@ -95,8 +95,8 @@ POS_CAJA_NOMBRE = {
     "padding_lados": 5.0 * mm,
     "fill_alpha": 0.40,
 
-    "y_nombre": 62.6 * mm,
-    "y_institucion": 57.3 * mm,
+    "y_nombre": 50.5 * mm,
+    "y_institucion": 45.3 * mm,
 
     "size_nombre": 13.5,
     "size_institucion": 7.9,
@@ -105,22 +105,22 @@ POS_CAJA_NOMBRE = {
 
 POS_CAJA_DOC = {
     "x": 26.0 * mm,
-    "y": 46.7 * mm,
+    "y": 34.5 * mm,
     "w": 55.0 * mm,
     "h": 7.2 * mm,
     "r": 3.6 * mm,
     "borde_grosor": 0,
     "fill_alpha": 0.40,
-    "y_texto": 49.2 * mm,
+    "y_texto": 36.9 * mm,
     "size": 11.1,
 }
 
 
 POS_CAJA_INFERIOR = {
     "x": 15.5 * mm,
-    "y": 8.2 * mm,
+    "y": 4.5 * mm,
     "w": 76.0 * mm,
-    "h": 36.6 * mm,
+    "h": 26.0 * mm,
     "r": 5.8 * mm,
     "borde_grosor": 0,
 
@@ -137,9 +137,9 @@ POS_CAJA_INFERIOR = {
     "size_valor": 8.3,
 
     # QR — CENTRADO, ocupa toda la zona.
-    "qr_size": 30.0 * mm,
+    "qr_size": 27.0 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 14.0 * mm,
+    "qr_y_inf": 7.0 * mm,
 }
 
 
