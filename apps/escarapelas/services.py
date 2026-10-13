@@ -15,9 +15,9 @@ from apps.personas.services import QrService
 # ============================================================
 # DIMENSIONES FÍSICAS
 # ============================================================
-# Porta-escarapela: 10.7 cm x 13.5 cm
-ESCARAPELA_W = 107 * mm
-ESCARAPELA_H = 135 * mm
+# Porta-escarapela: 10.0 cm x 12.5 cm
+ESCARAPELA_W = 100 * mm
+ESCARAPELA_H = 125 * mm
 
 CARTA_W, CARTA_H = letter
 
@@ -76,84 +76,78 @@ BADGE_ROL_TEXTO = {
 # ============================================================
 
 POS_BADGE = {
-    "x": 19 * mm,
-    "y": 72.5 * mm,
-    "w": 69 * mm,
-    "h": 8.5 * mm,
-    "r": 4.25 * mm,
-    "size": 12.5,
+    "x": 17.8 * mm,
+    "y": 67.1 * mm,
+    "w": 64.5 * mm,
+    "h": 7.9 * mm,
+    "r": 3.9 * mm,
+    "size": 11.6,
 }
 
 
 POS_CAJA_NOMBRE = {
-    "x": 7 * mm,
-    "y": 56.5 * mm,
-    "w": 93 * mm,
-    "h": 12.5 * mm,
-    "r": 6 * mm,
+    "x": 6.5 * mm,
+    "y": 52.3 * mm,
+    "w": 86.9 * mm,
+    "h": 11.6 * mm,
+    "r": 5.6 * mm,
     "borde_grosor": 0,
-    "padding_lados": 5 * mm,
+    "padding_lados": 4.7 * mm,
     "fill_alpha": 0.40,
 
-    # Caja reducida: rango [56.5 → 69.0], centro geométrico = 62.75mm
-    # IE en 59.5mm (gap 3.0mm sobre borde inferior → MUY CERCA como pides)
-    # Nombre en 65.0mm, gap Nombre-IE 5.5mm (juntos)
-    # Centro baselines: (65.0 + 59.5)/2 = 62.25mm  → 0.5mm vs centro geométrico 62.75 ✔ CENTRADO
-    "y_nombre": 65.0 * mm,
-    "y_institucion": 59.5 * mm,
+    # Caja reducida: rango [52.3 → 63.9], centro geométrico = 58.1mm
+    "y_nombre": 60.2 * mm,
+    "y_institucion": 55.1 * mm,
 
-    "size_nombre": 14,
-    "size_institucion": 8.2,
+    "size_nombre": 13,
+    "size_institucion": 7.6,
 }
 
 
 POS_CAJA_DOC = {
-    "x": 26 * mm,
-    "y": 48.5 * mm,
-    "w": 55 * mm,
-    "h": 7.5 * mm,
-    "r": 3.75 * mm,
+    "x": 24.3 * mm,
+    "y": 44.9 * mm,
+    "w": 51.4 * mm,
+    "h": 6.9 * mm,
+    "r": 3.5 * mm,
     "borde_grosor": 0,
     "fill_alpha": 0.40,
-    "y_texto": 51.1 * mm,
-    "size": 11.5,
+    "y_texto": 47.3 * mm,
+    "size": 10.7,
 }
 
 
 POS_CAJA_INFERIOR = {
-    "x": 15.5 * mm,
-    "y": 8.5 * mm,
-    "w": 76 * mm,
-    "h": 38.0 * mm,
-    "r": 6 * mm,
+    "x": 14.5 * mm,
+    "y": 7.9 * mm,
+    "w": 71.0 * mm,
+    "h": 35.2 * mm,
+    "r": 5.6 * mm,
     "borde_grosor": 0,
 
     # ✅ Fondo TRANSPARENTE (tal como lo solicitó el usuario).
-    # Blanco con 40% opacidad: deja ver el arte del fondo Credencial.png
-    # sin mezclar texto (ya NO pintamos nombre-proyecto → N/A).
     "fill_alpha": 0.40,
 
     # KEYS RETENIDAS (compatibilidad) — NUNCA se usan porque ahora la
     # caja inferior es SOLO QR para TODOS los roles (incluido APRENDIZ).
-    "y_valor_solo": 13.5 * mm,
-    "size_valor_solo": 9.2,
-    "y_proyecto_1": 13.2 * mm,
-    "size_label": 8.8,
-    "y_proyecto_2": 11.9 * mm,
-    "size_valor": 8.6,
+    "y_valor_solo": 12.5 * mm,
+    "size_valor_solo": 8.5,
+    "y_proyecto_1": 12.2 * mm,
+    "size_label": 8.2,
+    "y_proyecto_2": 11.0 * mm,
+    "size_valor": 8.0,
 
-    # QR 32mm (+14% vs v17 28mm) — CENTRADO, ocupa toda la zona.
-    # qr_inf=14.5, qr_sup = 14.5 + 32 = 46.5 ≡ borde sup caja.
-    "qr_size": 32 * mm,
-    "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 14.5 * mm,
+    # QR 29.6mm — CENTRADO, ocupa toda la zona.
+    "qr_size": 29.6 * mm,
+    "qr_centro_x": 50.0 * mm,
+    "qr_y_inf": 13.4 * mm,
 }
 
 
 # =========================================================================
 # CACHE GLOBAL DE LA IMAGEN DE FONDO PROCESADA CON ImageOps.pad().
 #
-# SIN ESTO: ImageOps.pad LANCZOS 2140×2700 + save PNG + io.BytesIO()
+# SIN ESTO: ImageOps.pad LANCZOS 2000×2500 + save PNG + io.BytesIO()
 #          por cada tarjeta. 300 personas = 30s → Railway timeout.
 #
 # CON ESTO: 1 SOLA VEZ por proceso Railway. Render lote 300 = ~1 segundo.
@@ -161,7 +155,7 @@ POS_CAJA_INFERIOR = {
 # Invalidación cache: st_mtime_ns Credencial.png cambia (actualizas plantilla)
 # → cache regenera sola en el siguiente request.
 # =========================================================================
-_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO PNG ya pad-2140×2700
+_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO PNG ya pad-2000×2500
 _FONDO_CREDENCIAL_MTIME = None            # mtime Credencial.png
 _FONDO_CREDENCIAL_RUTA_STR = None         # ruta que generó la cache
 
@@ -404,7 +398,7 @@ class EscarapelaPDFService:
 
         --- MOTIVO por el que se quitó ImageOps.fit() ---
         Credencial.png actual = 1024 ancho × 1536 alto (ratio 0.667).
-        Escarapela física    = 107mm W × 135mm H  (ratio 0.793 MÁS ANCHA).
+        Escarapela física    = 100mm W × 125mm H  (ratio 0.800 MÁS ANCHA).
         ImageOps.fit() recortaba centrado → cortaba:
           - ARRIBA: el título "VI Feria / Proyectos Productivos / CENTRO..."
           - ABAJO: desierto / cactus / mar.
@@ -466,8 +460,8 @@ class EscarapelaPDFService:
         try:
             with Image.open(ruta) as img:
                 img = img.convert("RGBA")
-                target_w = 2140
-                target_h = 2700
+                target_w = 2000
+                target_h = 2500
                 # Beige degradado SENA extraído del borde de Credencial.png
                 # Cualquier pixel del borde exterior tiene ese tono.
                 color_padding = (255, 241, 216, 255)
