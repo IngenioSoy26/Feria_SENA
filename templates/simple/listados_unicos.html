@@ -4,29 +4,18 @@
 {% block extra_css %}
 <style>
   @media print {
-    @page { size: A4 landscape; margin: 8mm; }
-    html, body { background: #fff !important; font-size: 8px; }
+    body { background: #fff !important; }
     .navbar, .no-print, .sidebar, footer { display: none !important; }
     .print-header { display: block !important; }
-    .print-header h2 { font-size: 14px; }
-    .print-header h3 { font-size: 12px; }
-    .print-header h4 { font-size: 11px; }
-    .print-header p { font-size: 8px; }
-    .card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+    .card { border: none !important; box-shadow: none !important; }
     .table-responsive { overflow: visible !important; }
-    .table { font-size: 8px !important; width: 100% !important; table-layout: auto; border-collapse: collapse; }
+    .table { font-size: 11px; }
     .table thead { background: #0f6b34 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .table thead tr { display: table-row-group; }
-    .table td, .table th { border-color: #ccc !important; padding: 2px 4px !important; vertical-align: top; word-wrap: break-word; word-break: break-word; white-space: normal; }
-    .table th { font-size: 8px; }
-    .table td b, .table td code { font-size: 8px; }
-    .badge { font-size: 7px !important; padding: 1px 4px !important; }
-    .tag { font-size: 7px !important; }
+    .table td, .table th { border-color: #ccc !important; padding: 6px 8px; }
     a { color: #000 !important; text-decoration: none !important; }
     .btn { display: none !important; }
     form { display: block !important; }
-    .asistio-si { color: #16a34a !important; font-weight: 900; font-size: 10px; }
-    .asistio-no { color: #dc2626 !important; font-weight: 700; font-size: 8px; }
+    .asistio-si { color: #16a34a !important; font-weight: 900; font-size: 18px; }
   }
   .print-header { display: none; }
   .asistio-si { color: #16a34a; font-weight: 900; font-size: 18px; }
