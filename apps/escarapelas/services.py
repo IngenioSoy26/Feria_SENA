@@ -15,9 +15,9 @@ from apps.personas.services import QrService
 # ============================================================
 # DIMENSIONES FÍSICAS
 # ============================================================
-# Porta-escarapela: 10.0 cm x 12.5 cm
-ESCARAPELA_W = 100 * mm
-ESCARAPELA_H = 125 * mm
+# Porta-escarapela: 11.0 cm x 13.0 cm
+ESCARAPELA_W = 110 * mm
+ESCARAPELA_H = 130 * mm
 
 CARTA_W, CARTA_H = letter
 
@@ -76,53 +76,52 @@ BADGE_ROL_TEXTO = {
 # ============================================================
 
 POS_BADGE = {
-    "x": 17.8 * mm,
-    "y": 67.1 * mm,
-    "w": 64.5 * mm,
-    "h": 7.9 * mm,
-    "r": 3.9 * mm,
-    "size": 11.6,
+    "x": 19.5 * mm,
+    "y": 69.8 * mm,
+    "w": 70.9 * mm,
+    "h": 8.2 * mm,
+    "r": 4.1 * mm,
+    "size": 12.0,
 }
 
 
 POS_CAJA_NOMBRE = {
-    "x": 6.5 * mm,
-    "y": 52.3 * mm,
-    "w": 86.9 * mm,
-    "h": 11.6 * mm,
-    "r": 5.6 * mm,
+    "x": 7.2 * mm,
+    "y": 54.4 * mm,
+    "w": 95.6 * mm,
+    "h": 12.0 * mm,
+    "r": 5.8 * mm,
     "borde_grosor": 0,
-    "padding_lados": 4.7 * mm,
+    "padding_lados": 5.1 * mm,
     "fill_alpha": 0.40,
 
-    # Caja reducida: rango [52.3 → 63.9], centro geométrico = 58.1mm
-    "y_nombre": 60.2 * mm,
-    "y_institucion": 55.1 * mm,
+    "y_nombre": 62.6 * mm,
+    "y_institucion": 57.3 * mm,
 
-    "size_nombre": 13,
-    "size_institucion": 7.6,
+    "size_nombre": 13.5,
+    "size_institucion": 7.9,
 }
 
 
 POS_CAJA_DOC = {
-    "x": 24.3 * mm,
-    "y": 44.9 * mm,
-    "w": 51.4 * mm,
-    "h": 6.9 * mm,
-    "r": 3.5 * mm,
+    "x": 26.7 * mm,
+    "y": 46.7 * mm,
+    "w": 56.5 * mm,
+    "h": 7.2 * mm,
+    "r": 3.6 * mm,
     "borde_grosor": 0,
     "fill_alpha": 0.40,
-    "y_texto": 47.3 * mm,
-    "size": 10.7,
+    "y_texto": 49.2 * mm,
+    "size": 11.1,
 }
 
 
 POS_CAJA_INFERIOR = {
-    "x": 14.5 * mm,
-    "y": 7.9 * mm,
-    "w": 71.0 * mm,
-    "h": 35.2 * mm,
-    "r": 5.6 * mm,
+    "x": 15.9 * mm,
+    "y": 8.2 * mm,
+    "w": 78.1 * mm,
+    "h": 36.6 * mm,
+    "r": 5.8 * mm,
     "borde_grosor": 0,
 
     # ✅ Fondo TRANSPARENTE (tal como lo solicitó el usuario).
@@ -130,24 +129,24 @@ POS_CAJA_INFERIOR = {
 
     # KEYS RETENIDAS (compatibilidad) — NUNCA se usan porque ahora la
     # caja inferior es SOLO QR para TODOS los roles (incluido APRENDIZ).
-    "y_valor_solo": 12.5 * mm,
-    "size_valor_solo": 8.5,
-    "y_proyecto_1": 12.2 * mm,
-    "size_label": 8.2,
-    "y_proyecto_2": 11.0 * mm,
-    "size_valor": 8.0,
+    "y_valor_solo": 13.0 * mm,
+    "size_valor_solo": 8.9,
+    "y_proyecto_1": 12.7 * mm,
+    "size_label": 8.5,
+    "y_proyecto_2": 11.5 * mm,
+    "size_valor": 8.3,
 
-    # QR 29.6mm — CENTRADO, ocupa toda la zona.
-    "qr_size": 29.6 * mm,
-    "qr_centro_x": 50.0 * mm,
-    "qr_y_inf": 13.4 * mm,
+    # QR — CENTRADO, ocupa toda la zona.
+    "qr_size": 30.8 * mm,
+    "qr_centro_x": 55.0 * mm,
+    "qr_y_inf": 14.0 * mm,
 }
 
 
 # =========================================================================
 # CACHE GLOBAL DE LA IMAGEN DE FONDO PROCESADA CON ImageOps.pad().
 #
-# SIN ESTO: ImageOps.pad LANCZOS 2000×2500 + save PNG + io.BytesIO()
+# SIN ESTO: ImageOps.pad LANCZOS 2200×2600 + save PNG + io.BytesIO()
 #          por cada tarjeta. 300 personas = 30s → Railway timeout.
 #
 # CON ESTO: 1 SOLA VEZ por proceso Railway. Render lote 300 = ~1 segundo.
@@ -155,7 +154,7 @@ POS_CAJA_INFERIOR = {
 # Invalidación cache: st_mtime_ns Credencial.png cambia (actualizas plantilla)
 # → cache regenera sola en el siguiente request.
 # =========================================================================
-_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO PNG ya pad-2000×2500
+_FONDO_CREDENCIAL_BYTESIO = None          # BytesIO PNG ya pad-2200×2600
 _FONDO_CREDENCIAL_MTIME = None            # mtime Credencial.png
 _FONDO_CREDENCIAL_RUTA_STR = None         # ruta que generó la cache
 
@@ -398,7 +397,7 @@ class EscarapelaPDFService:
 
         --- MOTIVO por el que se quitó ImageOps.fit() ---
         Credencial.png actual = 1024 ancho × 1536 alto (ratio 0.667).
-        Escarapela física    = 100mm W × 125mm H  (ratio 0.800 MÁS ANCHA).
+        Escarapela física    = 110mm W × 130mm H  (ratio 0.846 MÁS ANCHA).
         ImageOps.fit() recortaba centrado → cortaba:
           - ARRIBA: el título "VI Feria / Proyectos Productivos / CENTRO..."
           - ABAJO: desierto / cactus / mar.
@@ -460,8 +459,8 @@ class EscarapelaPDFService:
         try:
             with Image.open(ruta) as img:
                 img = img.convert("RGBA")
-                target_w = 2000
-                target_h = 2500
+                target_w = 2200
+                target_h = 2600
                 # Beige degradado SENA extraído del borde de Credencial.png
                 # Cualquier pixel del borde exterior tiene ese tono.
                 color_padding = (255, 241, 216, 255)
