@@ -2621,6 +2621,104 @@ class ListadoUnicosView(LoginRequiredMixin, RoleRequiredMixin, View):
         })
 
 
+def _obtener_datos_listado(que_normalizado, evento):
+    """Devuelve (titulo, data, columnas_especiales) para un tipo de listado."""
+    data = None
+    titulo = ''
+    columnas_especiales = None
+    if que_normalizado == 'colegios':
+        titulo = 'Instituciones Educativas'
+        qs = InstitucionEducativa.objects.order_by('nombre')
+        if evento:
+            qs = qs.filter(proyectos__evento=evento).distinct()
+        data = qs
+    elif que_normalizado == 'programas':
+        titulo = 'Programas Técnicos'
+        qs = ProgramaTecnico.objects.order_by('nombre')
+        if evento:
+            qs = qs.filter(proyectos__evento=evento).distinct()
+        data = qs
+    elif que_normalizado == 'instructores':
+        titulo = 'Instructores'
+        data = _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR')
+    elif que_normalizado == 'invitados':
+        titulo = 'Invitados'
+        data = _qs_perfiles_o_fallback(Invitado, 'INVITADO')
+    elif que_normalizado == 'organizadores':
+        titulo = 'Organizadores'
+        data = _qs_perfiles_o_fallback(_Organizador, 'ORGANIZADOR')
+    elif que_normalizado == 'visitantes':
+        titulo = 'Visitantes'
+        try:
+            from apps.visitantes.models import Visitante as _VisMod
+            data = _qs_perfiles_o_fallback(_VisMod, 'VISITANTE')
+        except Exception:
+            data = _qs_perfiles_o_fallback(None, 'VISITANTE')
+    elif que_normalizado == 'proyectos':
+        titulo = 'Proyectos registrados'
+        qs = Proyecto.objects.select_related(
+            'institucion', 'programa', 'instructor_responsable__persona'
+        ).prefetch_related('aprendices__persona').order_by('codigo')
+        if evento:
+            qs = qs.filter(evento=evento)
+        data = qs
+    elif que_normalizado == 'aprendices':
+        titulo = 'Aprendices por proyecto'
+        data = _qs_perfiles_o_fallback(Aprendiz, 'APRENDIZ', extra_order='proyecto__codigo')
+    elif que_normalizado in ('asistencia', 'asistencias'):
+        titulo = 'Lista de Asistencias'
+        qs = AsistenciaEvento.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora')
+        if evento:
+            qs = qs.filter(evento=evento)
+        data = qs
+        columnas_especiales = 'asistencia'
+    elif que_normalizado in ('refrigerios', 'entregas', 'almuerzos'):
+        svc = _servicio_almuerzo(evento) if evento else None
+        titulo = f'Entregas de {svc.nombre}' if svc else 'Entregas de Refrigerios'
+        qs = EntregaServicio.objects.select_related('persona', 'evento', 'operador', 'tipo_servicio').order_by('-fecha_hora')
+        if evento:
+            qs = qs.filter(evento=evento)
+        if svc:
+            qs = qs.filter(tipo_servicio=svc)
+        data = qs
+        columnas_especiales = 'entrega'
+    elif que_normalizado in ('certificados', 'certificados_entregados'):
+        titulo = 'Certificados Entregados'
+        qs = Certificado.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora_entrega')
+        if evento:
+            qs = qs.filter(evento=evento)
+        data = qs
+        columnas_especiales = 'certificado'
+    return titulo, data, columnas_especiales
+
+
+class InformeImpresionView(LoginRequiredMixin, RoleRequiredMixin, View):
+    """Vista que genera un informe profesional para imprimir/PDF."""
+    areas_requeridas = [AREA_LISTADOS]
+
+    def get(self, request, que='colegios', **_ignorado):
+        que_normalizado = (que or '').strip().lower()
+        evento = _evento_activo()
+        titulo, data, _ = _obtener_datos_listado(que_normalizado, evento)
+
+        # Métricas adicionales para proyectos
+        total_aprendices = 0
+        total_instituciones = 0
+        if que_normalizado == 'proyectos' and data is not None:
+            for p in data:
+                total_aprendices += p.aprendices.all().count()
+            total_instituciones = len({p.institucion_id for p in data if p.institucion_id})
+
+        return render(request, 'simple/informe_impresion.html', {
+            'que': que_normalizado,
+            'titulo': titulo,
+            'filas': data,
+            'evento': evento,
+            'total_aprendices': total_aprendices,
+            'total_instituciones': total_instituciones,
+        })
+
+
 # ============================================================
 # ESCARAPELAS PDF - Individual / Lotes
 # ============================================================

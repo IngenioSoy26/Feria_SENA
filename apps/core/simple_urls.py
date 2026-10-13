@@ -67,6 +67,7 @@ urlpatterns = [
 
     path('dashboard/', simple_views.DashboardSimpleView.as_view(), name='dashboard'),
     path('listados/<slug:que>/', simple_views.ListadoUnicosView.as_view(), name='listados'),
+    path('informe/<slug:que>/', simple_views.InformeImpresionView.as_view(), name='informe'),
 
     path('escarapela/<int:persona_id>/', simple_views.DescargarEscarapelaIndividual.as_view(), name='escarapela_persona'),
     path('escarapelas/lote/<slug:grupo>/', simple_views.DescargarEscarapelasLote.as_view(), name='escarapelas_lote'),

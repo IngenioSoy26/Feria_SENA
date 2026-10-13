@@ -33,7 +33,7 @@
   <h2 class="text-sena mb-0">📋 {{ titulo }}</h2>
   <div class="d-flex gap-2 flex-wrap no-print">
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'simple:home' %}">← Inicio</a>
-    <button type="button" class="btn btn-sena btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+    <button type="button" class="btn btn-sena btn-sm" onclick="window.open('{% url 'simple:informe' que %}', '_blank');">🖨️ Imprimir / PDF</button>
     {% if puede_editar %}
     {% if columnas_especiales == 'asistencia' %}
       <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/asistencia/asistenciaevento/">🛠️ Admin Asistencias</a>
