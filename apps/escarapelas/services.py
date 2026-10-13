@@ -529,11 +529,13 @@ class EscarapelaPDFService:
                 # bordes irregulares del PNG original.
                 # Usamos FIT (no PAD) para que la imagen llene TODO el área
                 # de la escarapela sin bordes beige/café laterales.
+                # centering=(0.5, 0.0) = ancla ARRIBA para que el logo SENA
+                # y el título NO se corten (el recorte sobrante va abajo).
                 img = ImageOps.fit(
                     img,
                     (target_w, target_h),
                     method=Image.Resampling.LANCZOS,
-                    centering=(0.5, 0.5),
+                    centering=(0.5, 0.0),
                 )
                 memoria = io.BytesIO()
                 img.save(memoria, format="PNG", optimize=True)
