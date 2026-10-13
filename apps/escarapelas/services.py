@@ -455,15 +455,78 @@ class EscarapelaPDFService:
                 _FONDO_CREDENCIAL_RUTA_STR = None
                 _FONDO_CREDENCIAL_MTIME = None
 
-        # --- Regenerar cache: PAD (no más FIT) = 0 cortes ---
+        # --- Regenerar cache: AUTO-CROP beige + PAD centrado ---
         try:
             with Image.open(ruta) as img:
                 img = img.convert("RGBA")
                 target_w = 2200
                 target_h = 2600
-                # Beige degradado SENA extraído del borde de Credencial.png
-                # Cualquier pixel del borde exterior tiene ese tono.
-                color_padding = (255, 241, 216, 255)
+
+                # ── 1. Detectar color de fondo (beige) de las 4 esquinas ──
+                # Promediamos los píxeles de las esquinas para obtener el
+                # color exacto del borde del PNG original.
+                w, h = img.size
+                esquinas = [
+                    img.getpixel((0, 0)),
+                    img.getpixel((w - 1, 0)),
+                    img.getpixel((0, h - 1)),
+                    img.getpixel((w - 1, h - 1)),
+                ]
+                color_padding = tuple(
+                    int(sum(p[i] for p in esquinas) / 4) for i in range(4)
+                )
+
+                # ── 2. AUTO-CROP: encontrar el contenido real (no beige) ──
+                # Recorremos desde cada borde hacia adentro hasta encontrar
+                # píxeles que no sean beige (con tolerancia).
+                tolerancia = 25  # tolerancia RGB para considerar "mismo beige"
+
+                def _es_beige(pixel):
+                    return all(
+                        abs(pixel[i] - color_padding[i]) <= tolerancia
+                        for i in range(3)
+                    )
+
+                # Encontrar límites del contenido
+                pix = img.load()
+                left, right, top, bottom = 0, w - 1, 0, h - 1
+
+                # Borde izquierdo
+                for x in range(w):
+                    if not all(_es_beige(pix[x, y]) for y in range(0, h, max(1, h // 50))):
+                        left = x
+                        break
+
+                # Borde derecho
+                for x in range(w - 1, -1, -1):
+                    if not all(_es_beige(pix[x, y]) for y in range(0, h, max(1, h // 50))):
+                        right = x
+                        break
+
+                # Borde superior
+                for y in range(h):
+                    if not all(_es_beige(pix[x, y]) for x in range(0, w, max(1, w // 50))):
+                        top = y
+                        break
+
+                # Borde inferior
+                for y in range(h - 1, -1, -1):
+                    if not all(_es_beige(pix[x, y]) for x in range(0, w, max(1, w // 50))):
+                        bottom = y
+                        break
+
+                # Recortar al contenido real (con un pequeño margen de 2px)
+                margen = 2
+                left = max(0, left - margen)
+                top = max(0, top - margen)
+                right = min(w - 1, right + margen)
+                bottom = min(h - 1, bottom + margen)
+
+                img = img.crop((left, top, right + 1, bottom + 1))
+
+                # ── 3. PAD centrado al tamaño objetivo ──
+                # Ahora el contenido está centrado porque recortamos los
+                # bordes irregulares del PNG original.
                 img = ImageOps.pad(
                     img,
                     (target_w, target_h),
