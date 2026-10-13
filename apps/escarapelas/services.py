@@ -403,11 +403,11 @@ class EscarapelaPDFService:
           - ABAJO: desierto / cactus / mar.
         Usuario: "la imagen del fondo quedo cortada".
 
-        --- SOLUCIÓN: ImageOps.pad(color = beige SENA #FFF1D8) ---
-        Resultado: CONTENIDO PNG 100% visible (sin cortar nada).
-        El espacio "sobrante" a izquierda y derecha del PNG más estrecho
-        se RELLENA con color beige idéntico al degradado de Credencial.png
-        → visualmente INPERCEPTIBLE, como si la imagen ocupara todo el ancho.
+        --- SOLUCIÓN: ImageOps.fit(centering 0.5,0.5) ---
+        Resultado: la imagen llena TODO el área de la escarapela SIN bordes
+        beige/café laterales. El auto-crop previo centra el contenido real
+        (quitando bordes irregulares del PNG) y luego fit escala y
+        recorta centrado para cubrir completamente el rectángulo.
         + Cache global singleton (1 vez proceso Railway, 0 Pillow por tarjeta).
         + Invalida cache cuando st_mtime_ns de Credencial.png cambia
           (subes nueva plantilla).
@@ -524,15 +524,16 @@ class EscarapelaPDFService:
 
                 img = img.crop((left, top, right + 1, bottom + 1))
 
-                # ── 3. PAD centrado al tamaño objetivo ──
+                # ── 3. FIT centrado al tamaño objetivo ──
                 # Ahora el contenido está centrado porque recortamos los
                 # bordes irregulares del PNG original.
-                img = ImageOps.pad(
+                # Usamos FIT (no PAD) para que la imagen llene TODO el área
+                # de la escarapela sin bordes beige/café laterales.
+                img = ImageOps.fit(
                     img,
                     (target_w, target_h),
                     method=Image.Resampling.LANCZOS,
                     centering=(0.5, 0.5),
-                    color=color_padding,
                 )
                 memoria = io.BytesIO()
                 img.save(memoria, format="PNG", optimize=True)
