@@ -4,17 +4,29 @@
 {% block extra_css %}
 <style>
   @media print {
-    body { background: #fff !important; }
+    @page { size: A4 landscape; margin: 8mm; }
+    html, body { background: #fff !important; font-size: 8px; }
     .navbar, .no-print, .sidebar, footer { display: none !important; }
     .print-header { display: block !important; }
-    .card { border: none !important; box-shadow: none !important; }
-    .table { font-size: 11px; }
+    .print-header h2 { font-size: 14px; }
+    .print-header h3 { font-size: 12px; }
+    .print-header h4 { font-size: 11px; }
+    .print-header p { font-size: 8px; }
+    .card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+    .table-responsive { overflow: visible !important; }
+    .table { font-size: 8px !important; width: 100% !important; table-layout: auto; border-collapse: collapse; }
     .table thead { background: #0f6b34 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .table td, .table th { border-color: #ccc !important; padding: 6px 8px; }
+    .table thead tr { display: table-row-group; }
+    .table td, .table th { border-color: #ccc !important; padding: 2px 4px !important; vertical-align: top; word-wrap: break-word; word-break: break-word; white-space: normal; }
+    .table th { font-size: 8px; }
+    .table td b, .table td code { font-size: 8px; }
+    .badge { font-size: 7px !important; padding: 1px 4px !important; }
+    .tag { font-size: 7px !important; }
     a { color: #000 !important; text-decoration: none !important; }
     .btn { display: none !important; }
     form { display: block !important; }
-    .asistio-si { color: #16a34a !important; font-weight: 900; font-size: 18px; }
+    .asistio-si { color: #16a34a !important; font-weight: 900; font-size: 10px; }
+    .asistio-no { color: #dc2626 !important; font-weight: 700; font-size: 8px; }
   }
   .print-header { display: none; }
   .asistio-si { color: #16a34a; font-weight: 900; font-size: 18px; }
@@ -70,7 +82,7 @@
     <form method="POST" onsubmit="if(this.accion.value==='eliminar'){return confirm('¿Eliminar definitivamente los registros seleccionados? Esta acción NO se puede deshacer.');}return true;">
       {% csrf_token %}
       {% if puede_editar and columnas_especiales %}
-        <div class="px-3 pt-3 pb-2 d-flex flex-wrap align-items-center gap-2 bg-body-tertiary border-bottom">
+        <div class="no-print px-3 pt-3 pb-2 d-flex flex-wrap align-items-center gap-2 bg-body-tertiary border-bottom">
           <label class="m-0" style="font-size:.86rem;font-weight:600;">Acciones en lote:</label>
           <select class="form-select form-select-sm" name="accion" style="width:auto;min-width:180px;">
             <option value="">-- Selecciona una acción --</option>
@@ -88,16 +100,16 @@
             <tr>
               <th style="width:44px;">#</th>
               {% if columnas_especiales == 'asistencia' %}
-                {% if puede_editar %}<th style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
-                <th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo marcó?</th>{% if puede_editar %}<th style="width:150px;">Acciones</th>{% endif %}
+                {% if puede_editar %}<th class="no-print" style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
+                <th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo marcó?</th>{% if puede_editar %}<th class="no-print" style="width:150px;">Acciones</th>{% endif %}
               {% elif columnas_especiales == 'entrega' %}
-                {% if puede_editar %}<th style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
-                <th>Servicio</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th style="width:150px;">Acciones</th>{% endif %}
+                {% if puede_editar %}<th class="no-print" style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
+                <th>Servicio</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th class="no-print" style="width:150px;">Acciones</th>{% endif %}
               {% elif columnas_especiales == 'certificado' %}
-                {% if puede_editar %}<th style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
-                <th>Código</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Entregado</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th style="width:150px;">Acciones</th>{% endif %}
+                {% if puede_editar %}<th class="no-print" style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
+                <th>Código</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Entregado</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th class="no-print" style="width:150px;">Acciones</th>{% endif %}
               {% elif que == 'colegios' %}
-                <th>Institución Educativa</th><th>Municipio</th><th>Proyectos</th>{% if puede_editar %}<th>Acciones</th>{% endif %}
+                <th>Institución Educativa</th><th>Municipio</th><th>Proyectos</th>{% if puede_editar %}<th class="no-print">Acciones</th>{% endif %}
               {% elif que == 'programas' %}
                 <th>Programa Técnico</th><th>Código</th><th>Proyectos que lo usan</th>
               {% elif que == 'instructores' %}
@@ -109,7 +121,7 @@
               {% elif que == 'visitantes' %}
                 <th>Visitante</th><th>Cédula</th><th>Entidad</th><th>Cargo</th><th style="width:70px;text-align:center;">Asistió</th>{% if puede_editar %}<th class="no-print">Acciones</th>{% endif %}
               {% elif que == 'proyectos' %}
-                <th>Código</th><th>Proyecto</th><th>Colegio</th><th>Programa</th><th>Municipio</th><th>Instructor</th><th>Aprendices</th>{% if puede_editar %}<th>Acciones</th>{% endif %}
+                <th>Código</th><th>Proyecto</th><th>Colegio</th><th>Programa</th><th>Municipio</th><th>Instructor</th><th>Aprendices</th>{% if puede_editar %}<th class="no-print">Acciones</th>{% endif %}
               {% elif que == 'aprendices' %}
                 <th>Ficha</th><th>Aprendiz</th><th>Proyecto</th><th>Colegio</th><th>Grado</th><th style="width:70px;text-align:center;">Asistió</th>{% if puede_editar %}<th class="no-print">Acciones</th>{% endif %}
               {% endif %}
@@ -120,7 +132,7 @@
             <tr>
               <td>{{ forloop.counter }}</td>
               {% if columnas_especiales == 'asistencia' %}
-                {% if puede_editar %}<td><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
+                {% if puede_editar %}<td class="no-print"><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
                 <td><b>{{ fila.persona.numero_identificacion }}</b></td>
                 <td>{{ fila.persona.nombre_completo }}</td>
                 <td>
@@ -137,13 +149,13 @@
                   {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
                 </td>
                 {% if puede_editar %}
-                <td>
+                <td class="no-print">
                   <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
                           onclick="return confirm('¿Quitar esta asistencia?');return true;">🗑️ Quitar</button>
                 </td>
                 {% endif %}
               {% elif columnas_especiales == 'entrega' %}
-                {% if puede_editar %}<td><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
+                {% if puede_editar %}<td class="no-print"><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
                 <td><span class="badge text-bg-warning">{{ fila.tipo_servicio.nombre|default:"Refrigerio" }}</span></td>
                 <td><b>{{ fila.persona.numero_identificacion }}</b></td>
                 <td>{{ fila.persona.nombre_completo }}</td>
@@ -161,13 +173,13 @@
                   {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
                 </td>
                 {% if puede_editar %}
-                <td>
+                <td class="no-print">
                   <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
                           onclick="return confirm('¿Quitar esta entrega de refrigerio?');return true;">🗑️ Quitar</button>
                 </td>
                 {% endif %}
               {% elif columnas_especiales == 'certificado' %}
-                {% if puede_editar %}<td><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
+                {% if puede_editar %}<td class="no-print"><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
                 <td><code style="background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:6px;">{{ fila.codigo_unico }}</code></td>
                 <td><b>{{ fila.persona.numero_identificacion }}</b></td>
                 <td>{{ fila.persona.nombre_completo }}</td>
@@ -185,7 +197,7 @@
                   {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
                 </td>
                 {% if puede_editar %}
-                <td>
+                <td class="no-print">
                   <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
                           onclick="return confirm('¿Quitar este certificado entregado?');return true;">🗑️ Quitar</button>
                 </td>
@@ -194,7 +206,7 @@
                 <td><b>{{ fila.nombre }}</b></td>
                 <td>{{ fila.municipio|default:"-" }}</td>
                 <td><span class="badge badge-sena">{{ fila.proyecto_set.all|length }}</span></td>
-                {% if puede_editar %}<td><a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.id %}">🖨️ Escarapelas IE</a></td>{% endif %}
+                {% if puede_editar %}<td class="no-print"><a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.id %}">🖨️ Escarapelas IE</a></td>{% endif %}
               {% elif que == 'programas' %}
                 <td><b>{{ fila.nombre }}</b></td>
                 <td><code>{{ fila.codigo }}</code></td>
@@ -256,7 +268,7 @@
                 <td>{{ fila.instructor_responsable.persona.get_full_name|default:"-" }}</td>
                 <td><span class="badge badge-azul">{{ fila.aprendiz_set.all|length }}</span></td>
                 {% if puede_editar %}
-                <td>
+                <td class="no-print">
                   {% if fila.institucion_id %}
                     <a target="_blank" class="btn btn-sm btn-outline-success" href="{% url 'simple:escarapelas_lote' fila.institucion.id %}">🖨️ IE</a>
                   {% endif %}
