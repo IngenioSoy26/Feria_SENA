@@ -15,15 +15,15 @@ from apps.personas.services import QrService
 # ============================================================
 # DIMENSIONES FÍSICAS
 # ============================================================
-# Porta-escarapela: 11.0 cm x 13.0 cm
-ESCARAPELA_W = 110 * mm
+# Porta-escarapela: 10.7 cm x 13.0 cm
+ESCARAPELA_W = 107 * mm
 ESCARAPELA_H = 130 * mm
 
 CARTA_W, CARTA_H = letter
 
-# En carta caben 2 x 2. Gutter 3mm mínimo garantiza margen de corte
-# para gillotina/tijera al imprimir 4 tarjetas por hoja.
-GUTTER = 3.0 * mm
+# En carta caben 2 x 2. Con W=107mm: 2*107=214mm + gutter.
+# Carta = 215.9mm → gutter máximo 1.9mm. Usamos 1mm para margen de corte.
+GUTTER = 1.0 * mm
 
 
 # ============================================================
@@ -76,9 +76,9 @@ BADGE_ROL_TEXTO = {
 # ============================================================
 
 POS_BADGE = {
-    "x": 19.5 * mm,
+    "x": 19.0 * mm,
     "y": 69.8 * mm,
-    "w": 70.9 * mm,
+    "w": 69.0 * mm,
     "h": 8.2 * mm,
     "r": 4.1 * mm,
     "size": 12.0,
@@ -86,13 +86,13 @@ POS_BADGE = {
 
 
 POS_CAJA_NOMBRE = {
-    "x": 7.2 * mm,
+    "x": 7.0 * mm,
     "y": 54.4 * mm,
-    "w": 95.6 * mm,
+    "w": 93.0 * mm,
     "h": 12.0 * mm,
     "r": 5.8 * mm,
     "borde_grosor": 0,
-    "padding_lados": 5.1 * mm,
+    "padding_lados": 5.0 * mm,
     "fill_alpha": 0.40,
 
     "y_nombre": 62.6 * mm,
@@ -104,9 +104,9 @@ POS_CAJA_NOMBRE = {
 
 
 POS_CAJA_DOC = {
-    "x": 26.7 * mm,
+    "x": 26.0 * mm,
     "y": 46.7 * mm,
-    "w": 56.5 * mm,
+    "w": 55.0 * mm,
     "h": 7.2 * mm,
     "r": 3.6 * mm,
     "borde_grosor": 0,
@@ -117,9 +117,9 @@ POS_CAJA_DOC = {
 
 
 POS_CAJA_INFERIOR = {
-    "x": 15.9 * mm,
+    "x": 15.5 * mm,
     "y": 8.2 * mm,
-    "w": 78.1 * mm,
+    "w": 76.0 * mm,
     "h": 36.6 * mm,
     "r": 5.8 * mm,
     "borde_grosor": 0,
@@ -137,8 +137,8 @@ POS_CAJA_INFERIOR = {
     "size_valor": 8.3,
 
     # QR — CENTRADO, ocupa toda la zona.
-    "qr_size": 30.8 * mm,
-    "qr_centro_x": 55.0 * mm,
+    "qr_size": 30.0 * mm,
+    "qr_centro_x": 53.5 * mm,
     "qr_y_inf": 14.0 * mm,
 }
 
@@ -397,7 +397,7 @@ class EscarapelaPDFService:
 
         --- MOTIVO por el que se quitó ImageOps.fit() ---
         Credencial.png actual = 1024 ancho × 1536 alto (ratio 0.667).
-        Escarapela física    = 110mm W × 130mm H  (ratio 0.846 MÁS ANCHA).
+        Escarapela física    = 107mm W × 130mm H  (ratio 0.823 MÁS ANCHA).
         ImageOps.fit() recortaba centrado → cortaba:
           - ARRIBA: el título "VI Feria / Proyectos Productivos / CENTRO..."
           - ABAJO: desierto / cactus / mar.
@@ -459,7 +459,7 @@ class EscarapelaPDFService:
         try:
             with Image.open(ruta) as img:
                 img = img.convert("RGBA")
-                target_w = 2200
+                target_w = 2140
                 target_h = 2600
 
                 # ── 1. Detectar color de fondo (beige) de las 4 esquinas ──
