@@ -383,73 +383,84 @@ def _draw_certificado_individual(canvas, page_w, page_h, persona, proyecto=None)
 
 
 def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_token=None):
-    """Dibuja un certificado usando la imagen de fondo y superponiendo datos dinámicos."""
-    from reportlab.lib.colors import HexColor, black
+    """Dibuja un certificado usando la imagen de fondo y superponiendo datos dinámicos.
+    El área (w, h) es media carta (612x396), mismo ratio que la imagen de fondo."""
+    from reportlab.lib.colors import HexColor, black, white
     from reportlab.lib.units import mm
     from reportlab.pdfbase.pdfmetrics import stringWidth
 
     SENA_VERDE_OSCURO = HexColor('#1B5E20')
     SENA_AZUL = HexColor('#0D47A1')
 
-    # --- Imagen de fondo (ocupa todo el área del certificado) ---
+    # --- Imagen de fondo (llena TODO el área media carta) ---
     if os.path.isfile(_CERT_FONDO_PATH):
         try:
+            # Ratio imagen = 1.5451, ratio media carta = 1.5454 -> sin distorsión
             canvas.drawImage(_CERT_FONDO_PATH, x, y, width=w, height=h,
-                             preserveAspectRatio=True, anchor='c')
+                             preserveAspectRatio=False, anchor='c')
         except Exception:
             pass
 
-    # --- Nombre del proyecto (debajo de 'SE OTORGA AL PROYECTO') ---
+    # --- Nombre del proyecto (entre 'SE OTORGA AL PROYECTO' y 'DE LA INSTITUCIÓN EDUCATIVA') ---
     nombre_proy = (getattr(proyecto, 'nombre', '') or '').strip().upper()
-    max_w = w - 40 * mm
-    fs = 15
-    while fs > 9 and stringWidth(nombre_proy, 'Helvetica-Bold', fs) > max_w:
+    max_w = w - 50 * mm
+    fs = 16
+    while fs > 10 and stringWidth(nombre_proy, 'Helvetica-Bold', fs) > max_w:
         fs -= 0.5
     canvas.setFillColor(black)
     canvas.setFont('Helvetica-Bold', fs)
-    # Posición: ~47% desde arriba del certificado
-    proy_y = y + h * 0.53
+    # Posición: línea base ~50% desde abajo (centro del espacio entre las dos líneas de la plantilla)
+    proy_y = y + h * 0.50
     canvas.drawCentredString(x + w / 2, proy_y, nombre_proy)
 
-    # --- Nombre de la institución (debajo de 'DE LA INSTITUCIÓN EDUCATIVA') ---
+    # --- Nombre de la institución (entre 'DE LA INSTITUCIÓN EDUCATIVA' y el párrafo) ---
     nombre_inst = ''
     try:
         if getattr(proyecto, 'institucion_id', None) and proyecto.institucion:
             nombre_inst = (getattr(proyecto.institucion, 'nombre', '') or '').strip().upper()
     except Exception:
         pass
-    fs2 = 12
+    fs2 = 11
     while fs2 > 8 and stringWidth(nombre_inst, 'Helvetica-Bold', fs2) > max_w:
         fs2 -= 0.5
     canvas.setFillColor(SENA_VERDE_OSCURO)
     canvas.setFont('Helvetica-Bold', fs2)
-    # Posición: ~62% desde arriba
-    inst_y = y + h * 0.38
+    # Posición: línea base ~45% desde abajo (justo debajo de 'DE LA INSTITUCIÓN EDUCATIVA')
+    inst_y = y + h * 0.45
     canvas.drawCentredString(x + w / 2, inst_y, nombre_inst)
 
-    # --- Código del proyecto (esquina inferior izquierda) ---
+    # --- Código del proyecto (esquina inferior izquierda, dentro de la imagen) ---
+    cod_texto = f'Cód: {getattr(proyecto, "codigo", "") or ""}'
+    cod_fs = 7
+    canvas.setFont('Helvetica', cod_fs)
+    cod_w = stringWidth(cod_texto, 'Helvetica', cod_fs)
+    cod_x = x + 8 * mm
+    cod_y = y + 8 * mm
+    # Fondo blanco semi-transparente para legibilidad sobre el paisaje
+    canvas.setFillColor(HexColor('#FFFFFFCC'))
+    canvas.rect(cod_x - 1 * mm, cod_y - 1 * mm, cod_w + 2 * mm, cod_fs * 0.5 + 2 * mm,
+                stroke=0, fill=1)
     canvas.setFillColor(SENA_AZUL)
-    canvas.setFont('Helvetica', 6)
-    canvas.drawString(x + 8 * mm, y + 6 * mm, f'Cód: {getattr(proyecto, "codigo", "") or ""}')
+    canvas.drawString(cod_x, cod_y, cod_texto)
 
-    # --- QR (esquina inferior derecha) ---
+    # --- QR (esquina inferior derecha, dentro de la imagen) ---
     qr_size = 22 * mm
-    qr_x = x + w - qr_size - 8 * mm
-    qr_y = y + 6 * mm
+    qr_x = x + w - qr_size - 10 * mm
+    qr_y = y + 10 * mm
     if qr_token:
         try:
             from reportlab.graphics.barcode.qr import QrCodeWidget
             from reportlab.graphics.shapes import Drawing
+            # Fondo blanco detrás del QR para legibilidad
+            canvas.setFillColor(white)
+            canvas.rect(qr_x - 1 * mm, qr_y - 1 * mm, qr_size + 2 * mm, qr_size + 2 * mm,
+                        stroke=0, fill=1)
             qrw = QrCodeWidget(str(qr_token), barLevel='M', barWidth=qr_size, barHeight=qr_size)
             d = Drawing(qr_size, qr_size)
             d.add(qrw)
             d.drawOn(canvas, qr_x, qr_y)
         except Exception:
             pass
-    # Etiqueta del QR
-    canvas.setFillColor(HexColor('#555555'))
-    canvas.setFont('Helvetica', 5)
-    canvas.drawCentredString(qr_x + qr_size / 2, qr_y - 3 * mm, 'Escanea para entregar')
 
 
 def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
