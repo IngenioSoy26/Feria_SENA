@@ -1912,9 +1912,19 @@ class OperadorMobileView(View):
                         ids = set(EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).values_list('persona_id', flat=True))
                         ingresaron = len(ids)
                 elif tipo == 'certificados':
-                    # Los certificados son 1 por PROYECTO (no por persona)
-                    total = Proyecto.objects.filter(evento=evento).count()
-                    ingresaron = Certificado.objects.filter(evento=evento).count()
+                    # Certificados: 1 por proyecto. Total = proyectos con al menos 1 aprendiz asistente
+                    _ids_asist = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                    _proy_elegibles = set(
+                        Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_asist)
+                        .values_list('id', flat=True)
+                    )
+                    _ids_cert = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                    _proy_con_cert = set(
+                        Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_cert)
+                        .values_list('id', flat=True)
+                    )
+                    total = len(_proy_elegibles)
+                    ingresaron = len(_proy_elegibles & _proy_con_cert)
                 faltan = max(total - ingresaron, 0)
                 porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             except Exception:
@@ -1972,9 +1982,19 @@ class StatsOperadorAjax(View):
                 else:
                     ingresaron = 0
             elif tipo == 'certificados':
-                # Los certificados son 1 por PROYECTO (no por persona)
-                total = Proyecto.objects.filter(evento=evento).count()
-                ingresaron = Certificado.objects.filter(evento=evento).count()
+                # Certificados: 1 por proyecto. Total = proyectos con al menos 1 aprendiz asistente
+                _ids_asist = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                _proy_elegibles = set(
+                    Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_asist)
+                    .values_list('id', flat=True)
+                )
+                _ids_cert = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
+                _proy_con_cert = set(
+                    Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_cert)
+                    .values_list('id', flat=True)
+                )
+                total = len(_proy_elegibles)
+                ingresaron = len(_proy_elegibles & _proy_con_cert)
             else:
                 ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
                 ingresaron = len(ids_ingresados)
@@ -2375,9 +2395,21 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         cert_organizadores = cert_por_rol.get('ORGANIZADOR', 0)
         cert_qr = qs_certificados.filter(medio='QR').count()
         cert_manual = qs_certificados.filter(medio='MANUAL').count()
-        # Los certificados son 1 por PROYECTO → pendientes = total proyectos - certificados entregados
-        certificados_pendientes = max(total_proyectos - certificados_entregados, 0)
-        pct_certificados = (certificados_entregados * 100 // total_proyectos) if total_proyectos else 0
+        # Certificados pendientes: proyectos donde al menos 1 aprendiz asistió pero aún no hay certificado
+        _ids_asistieron = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
+        _proy_elegibles_ids = set(
+            Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_asistieron)
+            .values_list('id', flat=True)
+        )
+        _ids_con_cert = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
+        _proy_con_cert_ids = set(
+            Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_con_cert)
+            .values_list('id', flat=True)
+        )
+        proyectos_elegibles = len(_proy_elegibles_ids)
+        proyectos_con_certificado = len(_proy_con_cert_ids)
+        certificados_pendientes = proyectos_elegibles - proyectos_con_certificado
+        pct_certificados = (proyectos_con_certificado * 100 // proyectos_elegibles) if proyectos_elegibles else 0
 
         ahora = timezone.localtime(timezone.now()) if timezone.is_aware(timezone.now()) else timezone.now()
         fi = evento.fecha_inicio
