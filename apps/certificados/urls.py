@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/validar-token/', views.ValidarTokenCertificadoJson.as_view(), name='api_validar'),
     path('api/registrar/', views.RegistrarEntregaCertificadoJson.as_view(), name='api_registrar'),
     path('buscar-persona/', views.BuscarManualCertificadoView.as_view(), name='buscar_manual'),
+    path('proyectos/pdf/', views.GenerarCertificadosProyectosPdfView.as_view(), name='proyectos_pdf'),
 ]

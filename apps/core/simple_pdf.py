@@ -405,3 +405,220 @@ def generar_certificados_lote(lista, tipo='ASISTENCIA', evento=None):
 
     doc.build(story)
     return buffer
+
+
+# =======================================================================
+# CERTIFICADOS POR PROYECTO — Media carta (2 por hoja carta)
+# Diseño: RECONOCIMIENTO / SE OTORGA AL PROYECTO / DE LA INSTITUCIÓN
+# =======================================================================
+def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_token=None):
+    """Dibuja un certificado de proyecto en el rectángulo (x,y,w,h) de una hoja carta."""
+    from reportlab.lib.colors import HexColor, white, black
+    from reportlab.lib.units import mm
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    SENA_VERDE = HexColor('#39A900')
+    SENA_VERDE_OSCURO = HexColor('#1B5E20')
+    SENA_AZUL = HexColor('#0D47A1')
+    SENA_NARANJA = HexColor('#F57C00')
+    SENA_AMARILLO = HexColor('#FBC02D')
+    GRIS_TEXTO = HexColor('#333333')
+
+    # --- Borde exterior ---
+    canvas.setStrokeColor(SENA_VERDE_OSCURO)
+    canvas.setLineWidth(1.5)
+    canvas.rect(x, y, w, h, stroke=1, fill=0)
+
+    # --- Borde interior (márgenes) ---
+    margin = 5 * mm
+    canvas.setStrokeColor(SENA_VERDE)
+    canvas.setLineWidth(0.5)
+    canvas.rect(x + margin, y + margin, w - 2 * margin, h - 2 * margin, stroke=1, fill=0)
+
+    # --- Franja superior verde con logo ---
+    franja_h = 22 * mm
+    canvas.setFillColor(SENA_VERDE_OSCURO)
+    canvas.rect(x, y + h - franja_h, w, franja_h, stroke=0, fill=1)
+
+    # Logo SENA (blanco sobre verde)
+    logo_path = _path_logo()
+    if logo_path and _HAS_PIL:
+        try:
+            canvas.drawImage(logo_path, x + 6 * mm, y + h - franja_h + 4 * mm,
+                             width=14 * mm, height=14 * mm, mask='auto')
+        except Exception:
+            canvas.setFillColor(white)
+            canvas.setFont('Helvetica-Bold', 16)
+            canvas.drawString(x + 6 * mm, y + h - franja_h + 9 * mm, 'SENA')
+    else:
+        canvas.setFillColor(white)
+        canvas.setFont('Helvetica-Bold', 16)
+        canvas.drawString(x + 6 * mm, y + h - franja_h + 9 * mm, 'SENA')
+
+    # Texto a la derecha del logo
+    canvas.setFillColor(white)
+    canvas.setFont('Helvetica-Bold', 9)
+    canvas.drawString(x + 22 * mm, y + h - franja_h + 13 * mm, 'SERVICIO NACIONAL DE APRENDIZAJE')
+    canvas.setFont('Helvetica', 7.5)
+    canvas.drawString(x + 22 * mm, y + h - franja_h + 9 * mm, 'Regional Guajira · Centro Industrial y de Energías Alternativas')
+
+    # --- Título de la feria (debajo de la franja) ---
+    titulo_y = y + h - franja_h - 10 * mm
+    canvas.setFillColor(SENA_VERDE_OSCURO)
+    canvas.setFont('Helvetica-Bold', 13)
+    canvas.drawCentredString(x + w / 2, titulo_y, 'VI FERIA DE PROYECTOS PRODUCTIVOS')
+
+    canvas.setFillColor(SENA_AZUL)
+    canvas.setFont('Helvetica', 7.5)
+    canvas.drawCentredString(x + w / 2, titulo_y - 4.5 * mm,
+                             'Programa de Articulación con la Educación Media del SENA')
+
+    # Línea decorativa tricolor
+    line_y = titulo_y - 8 * mm
+    segmento = (w - 2 * margin) / 3
+    canvas.setStrokeColor(SENA_VERDE)
+    canvas.setLineWidth(2)
+    canvas.line(x + margin, line_y, x + margin + segmento, line_y)
+    canvas.setStrokeColor(SENA_NARANJA)
+    canvas.line(x + margin + segmento, line_y, x + margin + 2 * segmento, line_y)
+    canvas.setStrokeColor(SENA_AMARILLO)
+    canvas.line(x + margin + 2 * segmento, line_y, x + w - margin, line_y)
+
+    # --- RECONOCIMIENTO ---
+    recon_y = line_y - 10 * mm
+    canvas.setFillColor(SENA_AZUL)
+    canvas.setFont('Helvetica-Bold', 22)
+    canvas.drawCentredString(x + w / 2, recon_y, 'RECONOCIMIENTO')
+
+    # --- SE OTORGA AL PROYECTO ---
+    otorga_y = recon_y - 10 * mm
+    canvas.setFillColor(GRIS_TEXTO)
+    canvas.setFont('Helvetica', 9)
+    canvas.drawCentredString(x + w / 2, otorga_y, 'SE OTORGA AL PROYECTO')
+
+    # --- Nombre del proyecto (dinámico) ---
+    nombre_proy = (proyecto.nombre or '').strip().upper()
+    # Ajustar tamaño si es muy largo
+    fs = 14
+    max_w = w - 30 * mm
+    while fs > 8 and stringWidth(nombre_proy, 'Helvetica-Bold', fs) > max_w:
+        fs -= 0.5
+    canvas.setFillColor(black)
+    canvas.setFont('Helvetica-Bold', fs)
+    canvas.drawCentredString(x + w / 2, otorga_y - 8 * mm, nombre_proy)
+
+    # --- DE LA INSTITUCIÓN EDUCATIVA ---
+    inst_label_y = otorga_y - 18 * mm
+    canvas.setFillColor(GRIS_TEXTO)
+    canvas.setFont('Helvetica', 9)
+    canvas.drawCentredString(x + w / 2, inst_label_y, 'DE LA INSTITUCIÓN EDUCATIVA')
+
+    # --- Nombre de la institución (dinámico) ---
+    nombre_inst = ''
+    try:
+        if proyecto.institucion_id:
+            nombre_inst = (proyecto.institucion.nombre or '').strip().upper()
+    except Exception:
+        pass
+    fs2 = 11
+    while fs2 > 7 and stringWidth(nombre_inst, 'Helvetica-Bold', fs2) > max_w:
+        fs2 -= 0.5
+    canvas.setFillColor(SENA_VERDE_OSCURO)
+    canvas.setFont('Helvetica-Bold', fs2)
+    canvas.drawCentredString(x + w / 2, inst_label_y - 6 * mm, nombre_inst)
+
+    # --- Párrafo de participación ---
+    parrafo_y = inst_label_y - 16 * mm
+    parrafo_texto = (
+        'Por su destacada participación en la VI Feria de Proyectos Productivos '
+        'del Programa de Articulación con la Educación Media del SENA, '
+        'evidenciando creatividad, innovación y compromiso con el desarrollo '
+        'de su institución educativa y su comunidad.'
+    )
+    canvas.setFillColor(GRIS_TEXTO)
+    canvas.setFont('Helvetica', 8)
+    # Dibujar párrafo centrado, ajustado al ancho
+    from reportlab.lib.utils import simpleSplit
+    lineas = simpleSplit(parrafo_texto, 'Helvetica', 8, w - 30 * mm)
+    for i, linea in enumerate(lineas):
+        canvas.drawCentredString(x + w / 2, parrafo_y - i * 4 * mm, linea)
+
+    # --- Firma (abajo) ---
+    firma_y = y + 18 * mm
+    canvas.setStrokeColor(black)
+    canvas.setLineWidth(0.8)
+    canvas.line(x + w / 2 - 30 * mm, firma_y, x + w / 2 + 30 * mm, firma_y)
+    canvas.setFillColor(GRIS_TEXTO)
+    canvas.setFont('Helvetica-Bold', 8)
+    canvas.drawCentredString(x + w / 2, firma_y - 4.5 * mm, 'Coordinador(a) de Programas Especiales')
+    canvas.setFont('Helvetica', 7)
+    canvas.drawCentredString(x + w / 2, firma_y - 8 * mm, 'SENA C.I.E.A')
+
+    # --- Código del proyecto (esquina inferior izquierda) ---
+    canvas.setFillColor(SENA_AZUL)
+    canvas.setFont('Helvetica', 6.5)
+    canvas.drawString(x + 6 * mm, y + 7 * mm, f'Cód: {proyecto.codigo or ""}')
+
+    # --- QR (esquina inferior derecha) ---
+    qr_size = 22 * mm
+    qr_x = x + w - qr_size - 6 * mm
+    qr_y = y + 6 * mm
+    if qr_token:
+        try:
+            from reportlab.graphics.barcode.qr import QrCodeWidget
+            qrw = QrCodeWidget(str(qr_token), barLevel='M', barWidth=qr_size, barHeight=qr_size)
+            d = Drawing(qr_size, qr_size)
+            d.add(qrw)
+            d.drawOn(canvas, qr_x, qr_y)
+        except Exception:
+            pass
+    # Etiqueta del QR
+    canvas.setFillColor(GRIS_TEXTO)
+    canvas.setFont('Helvetica', 5.5)
+    canvas.drawCentredString(qr_x + qr_size / 2, qr_y - 3 * mm, 'Escanea para entregar')
+
+
+def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
+    """Genera un PDF con certificados de proyectos, 2 por hoja carta (media carta)."""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas as canvas_mod
+
+    if buffer is None:
+        buffer = BytesIO()
+
+    page_w, page_h = letter  # 612 x 792 pt = 215.9 x 279.4 mm
+    cert_w = page_w
+    cert_h = page_h / 2  # media carta = 396 pt = 139.7 mm
+
+    c = canvas_mod.Canvas(buffer, pagesize=letter)
+
+    for idx, proyecto in enumerate(proyectos):
+        # Obtener el primer aprendiz para el QR
+        qr_token = None
+        try:
+            aprendiz = proyecto.aprendices.select_related('persona').first()
+            if aprendiz and aprendiz.persona_id:
+                qr_token = getattr(aprendiz.persona, 'qr_token', None)
+        except Exception:
+            pass
+
+        # Posición: par = arriba, impar = abajo
+        pos_in_page = idx % 2
+        if pos_in_page == 0:
+            x, y = 0, cert_h  # certificado superior
+        else:
+            x, y = 0, 0  # certificado inferior
+
+        _draw_certificado_proyecto(c, x, y, cert_w, cert_h, proyecto, evento=evento, qr_token=qr_token)
+
+        # Si es el segundo de la página (impar), pasar de página
+        if pos_in_page == 1 and idx < len(proyectos) - 1:
+            c.showPage()
+
+    # Si el último quedó solo (posición 0), asegurarse de mostrar la página
+    if len(proyectos) % 2 == 1:
+        c.showPage()
+
+    c.save()
+    buffer.seek(0)
+    return buffer

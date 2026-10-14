@@ -4,7 +4,7 @@ from datetime import date
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views import View
 from django.views.generic import TemplateView, FormView
 from django import forms
@@ -415,3 +415,30 @@ class BuscarManualCertificadoView(RoleRequiredMixin, FormView):
         )
         ctx['criterio'] = request.POST.get('criterio', '')
         return self.render_to_response(ctx)
+
+
+class GenerarCertificadosProyectosPdfView(RoleRequiredMixin, View):
+    """Genera un PDF con certificados de proyectos (2 por hoja carta)."""
+    roles_requeridos = ['ADMINISTRADOR', 'OPERADOR_CERTIFICADO', 'REGISTRO']
+    http_method_names = ['get']
+
+    def get(self, request, *args, **kwargs):
+        from apps.proyectos.models import Proyecto
+        from apps.core.simple_pdf import generar_certificados_proyectos_pdf
+
+        evento = _obtener_evento_activo()
+        if not evento:
+            return HttpResponse('No hay evento activo.', status=404)
+
+        # Obtener proyectos activos del evento
+        proyectos = Proyecto.objects.filter(
+            evento=evento,
+            estado__in=['INSCRITO', 'APROBADO'],
+        ).select_related('institucion', 'programa', 'ficha').prefetch_related(
+            'aprendices__persona'
+        ).order_by('codigo')
+
+        buffer = generar_certificados_proyectos_pdf(list(proyectos), evento=evento)
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="certificados_proyectos_{evento.id}.pdf"'
+        return response

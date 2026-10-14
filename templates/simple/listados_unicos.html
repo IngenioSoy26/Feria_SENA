@@ -56,6 +56,7 @@
       <a class="btn btn-outline-danger btn-sm" href="/admin/personas/persona/add/?next={% url 'simple:listados' 'visitantes' %}">➕ Nuevo visitante</a>
     {% elif que == 'proyectos' %}
       <a class="btn btn-sena btn-sm" href="{% url 'simple:wizard' %}">➕ Nuevo proyecto</a>
+      <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'certificados:proyectos_pdf' %}">🏆 Certificados proyectos</a>
     {% endif %}
     {% endif %}
   </div>
