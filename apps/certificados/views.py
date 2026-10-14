@@ -418,27 +418,34 @@ class BuscarManualCertificadoView(RoleRequiredMixin, FormView):
 
 
 class GenerarCertificadosProyectosPdfView(RoleRequiredMixin, View):
-    """Genera un PDF con certificados de proyectos (2 por hoja carta)."""
+    """Genera un PDF con certificados de proyectos (2 por hoja carta).
+    Crea el registro CertificadoProyecto en BD si no existe (con su QR único)."""
     roles_requeridos = ['ADMINISTRADOR', 'OPERADOR_CERTIFICADO', 'REGISTRO']
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
         from apps.proyectos.models import Proyecto
         from apps.core.simple_pdf import generar_certificados_proyectos_pdf
+        from apps.certificados.models import CertificadoProyecto
 
         evento = _obtener_evento_activo()
         if not evento:
             return HttpResponse('No hay evento activo.', status=404)
 
         # Obtener proyectos activos del evento
-        proyectos = Proyecto.objects.filter(
+        proyectos = list(Proyecto.objects.filter(
             evento=evento,
             estado__in=['INSCRITO', 'APROBADO'],
-        ).select_related('institucion', 'programa', 'ficha').prefetch_related(
-            'aprendices__persona'
-        ).order_by('codigo')
+        ).select_related('institucion', 'programa', 'ficha').order_by('codigo'))
 
-        buffer = generar_certificados_proyectos_pdf(list(proyectos), evento=evento)
+        # Crear el registro CertificadoProyecto para cada proyecto si no existe
+        for proyecto in proyectos:
+            CertificadoProyecto.objects.get_or_create(
+                evento=evento,
+                proyecto=proyecto,
+            )
+
+        buffer = generar_certificados_proyectos_pdf(proyectos, evento=evento)
         response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="certificados_proyectos_{evento.id}.pdf"'
         return response

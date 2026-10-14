@@ -2073,10 +2073,44 @@ class RegistrarOperadorAjax(View):
         if not evento:
             return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'No hay evento activo.'})
 
+        operador = _operador_para_guardar(request)
+        if not operador:
+            return JsonResponse({
+                'ok': False, 'status': 'ROJO',
+                'mensaje': 'No se pudo determinar el operador. Inicia sesión o usa el enlace token correcto.',
+            })
+
         # === CASO A) QR TOKEN (método normal) ===
         if token:
             persona = Persona.objects.filter(qr_token=token).first()
             if not persona:
+                # Para certificados: el QR puede ser el token_verificacion de un CertificadoProyecto
+                if tipo == 'certificados':
+                    from apps.certificados.models import CertificadoProyecto
+                    cert_proy = CertificadoProyecto.objects.filter(token_verificacion=token).first()
+                    if cert_proy:
+                        # Entregar el certificado del proyecto
+                        if cert_proy.estado == 'ENTREGADO':
+                            return JsonResponse({
+                                'ok': True, 'status': 'AMARILLO',
+                                'mensaje': f'⚠ Certificado ya entregado. Proyecto: {cert_proy.proyecto.nombre}',
+                                'nombre': cert_proy.proyecto.nombre,
+                                'rol': 'Proyecto',
+                                'es_duplicado': True, 'es_nuevo': False,
+                            })
+                        from django.utils import timezone
+                        cert_proy.estado = 'ENTREGADO'
+                        cert_proy.fecha_hora_entrega = timezone.now()
+                        cert_proy.operador = operador
+                        cert_proy.medio = medio
+                        cert_proy.save()
+                        return JsonResponse({
+                            'ok': True, 'status': 'VERDE',
+                            'mensaje': f'✅ Certificado entregado. Proyecto: {cert_proy.proyecto.nombre}',
+                            'nombre': cert_proy.proyecto.nombre,
+                            'rol': 'Proyecto',
+                            'es_duplicado': False, 'es_nuevo': True,
+                        })
                 return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Código QR no registrado en el sistema.'})
         # === CASO B) INGRESO MANUAL POR NÚMERO DE DOCUMENTO (fallback sin escarapela) ===
         elif numero_documento_req:
@@ -2132,13 +2166,6 @@ class RegistrarOperadorAjax(View):
         tipo_doc = getattr(persona.tipo_identificacion, 'codigo', None) if persona.tipo_identificacion else ''
         tipo_doc = (tipo_doc or 'CC').strip()[:5] or 'CC'
         numero_doc = persona.numero_identificacion or ''
-
-        operador = _operador_para_guardar(request)
-        if not operador:
-            return JsonResponse({
-                'ok': False, 'status': 'ROJO',
-                'mensaje': 'No se pudo determinar el operador. Inicia sesión o usa el enlace token correcto.',
-            })
 
         try:
             if tipo == 'asistencia':

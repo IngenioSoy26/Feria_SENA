@@ -453,9 +453,11 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
 
 
 def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
-    """Genera un PDF con certificados de proyectos, 2 por hoja carta (media carta)."""
+    """Genera un PDF con certificados de proyectos, 2 por hoja carta (media carta).
+    El QR de cada certificado es el token_verificacion del CertificadoProyecto."""
     from reportlab.lib.pagesizes import letter
     from reportlab.pdfgen import canvas as canvas_mod
+    from apps.certificados.models import CertificadoProyecto
 
     if buffer is None:
         buffer = BytesIO()
@@ -466,15 +468,16 @@ def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
 
     c = canvas_mod.Canvas(buffer, pagesize=letter)
 
+    # Obtener los tokens de certificado de todos los proyectos en una sola consulta
+    proyecto_ids = [p.id for p in proyectos]
+    tokens_por_proyecto = dict(
+        CertificadoProyecto.objects.filter(proyecto_id__in=proyecto_ids)
+        .values_list('proyecto_id', 'token_verificacion')
+    )
+
     for idx, proyecto in enumerate(proyectos):
-        # Obtener el primer aprendiz para el QR
-        qr_token = None
-        try:
-            aprendiz = proyecto.aprendices.select_related('persona').first()
-            if aprendiz and aprendiz.persona_id:
-                qr_token = getattr(aprendiz.persona, 'qr_token', None)
-        except Exception:
-            pass
+        # Obtener el token del certificado de este proyecto
+        qr_token = tokens_por_proyecto.get(proyecto.id)
 
         # Posición: par = arriba, impar = abajo
         pos_in_page = idx % 2
