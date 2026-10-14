@@ -10,6 +10,11 @@ from django.conf import settings
 from django.urls import reverse
 from django import forms as _forms
 
+import hmac
+import time
+from collections import defaultdict, deque
+from functools import wraps
+
 from apps.core.simple_pdf import (
     generar_escarapela_individual, generar_escarapelas_lote,
     generar_certificado_pdf, generar_certificados_lote, PLANTILLAS_CERTIFICADO,
@@ -936,13 +941,52 @@ def _operador_para_guardar(request):
         return None
 
 
+# ============================================================
+# RATE LIMITING — Limitador simple por IP (en memoria, sin deps)
+# Uso: @rate_limit(max_requests=60, window_seconds=60) sobre una view.
+# ============================================================
+_RATE_LIMIT_BUCKETS = defaultdict(deque)
+
+
+def rate_limit(max_requests=60, window_seconds=60):
+    """Limita requests por IP. Si excede, retorna 429 Too Many Requests."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            ip = _get_client_ip(request)
+            key = f"{ip}:{view_func.__name__}"
+            now = time.time()
+            bucket = _RATE_LIMIT_BUCKETS[key]
+            # Limpiar entradas antiguas
+            while bucket and now - bucket[0] > window_seconds:
+                bucket.popleft()
+            if len(bucket) >= max_requests:
+                retry_after = int(window_seconds - (now - bucket[0])) + 1
+                return JsonResponse(
+                    {'ok': False, 'mensaje': f'Too Many Requests. Intenta de nuevo en {retry_after}s.', 'code': 'RATE_LIMITED'},
+                    status=429,
+                )
+            bucket.append(now)
+            return view_func(request, *args, **kwargs)
+        return _wrapped
+    return decorator
+
+
+def _get_client_ip(request):
+    """Obtiene la IP real del cliente (considerando proxies como Railway)."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '0.0.0.0')
+
+
 def _permitido(request, token_esperado):
     if _es_admin(request) or (request.user.is_authenticated and request.user.rol_sistema in ('ADMINISTRADOR', 'REGISTRO',
         'OPERADOR_ASISTENCIA', 'OPERADOR_REFRIGERIO', 'OPERADOR_CERTIFICADO', 'CONSULTA')):
         return True
     if token_esperado and request.resolver_match and request.resolver_match.kwargs:
         tok = request.resolver_match.kwargs.get('token_registro') or request.resolver_match.kwargs.get('token_operador') or ''
-        if tok and token_esperado and tok == token_esperado:
+        if tok and token_esperado and hmac.compare_digest(tok, token_esperado):
             return True
     return False
 
@@ -991,29 +1035,35 @@ def _solicitar_login_o_token(request, tipo='registro'):
         _debug_kw = tok_desde_kwargs[:6]+'…' if tok_desde_kwargs else 'VACIO'
         _debug_rec = tok_recibido[:6]+'…' if tok_recibido else 'VACIO'
         _debug_pub = ('OK('+token_publico[:6]+'…)' ) if token_publico else 'VACIO(RAILWAY_SIN_VARIABLE)'
-        print(f'[AUTH_OPERADOR_{tipo.upper()}] path={_debug_path} | kwargs={_debug_kw} | recibido={_debug_rec} | esperado_railway={_debug_pub}', flush=True)
+        _debug_ip = _get_client_ip(request)
+        print(f'[AUTH_OPERADOR_{tipo.upper()}] ip={_debug_ip} | path={_debug_path} | kwargs={_debug_kw} | recibido={_debug_rec} | esperado_railway={_debug_pub}', flush=True)
     except Exception:
         pass
 
     if tok_recibido:
-        # CASO 1: Railway SÍ tiene la variable configurada → comparación estricta
-        if token_publico and tok_recibido == token_publico:
+        # CASO 1: Railway SÍ tiene la variable configurada → comparación timing-safe
+        if token_publico and hmac.compare_digest(tok_recibido, token_publico):
             return None
-        # CASO 2 (seguridad): Railway variable NO configurada (vacía) y el token viene de la URL.
-        # Solo se permite si no hay token configurado; si sí lo hay, cualquier token que no coincida es rechazado.
+        # CASO 2 (seguridad FAIL-CLOSED): Railway variable NO configurada (vacía).
+        #   - En PRODUCCIÓN (DEBUG=False): BLOQUEAR (fail-closed). No se permite ningún token.
+        #   - En DESARROLLO (DEBUG=True): permitir (comodidad local).
         if not token_publico:
-            return None
-        # Error ESPECÍFICO
-        if token_publico:
-            msg = (
-                f'Token del enlace NO coincide con el configurado en Railway (variables: {cookie_nombre}).'
-                ' Copia NUEVAMENTE el enlace desde Panel Admin (card "🔗 Enlaces Operadores Públicos").'
+            if getattr(settings, 'DEBUG', False):
+                return None
+            # Producción sin token configurado → acceso denegado
+            msg_prod = (
+                f'⛔ Acceso denegado: la variable Railway {cookie_nombre} NO está configurada en producción. '
+                f'El administrador debe definir la variable {cookie_nombre} y hacer Deploy From Source. '
+                f'Modo fail-closed activado por seguridad.'
             )
-        else:
-            msg = (
-                f'Variable Railway {cookie_nombre} NO definida. Solicita al administrador que defina la variable'
-                f' y haga Deploy From Source, o usa el enlace público {prefijo_ruta}<token>/ generado.'
-            )
+            if _es_xhr():
+                return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': msg_prod, 'code': 'TOKEN_NOT_CONFIGURED'}, status=403)
+            return HttpResponse(msg_prod, status=403)
+        # Error ESPECÍFICO: token recibido no coincide
+        msg = (
+            f'Token del enlace NO coincide con el configurado en Railway (variables: {cookie_nombre}).'
+            ' Copia NUEVAMENTE el enlace desde Panel Admin (card "🔗 Enlaces Operadores Públicos").'
+        )
         if _es_xhr():
             return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': '⛔ Token inválido · ' + msg, 'code': 'TOKEN_MISMATCH'}, status=403)
         return HttpResponse(msg, status=403)
@@ -1831,6 +1881,7 @@ class BuscarAjaxView(View):
 # ============================================================
 # PANTALLAS MÓVILES OPERADOR (ASISTENCIA / REFRIGERIOS / CERTIFICADOS)
 # ============================================================
+@method_decorator(rate_limit(max_requests=30, window_seconds=60), name='dispatch')
 class OperadorMobileView(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
@@ -1884,6 +1935,7 @@ class OperadorMobileView(View):
 #   Parámetro URL: ?tipo=asistencia|refrigerios|certificados
 # ============================================================
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(rate_limit(max_requests=120, window_seconds=60), name='dispatch')
 class StatsOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
@@ -1981,6 +2033,7 @@ class StatsOperativosAjax(LoginRequiredMixin, RoleRequiredMixin, View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(rate_limit(max_requests=60, window_seconds=60), name='dispatch')
 class RegistrarOperadorAjax(View):
     def dispatch(self, request, *args, **kwargs):
         resp = _solicitar_login_o_token(request, 'operadores')
@@ -2007,6 +2060,13 @@ class RegistrarOperadorAjax(View):
         medio = (body.get('medio') or 'QR').strip()[:20] or 'QR'
         tipo = body.get('tipo') or 'asistencia'
         evento = _evento_activo()
+        ip_op = _get_client_ip(request)
+
+        # Auditoría: registrar cada intento de operación con IP (en logs de Railway)
+        try:
+            print(f'[OPERADOR_REGISTRO] ip={ip_op} | tipo={tipo} | medio={medio} | token={token[:8] if token else "N/A"} | doc={numero_documento_req[:8] if numero_documento_req else "N/A"}', flush=True)
+        except Exception:
+            pass
 
         if not evento:
             return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'No hay evento activo.'})
