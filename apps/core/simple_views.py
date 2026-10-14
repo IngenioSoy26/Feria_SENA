@@ -1899,7 +1899,7 @@ class OperadorMobileView(View):
             try:
                 from django.db.models import Q
                 qs = Persona.objects.filter(
-                    Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']),
+                    Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO', 'ORGANIZADOR']),
                     activo=True,
                 )
                 total = qs.count()
@@ -1956,7 +1956,7 @@ class StatsOperadorAjax(View):
         try:
             from django.db.models import Q
             qs_personas_feria = Persona.objects.filter(
-                Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']),
+                Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO', 'ORGANIZADOR']),
                 activo=True,
             )
             total = qs_personas_feria.count()
@@ -2005,7 +2005,7 @@ class StatsOperativosAjax(LoginRequiredMixin, RoleRequiredMixin, View):
         try:
             from django.db.models import Q
             qs_personas_feria = Persona.objects.filter(
-                Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO']),
+                Q(tipo_persona__in=['APRENDIZ', 'INSTRUCTOR', 'INVITADO', 'ORGANIZADOR']),
                 activo=True,
             )
             total = qs_personas_feria.count()
@@ -2155,6 +2155,13 @@ class RegistrarOperadorAjax(View):
                 status = 'VERDE' if created else 'AMARILLO'
                 mensaje = f'{svc.nombre} entregado ✔' if created else '⚠ Ya se le había entregado'
             elif tipo == 'certificados':
+                # Los certificados SOLO se entregan a aprendices (por proyecto)
+                if (persona.tipo_persona or '').strip().upper() != 'APRENDIZ':
+                    return JsonResponse({
+                        'ok': False, 'status': 'ROJO',
+                        'mensaje': f'⛔ Certificados solo para aprendices. {label} es {persona.tipo_persona or "Persona"}.',
+                        'nombre': label, 'rol': (persona.tipo_persona or '').title(),
+                    })
                 obj, created = Certificado.objects.get_or_create(
                     evento=evento, persona=persona,
                     defaults={'operador': operador, 'medio': medio},
@@ -2255,6 +2262,11 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             total_aprendices + total_instructores + total_invitados
             + total_organizadores + total_visitantes
         )
+        # Para asistencia/refrigerios/certificados NO se cuentan los visitantes
+        total_personas_asistencia = (
+            total_aprendices + total_instructores + total_invitados
+            + total_organizadores
+        )
         personas_estructura_desglose = [
             ('Aprendices inscritos', total_aprendices, 'chip-apr',),
             ('Instructores', total_instructores, 'chip-ins',),
@@ -2279,7 +2291,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         ausentes_instructores = max(total_instructores - asistentes_instructores, 0)
         ausentes_invitados = max(total_invitados - asistentes_invitados, 0)
         ausentes_organizadores = max(total_organizadores - asistentes_organizadores, 0)
-        ausentes = max(total_personas - asistentes_total, 0)
+        ausentes = max(total_personas_asistencia - asistentes_total, 0)
 
         def _build_ausentes(tipo):
             qs = Persona.objects.filter(tipo_persona=tipo, activo=True).exclude(id__in=ids_asistieron)
@@ -2334,7 +2346,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         lista_ausentes_instructores = _build_ausentes('INSTRUCTOR')
         lista_ausentes_invitados = _build_ausentes('INVITADO')
         lista_ausentes_organizadores = _build_ausentes('ORGANIZADOR')
-        pct_asistencia = (asistentes_total * 100 // total_personas) if total_personas else 0
+        pct_asistencia = (asistentes_total * 100 // total_personas_asistencia) if total_personas_asistencia else 0
 
         qs_refrigerios = EntregaServicio.objects.filter(evento=evento).select_related('persona', 'operador', 'tipo_servicio')
         refrigerios_entregados = qs_refrigerios.count()
@@ -2361,8 +2373,9 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         cert_organizadores = cert_por_rol.get('ORGANIZADOR', 0)
         cert_qr = qs_certificados.filter(medio='QR').count()
         cert_manual = qs_certificados.filter(medio='MANUAL').count()
-        certificados_pendientes = max(asistentes_total - certificados_entregados, 0)
-        pct_certificados = (certificados_entregados * 100 // asistentes_total) if asistentes_total else 0
+        # Los certificados SOLO se entregan a aprendices → pendientes = aprendices que asistieron - certificados entregados
+        certificados_pendientes = max(asistentes_aprendices - certificados_entregados, 0)
+        pct_certificados = (certificados_entregados * 100 // asistentes_aprendices) if asistentes_aprendices else 0
 
         ahora = timezone.localtime(timezone.now()) if timezone.is_aware(timezone.now()) else timezone.now()
         fi = evento.fecha_inicio
