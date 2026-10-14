@@ -137,9 +137,9 @@ POS_CAJA_INFERIOR = {
     "size_valor": 8.3,
 
     # QR — CENTRADO, ocupa toda la zona.
-    "qr_size": 27.0 * mm,
+    "qr_size": 33.0 * mm,
     "qr_centro_x": 53.5 * mm,
-    "qr_y_inf": 7.0 * mm,
+    "qr_y_inf": 5.5 * mm,
 }
 
 
