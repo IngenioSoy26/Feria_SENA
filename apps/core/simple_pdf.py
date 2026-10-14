@@ -5,6 +5,12 @@ from pathlib import Path
 from django.http import HttpResponse
 from django.conf import settings
 
+# Ruta de la imagen de fondo para certificados
+_CERT_FONDO_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    'static', 'img', 'Certificado FERIA SENA.png'
+)
+
 from reportlab.lib.pagesizes import A4, landscape, A6
 from reportlab.lib.colors import HexColor, white, black
 from reportlab.lib.units import mm
@@ -186,225 +192,187 @@ def _reemplazar_plantilla(plantilla, persona, evento=None, proyecto=None, overri
 
 
 def generar_certificado_pdf(persona, tipo='ASISTENCIA', evento=None, proyecto=None, overrides=None, buffer=None):
+    """Genera un certificado individual usando la imagen de fondo 'Certificado FERIA SENA.png'."""
+    from reportlab.lib.colors import HexColor, black
+    from reportlab.lib.units import mm
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas as canvas_mod
+
     tipo = (tipo or 'ASISTENCIA').upper()
     plantilla = PLANTILLAS_CERTIFICADO.get(tipo, PLANTILLAS_CERTIFICADO['ASISTENCIA'])
     vars_ = _reemplazar_plantilla(plantilla, persona, evento=evento, proyecto=proyecto, overrides=overrides)
+
     if buffer is None:
         buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=18*mm, bottomMargin=18*mm, title=f'{tipo}_{persona.numero_identificacion or persona.id}.pdf')
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='TituloCert', textColor=SENA_VERDE, fontName='Helvetica-Bold', fontSize=20, leading=26, alignment=1, spaceAfter=10))
-    styles.add(ParagraphStyle(name='IntroCert', textColor=SENA_GRIS, fontName='Helvetica', fontSize=11, leading=16, alignment=1, spaceAfter=14))
-    styles.add(ParagraphStyle(name='CentralCert', textColor=black, fontName='Helvetica', fontSize=13, leading=20, alignment=4, spaceAfter=16, spaceBefore=6))
-    styles.add(ParagraphStyle(name='FinalCert', textColor=SENA_GRIS, fontName='Helvetica', fontSize=11, leading=16, alignment=4, spaceAfter=22))
-    styles.add(ParagraphStyle(name='FirmaNombre', textColor=SENA_AZUL, fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=1))
-    styles.add(ParagraphStyle(name='FirmaCargo', textColor=SENA_GRIS, fontName='Helvetica', fontSize=9, leading=11, alignment=1))
 
-    usable_w = 170 * mm  # A4 usable aprox 210 - 2*20 márgenes
+    page_w, page_h = letter  # 612 x 792 pt
+    c = canvas_mod.Canvas(buffer, pagesize=letter)
 
-    story = []
-    # ===========================================================
-    # Cabecera institucional: LOGO SENA CENTRADO (arriba)
-    # ===========================================================
-    logo_centrado = _construir_logo_centrado(styles, ancho_mm=32, alto_mm=32)
-    sena_titulo = Paragraph('<b>SERVICIO NACIONAL DE APRENDIZAJE - SENA</b>',
-                 ParagraphStyle(name='C1_cert', textColor=SENA_AZUL, fontName='Helvetica-Bold',
-                                alignment=1, leading=15, fontSize=13))
-    sena_sub = Paragraph('<b>Regional Guajira · Feria de Proyectos Productivos</b>',
-                ParagraphStyle(name='C2_cert', textColor=SENA_VERDE, fontName='Helvetica',
-                               alignment=1, leading=12, fontSize=10))
-    cabecera_centrada = [
-        logo_centrado,
-        Spacer(1, 2*mm),
-        sena_titulo,
-        sena_sub,
-    ]
-    cab = Table([[cabecera_centrada]], colWidths=[usable_w])
-    cab.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN',  (0, 0), (-1, -1), 'CENTER'),
-        ('LINEBELOW', (0, 0), (-1, -1), 2, SENA_VERDE),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-        ('TOPPADDING',    (0, 0), (-1, -1), 4),
-    ]))
-    story.append(cab)
-    story.append(Spacer(1, 10*mm))
+    SENA_VERDE_OSCURO = HexColor('#1B5E20')
+    SENA_AZUL = HexColor('#0D47A1')
 
-    story.append(Paragraph(plantilla['titulo'], styles['TituloCert']))
-    story.append(Paragraph('__________________________________________________', ParagraphStyle(name='sep', alignment=1, textColor=SENA_VERDE, fontName='Helvetica')))
-    story.append(Spacer(1, 6*mm))
+    # --- Imagen de fondo (ocupa toda la página) ---
+    if os.path.isfile(_CERT_FONDO_PATH):
+        try:
+            c.drawImage(_CERT_FONDO_PATH, 0, 0, width=page_w, height=page_h,
+                        preserveAspectRatio=True, anchor='c')
+        except Exception:
+            pass
 
-    story.append(Paragraph(plantilla['parrafo_intro'].format(**vars_), styles['IntroCert']))
-    story.append(Spacer(1, 4*mm))
-    story.append(Paragraph(plantilla['parrafo_central'].format(**vars_), styles['CentralCert']))
-    story.append(Spacer(1, 5*mm))
-    story.append(Paragraph(plantilla['parrafo_final'].format(**vars_), styles['FinalCert']))
-    story.append(Spacer(1, 14*mm))
+    # --- Nombre de la persona (debajo de 'SE OTORGA AL PROYECTO') ---
+    nombre_persona = (getattr(persona, 'nombre_completo', '') or '').strip().upper()
+    max_w = page_w - 40 * mm
+    fs = 16
+    while fs > 10 and stringWidth(nombre_persona, 'Helvetica-Bold', fs) > max_w:
+        fs -= 0.5
+    c.setFillColor(black)
+    c.setFont('Helvetica-Bold', fs)
+    # Posición: ~47% desde arriba
+    c.drawCentredString(page_w / 2, page_h * 0.53, nombre_persona)
 
-    # Firmas
-    col_f1 = [
-        Paragraph('_' * 40, styles['FirmaNombre']),
-        Spacer(1, 1*mm),
-        Paragraph(vars_['FIRMA_1_NOMBRE'], styles['FirmaNombre']),
-        Paragraph(vars_['FIRMA_1_CARGO'], styles['FirmaCargo']),
-    ]
-    col_f2 = [
-        Paragraph('_' * 40, styles['FirmaNombre']),
-        Spacer(1, 1*mm),
-        Paragraph(vars_['FIRMA_2_NOMBRE'], styles['FirmaNombre']),
-        Paragraph(vars_['FIRMA_2_CARGO'], styles['FirmaCargo']),
-    ]
-    firmas = Table([[col_f1, col_f2]], colWidths=[80*mm, 80*mm])
-    firmas.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('ALIGN',  (0, 0), (-1, -1), 'CENTER'),
-    ]))
-    story.append(firmas)
-    story.append(Spacer(1, 10*mm))
+    # --- Nombre del proyecto o institución (debajo de 'DE LA INSTITUCIÓN EDUCATIVA') ---
+    texto_secundario = ''
+    try:
+        if proyecto:
+            texto_secundario = (getattr(proyecto, 'nombre', '') or '').strip().upper()
+        elif getattr(persona, 'institucion', None) and persona.institucion:
+            texto_secundario = (getattr(persona.institucion, 'nombre', '') or '').strip().upper()
+    except Exception:
+        pass
+    fs2 = 13
+    while fs2 > 8 and stringWidth(texto_secundario, 'Helvetica-Bold', fs2) > max_w:
+        fs2 -= 0.5
+    c.setFillColor(SENA_VERDE_OSCURO)
+    c.setFont('Helvetica-Bold', fs2)
+    # Posición: ~38% desde arriba
+    c.drawCentredString(page_w / 2, page_h * 0.38, texto_secundario)
 
-    # ===========================================================
-    # QR CENTRADO (abajo) con ID / validez
-    # ===========================================================
-    qr_dibujo = _dibujar_qr_bytes(str(persona.qr_token), tamano_mm=26)
-    leyenda_qr = Paragraph(
-        f'<b>Certificación digital SENA · ID:</b> {str(persona.qr_token)[:20]}<br/>'
-        f'<font color="#555555">Valide públicamente en el sistema de la feria</font>',
-        ParagraphStyle(name='qr_ley', textColor=SENA_VERDE, fontName='Helvetica',
-                       fontSize=8, leading=10, alignment=1)
-    )
-    qr_bloque_centrado = Table(
-        [[qr_dibujo], [leyenda_qr]],
-        colWidths=[26*mm],
-        rowHeights=[26*mm, None]
-    )
-    qr_bloque_centrado.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN',  (0, 0), (-1, -1), 'CENTER'),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-    ]))
-    qr_container_tbl = Table([[qr_bloque_centrado]], colWidths=[usable_w])
-    qr_container_tbl.setStyle(TableStyle([
-        ('ALIGN',     (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN',    (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND',(0, 0), (-1, -1), SENA_BG_LIGHT),
-        ('TOPPADDING',    (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
-    ]))
-    story.append(qr_container_tbl)
+    # --- Documento de la persona (esquina inferior izquierda) ---
+    doc_texto = f'Doc: {getattr(persona, "numero_identificacion", "") or ""}'
+    c.setFillColor(SENA_AZUL)
+    c.setFont('Helvetica', 7)
+    c.drawString(10 * mm, 10 * mm, doc_texto)
 
-    doc.build(story)
+    # --- QR (esquina inferior derecha) ---
+    qr_token = getattr(persona, 'qr_token', None)
+    qr_size = 24 * mm
+    qr_x = page_w - qr_size - 10 * mm
+    qr_y = 10 * mm
+    if qr_token:
+        try:
+            from reportlab.graphics.barcode.qr import QrCodeWidget
+            from reportlab.graphics.shapes import Drawing
+            qrw = QrCodeWidget(str(qr_token), barLevel='M', barWidth=qr_size, barHeight=qr_size)
+            d = Drawing(qr_size, qr_size)
+            d.add(qrw)
+            d.drawOn(c, qr_x, qr_y)
+        except Exception:
+            pass
+    # Etiqueta del QR
+    c.setFillColor(HexColor('#555555'))
+    c.setFont('Helvetica', 6)
+    c.drawCentredString(qr_x + qr_size / 2, qr_y - 4 * mm, 'Escanea para verificar')
+
+    c.save()
+    buffer.seek(0)
     return buffer
 
 
 def generar_certificados_lote(lista, tipo='ASISTENCIA', evento=None):
+    """Genera un PDF con múltiples certificados individuales (1 por página) usando la imagen de fondo."""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas as canvas_mod
+
     buffer = BytesIO()
-    from reportlab.lib.pagesizes import A4
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=18*mm, bottomMargin=18*mm, title=f'{tipo}_LOTE.pdf')
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='TituloCert2', textColor=SENA_VERDE, fontName='Helvetica-Bold', fontSize=20, leading=26, alignment=1, spaceAfter=10))
-    styles.add(ParagraphStyle(name='IntroCert2', textColor=SENA_GRIS, fontName='Helvetica', fontSize=11, leading=16, alignment=1, spaceAfter=14))
-    styles.add(ParagraphStyle(name='CentralCert2', textColor=black, fontName='Helvetica', fontSize=13, leading=20, alignment=4, spaceAfter=16, spaceBefore=6))
-    styles.add(ParagraphStyle(name='FinalCert2', textColor=SENA_GRIS, fontName='Helvetica', fontSize=11, leading=16, alignment=4, spaceAfter=22))
-    styles.add(ParagraphStyle(name='FirmaNombre2', textColor=SENA_AZUL, fontName='Helvetica-Bold', fontSize=10, leading=12, alignment=1))
-    styles.add(ParagraphStyle(name='FirmaCargo2', textColor=SENA_GRIS, fontName='Helvetica', fontSize=9, leading=11, alignment=1))
-
-    usable_w = 170 * mm
-    logo_centrado = _construir_logo_centrado(styles, ancho_mm=32, alto_mm=32)
-
-    tipo = (tipo or 'ASISTENCIA').upper()
-    plantilla = PLANTILLAS_CERTIFICADO.get(tipo, PLANTILLAS_CERTIFICADO['ASISTENCIA'])
+    page_w, page_h = letter
+    c = canvas_mod.Canvas(buffer, pagesize=letter)
 
     for idx, item in enumerate(lista):
         if isinstance(item, tuple):
             persona, proyecto = item
         else:
             persona, proyecto = item, None
-        if idx > 0:
-            story.append(PageBreak())
 
-        story = [] if idx == 0 else story
+        # Dibuja el certificado en la página actual
+        _draw_certificado_individual(c, page_w, page_h, persona, proyecto=proyecto)
 
-        vars_ = _reemplazar_plantilla(plantilla, persona, evento=evento, proyecto=proyecto)
-        sena_titulo = Paragraph('<b>SERVICIO NACIONAL DE APRENDIZAJE - SENA</b>',
-                     ParagraphStyle(name='C1p'+str(idx), textColor=SENA_AZUL, fontName='Helvetica-Bold',
-                                    alignment=1, leading=15, fontSize=13))
-        sena_sub = Paragraph('<b>Regional Guajira · Feria de Proyectos Productivos</b>',
-                    ParagraphStyle(name='C2p'+str(idx), textColor=SENA_VERDE, fontName='Helvetica',
-                                   alignment=1, leading=12, fontSize=10))
-        cabecera_centrada = [logo_centrado, Spacer(1, 2*mm), sena_titulo, sena_sub]
-        cab = Table([[cabecera_centrada]], colWidths=[usable_w])
-        cab.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('ALIGN',  (0, 0), (-1, -1), 'CENTER'),
-            ('LINEBELOW', (0, 0), (-1, -1), 2, SENA_VERDE),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ('TOPPADDING',    (0, 0), (-1, -1), 4),
-        ]))
-        story.append(cab)
-        story.append(Spacer(1, 10*mm))
-        story.append(Paragraph(plantilla['titulo'], styles['TituloCert2']))
-        story.append(Paragraph('__________________________________________________', ParagraphStyle(name='sep2'+str(idx), alignment=1, textColor=SENA_VERDE, fontName='Helvetica')))
-        story.append(Spacer(1, 6*mm))
-        story.append(Paragraph(plantilla['parrafo_intro'].format(**vars_), styles['IntroCert2']))
-        story.append(Spacer(1, 4*mm))
-        story.append(Paragraph(plantilla['parrafo_central'].format(**vars_), styles['CentralCert2']))
-        story.append(Spacer(1, 5*mm))
-        story.append(Paragraph(plantilla['parrafo_final'].format(**vars_), styles['FinalCert2']))
-        story.append(Spacer(1, 14*mm))
-        col_f1 = [
-            Paragraph('_' * 40, styles['FirmaNombre2']),
-            Spacer(1, 1*mm),
-            Paragraph(vars_['FIRMA_1_NOMBRE'], styles['FirmaNombre2']),
-            Paragraph(vars_['FIRMA_1_CARGO'], styles['FirmaCargo2']),
-        ]
-        col_f2 = [
-            Paragraph('_' * 40, styles['FirmaNombre2']),
-            Spacer(1, 1*mm),
-            Paragraph(vars_['FIRMA_2_NOMBRE'], styles['FirmaNombre2']),
-            Paragraph(vars_['FIRMA_2_CARGO'], styles['FirmaCargo2']),
-        ]
-        firmas = Table([[col_f1, col_f2]], colWidths=[80*mm, 80*mm])
-        firmas.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'), ('ALIGN', (0, 0), (-1, -1), 'CENTER')]))
-        story.append(firmas)
-        story.append(Spacer(1, 10*mm))
+        # Pasar de página (excepto en el último)
+        if idx < len(lista) - 1:
+            c.showPage()
 
-        qr_dibujo = _dibujar_qr_bytes(str(persona.qr_token), tamano_mm=26)
-        leyenda_qr = Paragraph(
-            f'<b>Certificación digital SENA · ID:</b> {str(persona.qr_token)[:20]}<br/>'
-            f'<font color="#555555">Valide públicamente en el sistema de la feria</font>',
-            ParagraphStyle(name='qr_ley'+str(idx), textColor=SENA_VERDE, fontName='Helvetica',
-                           fontSize=8, leading=10, alignment=1)
-        )
-        qr_bloque_centrado = Table(
-            [[qr_dibujo], [leyenda_qr]],
-            colWidths=[26*mm],
-            rowHeights=[26*mm, None]
-        )
-        qr_bloque_centrado.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('ALIGN',  (0, 0), (-1, -1), 'CENTER'),
-            ('TOPPADDING', (0, 0), (-1, -1), 0),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
-            ('LEFTPADDING', (0, 0), (-1, -1), 0),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ]))
-        qr_container_tbl = Table([[qr_bloque_centrado]], colWidths=[usable_w])
-        qr_container_tbl.setStyle(TableStyle([
-            ('ALIGN',     (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN',    (0, 0), (-1, -1), 'MIDDLE'),
-            ('BACKGROUND',(0, 0), (-1, -1), SENA_BG_LIGHT),
-            ('TOPPADDING',    (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('ROUNDEDCORNERS', [6, 6, 6, 6]),
-        ]))
-        story.append(qr_container_tbl)
-
-    doc.build(story)
+    c.save()
+    buffer.seek(0)
     return buffer
+
+
+def _draw_certificado_individual(canvas, page_w, page_h, persona, proyecto=None):
+    """Dibuja un certificado individual sobre la imagen de fondo."""
+    from reportlab.lib.colors import HexColor, black
+    from reportlab.lib.units import mm
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    SENA_VERDE_OSCURO = HexColor('#1B5E20')
+    SENA_AZUL = HexColor('#0D47A1')
+
+    # Imagen de fondo
+    if os.path.isfile(_CERT_FONDO_PATH):
+        try:
+            canvas.drawImage(_CERT_FONDO_PATH, 0, 0, width=page_w, height=page_h,
+                             preserveAspectRatio=True, anchor='c')
+        except Exception:
+            pass
+
+    # Nombre de la persona
+    nombre_persona = (getattr(persona, 'nombre_completo', '') or '').strip().upper()
+    max_w = page_w - 40 * mm
+    fs = 16
+    while fs > 10 and stringWidth(nombre_persona, 'Helvetica-Bold', fs) > max_w:
+        fs -= 0.5
+    canvas.setFillColor(black)
+    canvas.setFont('Helvetica-Bold', fs)
+    canvas.drawCentredString(page_w / 2, page_h * 0.53, nombre_persona)
+
+    # Proyecto o institución
+    texto_secundario = ''
+    try:
+        if proyecto:
+            texto_secundario = (getattr(proyecto, 'nombre', '') or '').strip().upper()
+        elif getattr(persona, 'institucion', None) and persona.institucion:
+            texto_secundario = (getattr(persona.institucion, 'nombre', '') or '').strip().upper()
+    except Exception:
+        pass
+    fs2 = 13
+    while fs2 > 8 and stringWidth(texto_secundario, 'Helvetica-Bold', fs2) > max_w:
+        fs2 -= 0.5
+    canvas.setFillColor(SENA_VERDE_OSCURO)
+    canvas.setFont('Helvetica-Bold', fs2)
+    canvas.drawCentredString(page_w / 2, page_h * 0.38, texto_secundario)
+
+    # Documento
+    doc_texto = f'Doc: {getattr(persona, "numero_identificacion", "") or ""}'
+    canvas.setFillColor(SENA_AZUL)
+    canvas.setFont('Helvetica', 7)
+    canvas.drawString(10 * mm, 10 * mm, doc_texto)
+
+    # QR
+    qr_token = getattr(persona, 'qr_token', None)
+    qr_size = 24 * mm
+    qr_x = page_w - qr_size - 10 * mm
+    qr_y = 10 * mm
+    if qr_token:
+        try:
+            from reportlab.graphics.barcode.qr import QrCodeWidget
+            from reportlab.graphics.shapes import Drawing
+            qrw = QrCodeWidget(str(qr_token), barLevel='M', barWidth=qr_size, barHeight=qr_size)
+            d = Drawing(qr_size, qr_size)
+            d.add(qrw)
+            d.drawOn(canvas, qr_x, qr_y)
+        except Exception:
+            pass
+    canvas.setFillColor(HexColor('#555555'))
+    canvas.setFont('Helvetica', 6)
+    canvas.drawCentredString(qr_x + qr_size / 2, qr_y - 4 * mm, 'Escanea para verificar')
 
 
 # =======================================================================
@@ -412,12 +380,6 @@ def generar_certificados_lote(lista, tipo='ASISTENCIA', evento=None):
 # Usa la imagen 'Certificado FERIA SENA.png' como fondo y superpone
 # el nombre del proyecto, la institución y el QR.
 # =======================================================================
-import os as _os
-
-_CERT_FONDO_PATH = _os.path.join(
-    _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
-    'static', 'img', 'Certificado FERIA SENA.png'
-)
 
 
 def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_token=None):
@@ -430,7 +392,7 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
     SENA_AZUL = HexColor('#0D47A1')
 
     # --- Imagen de fondo (ocupa todo el área del certificado) ---
-    if _os.path.isfile(_CERT_FONDO_PATH):
+    if os.path.isfile(_CERT_FONDO_PATH):
         try:
             canvas.drawImage(_CERT_FONDO_PATH, x, y, width=w, height=h,
                              preserveAspectRatio=True, anchor='c')
