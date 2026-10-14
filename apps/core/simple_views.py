@@ -1912,19 +1912,9 @@ class OperadorMobileView(View):
                         ids = set(EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).values_list('persona_id', flat=True))
                         ingresaron = len(ids)
                 elif tipo == 'certificados':
-                    # Certificados: 1 por proyecto. Total = proyectos con al menos 1 aprendiz asistente
-                    _ids_asist = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
-                    _proy_elegibles = set(
-                        Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_asist)
-                        .values_list('id', flat=True)
-                    )
-                    _ids_cert = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
-                    _proy_con_cert = set(
-                        Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_cert)
-                        .values_list('id', flat=True)
-                    )
-                    total = len(_proy_elegibles)
-                    ingresaron = len(_proy_elegibles & _proy_con_cert)
+                    # Los certificados son 1 por PROYECTO (no por persona)
+                    total = Proyecto.objects.filter(evento=evento).count()
+                    ingresaron = Certificado.objects.filter(evento=evento).count()
                 faltan = max(total - ingresaron, 0)
                 porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             except Exception:
@@ -1982,19 +1972,9 @@ class StatsOperadorAjax(View):
                 else:
                     ingresaron = 0
             elif tipo == 'certificados':
-                # Certificados: 1 por proyecto. Total = proyectos con al menos 1 aprendiz asistente
-                _ids_asist = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
-                _proy_elegibles = set(
-                    Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_asist)
-                    .values_list('id', flat=True)
-                )
-                _ids_cert = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
-                _proy_con_cert = set(
-                    Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_cert)
-                    .values_list('id', flat=True)
-                )
-                total = len(_proy_elegibles)
-                ingresaron = len(_proy_elegibles & _proy_con_cert)
+                # Los certificados son 1 por PROYECTO (no por persona)
+                total = Proyecto.objects.filter(evento=evento).count()
+                ingresaron = Certificado.objects.filter(evento=evento).count()
             else:
                 ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
                 ingresaron = len(ids_ingresados)
