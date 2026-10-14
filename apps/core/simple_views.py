@@ -1912,8 +1912,9 @@ class OperadorMobileView(View):
                         ids = set(EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).values_list('persona_id', flat=True))
                         ingresaron = len(ids)
                 elif tipo == 'certificados':
-                    ids = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
-                    ingresaron = len(ids)
+                    # Los certificados son 1 por PROYECTO (no por persona)
+                    total = Proyecto.objects.filter(evento=evento).count()
+                    ingresaron = Certificado.objects.filter(evento=evento).count()
                 faltan = max(total - ingresaron, 0)
                 porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             except Exception:
@@ -1971,8 +1972,9 @@ class StatsOperadorAjax(View):
                 else:
                     ingresaron = 0
             elif tipo == 'certificados':
-                ids_ingresados = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
-                ingresaron = len(ids_ingresados)
+                # Los certificados son 1 por PROYECTO (no por persona)
+                total = Proyecto.objects.filter(evento=evento).count()
+                ingresaron = Certificado.objects.filter(evento=evento).count()
             else:
                 ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
                 ingresaron = len(ids_ingresados)
@@ -2373,9 +2375,9 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         cert_organizadores = cert_por_rol.get('ORGANIZADOR', 0)
         cert_qr = qs_certificados.filter(medio='QR').count()
         cert_manual = qs_certificados.filter(medio='MANUAL').count()
-        # Los certificados SOLO se entregan a aprendices → pendientes = aprendices que asistieron - certificados entregados
-        certificados_pendientes = max(asistentes_aprendices - certificados_entregados, 0)
-        pct_certificados = (certificados_entregados * 100 // asistentes_aprendices) if asistentes_aprendices else 0
+        # Los certificados son 1 por PROYECTO → pendientes = total proyectos - certificados entregados
+        certificados_pendientes = max(total_proyectos - certificados_entregados, 0)
+        pct_certificados = (certificados_entregados * 100 // total_proyectos) if total_proyectos else 0
 
         ahora = timezone.localtime(timezone.now()) if timezone.is_aware(timezone.now()) else timezone.now()
         fi = evento.fecha_inicio
