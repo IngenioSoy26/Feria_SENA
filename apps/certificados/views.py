@@ -204,12 +204,42 @@ class ValidarTokenCertificadoJson(AjaxPermissionRequiredMixin, View):
             }, status=200)
 
         token_limpio = str(token_raw).strip()
+        
+        # Intentar validar contra CertificadoProyecto primero (Certificados de Proyecto)
+        try:
+            token_uuid = uuid.UUID(token_limpio)
+            from apps.certificados.models import CertificadoProyecto
+            cp = CertificadoProyecto.objects.select_related(
+                'proyecto__institucion',
+                'proyecto__programa',
+                'proyecto__instructor_responsable__persona'
+            ).get(token_verificacion=token_uuid)
+            
+            # Si es un certificado de proyecto, devolvemos datos del proyecto
+            return JsonResponse({
+                'status': 'OK',
+                'tipo_entidad': 'PROYECTO',
+                'persona': {
+                    'nombre': cp.proyecto.nombre,
+                    'rol_color': '#0067B1', # Azul SENA
+                    'rol_texto': 'PROYECTO',
+                    'institucion': cp.proyecto.institucion.nombre if cp.proyecto.institucion else '',
+                    'programa': cp.proyecto.programa.nombre if cp.proyecto.programa else '',
+                    'proyecto': cp.proyecto.codigo,
+                    'persona_id': cp.proyecto.id,
+                },
+                'evento_id': evento_id,
+            }, status=200)
+        except Exception:
+            pass
+
+        # Si no es proyecto, intentar validar contra Persona (Escarapelas/Certificados individuales)
         try:
             token_uuid = uuid.UUID(token_limpio)
         except (ValueError, AttributeError):
             return JsonResponse({
                 'status': 'ROJO',
-                'mensaje': 'QR inválido o persona no encontrada',
+                'mensaje': 'QR inválido o no reconocido',
             }, status=200)
 
         try:
@@ -233,6 +263,70 @@ class ValidarTokenCertificadoJson(AjaxPermissionRequiredMixin, View):
             'persona': persona_data,
             'evento_id': evento_id,
         }, status=200)
+
+
+def _registrar_entrega_proyecto_logica(request, proyecto_id, evento_id, medio='QR'):
+    from apps.certificados.models import CertificadoProyecto
+    from django.utils import timezone
+    operador = request.user
+    
+    try:
+        cp = CertificadoProyecto.objects.select_related('proyecto', 'operador').get(
+            proyecto_id=proyecto_id,
+            evento_id=evento_id
+        )
+        
+        if cp.estado == 'ENTREGADO':
+            return {
+                'status': 'AMARILLO',
+                'mensaje': 'CERTIFICADO DE PROYECTO YA ENTREGADO',
+                'fecha_hora': _formato_fecha_hora(cp.fecha_hora_entrega),
+                'operador': cp.operador.nombre_completo if cp.operador else 'Sistema',
+                'persona': {
+                    'nombre': cp.proyecto.nombre,
+                    'rol_color': '#0067B1',
+                    'rol_texto': 'PROYECTO',
+                },
+                'codigo_unico': cp.codigo_unico,
+            }
+            
+        cp.estado = 'ENTREGADO'
+        cp.fecha_hora_entrega = timezone.now()
+        cp.operador = operador
+        cp.medio = medio
+        cp.save()
+        
+        AuditoriaService.registrar(
+            request=request,
+            usuario=operador,
+            accion='CERTIFICADO_PROYECTO',
+            modulo='CERTIFICADOS',
+            entidad='CertificadoProyecto',
+            id_entidad=cp.pk,
+            datos={
+                'proyecto': cp.proyecto.nombre,
+                'codigo': cp.proyecto.codigo,
+                'medio': medio
+            }
+        )
+        
+        return {
+            'status': 'VERDE',
+            'mensaje': 'CERTIFICADO DE PROYECTO ENTREGADO',
+            'fecha_hora': _formato_fecha_hora(cp.fecha_hora_entrega),
+            'operador': operador.nombre_completo,
+            'persona': {
+                'nombre': cp.proyecto.nombre,
+                'rol_color': '#0067B1',
+                'rol_texto': 'PROYECTO',
+            },
+            'codigo_unico': cp.codigo_unico,
+        }
+    except Exception as e:
+        return {
+            'status': 'ROJO',
+            'mensaje': f'Error al registrar entrega: {str(e)}',
+        }
 
 
 class RegistrarEntregaCertificadoJson(AjaxPermissionRequiredMixin, View):
@@ -262,6 +356,18 @@ class RegistrarEntregaCertificadoJson(AjaxPermissionRequiredMixin, View):
                 'mensaje': 'No hay un evento activo configurado.',
             }, status=200)
 
+        # 1. Intentar como certificado de proyecto primero
+        if token_raw:
+            try:
+                token_uuid = uuid.UUID(str(token_raw).strip())
+                from apps.certificados.models import CertificadoProyecto
+                cp = CertificadoProyecto.objects.get(token_verificacion=token_uuid)
+                resultado = _registrar_entrega_proyecto_logica(request, cp.proyecto_id, int(evento_id), medio=medio)
+                return JsonResponse(resultado, status=200)
+            except Exception:
+                pass
+
+        # 2. Lógica original para personas
         persona = None
         if persona_id:
             try:
