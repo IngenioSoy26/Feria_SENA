@@ -410,7 +410,7 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
     canvas.setFillColor(black)
     canvas.setFont('Helvetica-Bold', fs)
     # Posición: línea base ~50% desde abajo (centro del espacio entre las dos líneas de la plantilla)
-    proy_y = y + h * 0.50
+    proy_y = y + h * 0.53
     canvas.drawCentredString(x + w / 2, proy_y, nombre_proy)
 
     # --- Nombre de la institución (entre 'DE LA INSTITUCIÓN EDUCATIVA' y el párrafo) ---
@@ -435,7 +435,7 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
     canvas.setFont('Helvetica', cod_fs)
     cod_w = stringWidth(cod_texto, 'Helvetica', cod_fs)
     cod_x = x + 8 * mm
-    cod_y = y + 8 * mm
+    cod_y = y + 4 * mm
     # Fondo blanco semi-transparente para legibilidad sobre el paisaje
     canvas.setFillColor(HexColor('#FFFFFFCC'))
     canvas.rect(cod_x - 1 * mm, cod_y - 1 * mm, cod_w + 2 * mm, cod_fs * 0.5 + 2 * mm,
@@ -446,7 +446,7 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
     # --- QR (esquina inferior derecha, dentro de la imagen) ---
     qr_size = 22 * mm
     qr_x = x + w - qr_size - 10 * mm
-    qr_y = y + 10 * mm
+    qr_y = y + 4 * mm
     if qr_token:
         try:
             from reportlab.graphics.barcode.qr import QrCodeWidget

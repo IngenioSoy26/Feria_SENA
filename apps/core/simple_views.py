@@ -17,7 +17,8 @@ from functools import wraps
 
 from apps.core.simple_pdf import (
     generar_escarapela_individual, generar_escarapelas_lote,
-    generar_certificado_pdf, generar_certificados_lote, PLANTILLAS_CERTIFICADO,
+    generar_certificado_pdf, generar_certificados_lote,
+    generar_certificados_proyectos_pdf, PLANTILLAS_CERTIFICADO,
 )
 from apps.core.mixins import RoleRequiredMixin
 from apps.usuarios.authorization import AREA_LISTADOS
@@ -3028,6 +3029,23 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
     def get(self, request, tipo='ASISTENCIA', grupo='asistentes', **_ignorado):
         evento = _evento_activo()
         tipo = (tipo or 'ASISTENCIA').upper()
+        
+        # Lógica especial para certificados de proyectos (2 por hoja)
+        if tipo == 'PARTICIPACION' and grupo == 'aprendices':
+            qs_proyectos = Proyecto.objects.all()
+            if evento:
+                qs_proyectos = qs_proyectos.filter(evento=evento)
+            qs_proyectos = qs_proyectos.select_related('institucion').order_by('codigo')
+            
+            if not qs_proyectos.exists():
+                messages.warning(request, 'No hay proyectos para generar certificados.')
+                return redirect('simple:dashboard')
+                
+            buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
+            resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+            resp['Content-Disposition'] = 'inline; filename="certificados_proyectos.pdf"'
+            return resp
+
         lista = []
         if grupo == 'asistentes' and evento:
             asistencias = AsistenciaEvento.objects.filter(evento=evento).select_related('persona')
@@ -3088,9 +3106,9 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
             messages.warning(request, 'No hay certificados para generar.')
             return redirect('simple:dashboard')
 
-        buffer = generar_certificados_lote(lista, tipo=tipo, evento=evento)
+        buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
         resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
-        resp['Content-Disposition'] = f'inline; filename="certificados_{tipo}_{grupo}.pdf"'
+        resp['Content-Disposition'] = f'inline; filename="certificados_participacion_aprendices.pdf"'
         resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         resp['Pragma'] = 'no-cache'
         resp['Expires'] = '0'
