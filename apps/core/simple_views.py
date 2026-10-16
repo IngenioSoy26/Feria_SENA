@@ -3044,6 +3044,9 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
             buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
             resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
             resp['Content-Disposition'] = 'inline; filename="certificados_proyectos.pdf"'
+            resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            resp['Pragma'] = 'no-cache'
+            resp['Expires'] = '0'
             return resp
 
         lista = []
