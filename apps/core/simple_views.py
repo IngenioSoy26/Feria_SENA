@@ -3186,13 +3186,8 @@ class RegistroPersonasGraciasView(View):
         persona = get_object_or_404(Persona, pk=pk)
         t_r = kwargs.get('token_registro') or settings.TOKEN_REGISTRO_PUBLICO or ''
         if t_r:
-            url_escarapela = reverse(
-                'simple:public_escarapela',
-                kwargs={'token_registro': t_r, 'persona_id': persona.pk},
-            )
             url_form = reverse('simple:public_registro_personas', kwargs={'token_registro': t_r})
         else:
-            url_escarapela = reverse('simple:escarapela_persona', kwargs={'persona_id': persona.pk})
             url_form = reverse('simple:registro_personas')
         rol_display = dict(Persona.TIPOS).get(persona.tipo_persona, persona.tipo_persona)
         rol_pill_cls = {
@@ -3206,7 +3201,6 @@ class RegistroPersonasGraciasView(View):
             'persona': persona,
             'rol_display': rol_display,
             'rol_pill_cls': rol_pill_cls,
-            'url_escarapela': url_escarapela,
             'url_form': url_form,
             'token_registro': t_r,
         })
@@ -3322,13 +3316,8 @@ class RegistroInvitadosGraciasView(View):
                 'token_registro': t_r,
             })
         if t_r:
-            url_escarapela = reverse(
-                'simple:public_escarapela',
-                kwargs={'token_registro': t_r, 'persona_id': persona.pk},
-            )
             url_form = reverse('simple:public_registro_invitados', kwargs={'token_registro': t_r})
         else:
-            url_escarapela = reverse('simple:escarapela_persona', kwargs={'persona_id': persona.pk})
             url_form = reverse('simple:registro_invitados')
         rol_display = dict(Persona.TIPOS).get(persona.tipo_persona, persona.tipo_persona)
         rol_pill_cls = {
@@ -3387,7 +3376,6 @@ class RegistroInvitadosGraciasView(View):
             'persona': persona,
             'rol_display': rol_display,
             'rol_pill_cls': rol_pill_cls,
-            'url_escarapela': url_escarapela,
             'url_form': url_form,
             'token_registro': t_r,
             'no_encontrado': False,
@@ -3517,13 +3505,8 @@ class RegistroVisitantesGraciasView(View):
                 'token_registro': t_r,
             })
         if t_r:
-            url_escarapela = reverse(
-                'simple:public_escarapela',
-                kwargs={'token_registro': t_r, 'persona_id': persona.pk},
-            )
             url_form = reverse('simple:public_registro_visitantes', kwargs={'token_registro': t_r})
         else:
-            url_escarapela = reverse('simple:escarapela_persona', kwargs={'persona_id': persona.pk})
             url_form = reverse('simple:registro_visitantes')
         rol_display = dict(Persona.TIPOS).get(persona.tipo_persona, persona.tipo_persona)
         rol_pill_cls = {
@@ -3583,7 +3566,6 @@ class RegistroVisitantesGraciasView(View):
             'persona': persona,
             'rol_display': rol_display,
             'rol_pill_cls': rol_pill_cls,
-            'url_escarapela': url_escarapela,
             'url_form': url_form,
             'token_registro': t_r,
             'no_encontrado': False,
