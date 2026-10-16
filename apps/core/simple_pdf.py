@@ -468,7 +468,6 @@ def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
     El QR de cada certificado es el token_verificacion del CertificadoProyecto."""
     from reportlab.lib.pagesizes import letter
     from reportlab.pdfgen import canvas as canvas_mod
-    from apps.certificados.models import CertificadoProyecto
 
     if buffer is None:
         buffer = BytesIO()
@@ -481,14 +480,23 @@ def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
 
     # Obtener los tokens de certificado de todos los proyectos en una sola consulta
     proyecto_ids = [p.id for p in proyectos]
-    tokens_por_proyecto = dict(
-        CertificadoProyecto.objects.filter(proyecto_id__in=proyecto_ids)
-        .values_list('proyecto_id', 'token_verificacion')
-    )
+    tokens_por_proyecto = {}
+    try:
+        from apps.certificados.models import CertificadoProyecto
+        tokens_por_proyecto = dict(
+            CertificadoProyecto.objects.filter(proyecto_id__in=proyecto_ids)
+            .values_list('proyecto_id', 'token_verificacion')
+        )
+    except Exception:
+        # Fallback si la tabla no existe en la base de datos (evita error 500)
+        pass
 
     for idx, proyecto in enumerate(proyectos):
         # Obtener el token del certificado de este proyecto
         qr_token = tokens_por_proyecto.get(proyecto.id)
+        if not qr_token:
+            # Fallback al código del proyecto si no hay token (por tabla faltante o no generado)
+            qr_token = proyecto.codigo or f"PROY-{proyecto.id}"
 
         # Posición: par = arriba, impar = abajo
         pos_in_page = idx % 2
