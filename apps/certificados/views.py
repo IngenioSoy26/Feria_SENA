@@ -209,31 +209,33 @@ class ValidarTokenCertificadoJson(AjaxPermissionRequiredMixin, View):
         try:
             token_uuid = uuid.UUID(token_limpio)
             from apps.certificados.models import CertificadoProyecto
+            
+            # Usamos filter().first() para evitar excepciones si la tabla no existe o el token no es UUID
             cp = CertificadoProyecto.objects.select_related(
                 'proyecto__institucion',
-                'proyecto__programa',
-                'proyecto__instructor_responsable__persona'
-            ).get(token_verificacion=token_uuid)
+                'proyecto__programa'
+            ).filter(token_verificacion=token_uuid).first()
             
-            # Si es un certificado de proyecto, devolvemos datos del proyecto
-            return JsonResponse({
-                'status': 'OK',
-                'tipo_entidad': 'PROYECTO',
-                'persona': {
-                    'nombre': cp.proyecto.nombre,
-                    'rol_color': '#0067B1', # Azul SENA
-                    'rol_texto': 'PROYECTO',
-                    'institucion': cp.proyecto.institucion.nombre if cp.proyecto.institucion else '',
-                    'programa': cp.proyecto.programa.nombre if cp.proyecto.programa else '',
-                    'proyecto': cp.proyecto.codigo,
-                    'persona_id': cp.proyecto.id,
-                },
-                'evento_id': evento_id,
-            }, status=200)
+            if cp:
+                return JsonResponse({
+                    'status': 'OK',
+                    'tipo_entidad': 'PROYECTO',
+                    'persona': {
+                        'nombre': cp.proyecto.nombre,
+                        'rol_color': '#0067B1',
+                        'rol_texto': 'PROYECTO',
+                        'institucion': cp.proyecto.institucion.nombre if cp.proyecto.institucion else '',
+                        'programa': cp.proyecto.programa.nombre if cp.proyecto.programa else '',
+                        'proyecto': cp.proyecto.codigo,
+                        'persona_id': cp.proyecto.id,
+                    },
+                    'evento_id': evento_id,
+                }, status=200)
         except Exception:
+            # Si falla (por tabla inexistente o error de UUID), continuamos a la lógica de Persona
             pass
 
-        # Si no es proyecto, intentar validar contra Persona (Escarapelas/Certificados individuales)
+        # Si no es proyecto, intentar validar contra Persona (Escarapelas)
         try:
             token_uuid = uuid.UUID(token_limpio)
         except (ValueError, AttributeError):
@@ -361,9 +363,10 @@ class RegistrarEntregaCertificadoJson(AjaxPermissionRequiredMixin, View):
             try:
                 token_uuid = uuid.UUID(str(token_raw).strip())
                 from apps.certificados.models import CertificadoProyecto
-                cp = CertificadoProyecto.objects.get(token_verificacion=token_uuid)
-                resultado = _registrar_entrega_proyecto_logica(request, cp.proyecto_id, int(evento_id), medio=medio)
-                return JsonResponse(resultado, status=200)
+                cp = CertificadoProyecto.objects.filter(token_verificacion=token_uuid).first()
+                if cp:
+                    resultado = _registrar_entrega_proyecto_logica(request, cp.proyecto_id, int(evento_id), medio=medio)
+                    return JsonResponse(resultado, status=200)
             except Exception:
                 pass
 
