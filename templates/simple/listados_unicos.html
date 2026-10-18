@@ -52,6 +52,9 @@
     {% elif que == 'invitados' %}
       <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'invitados' %}">🖨️ Escarapelas invitados</a>
       <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'invitados' %}">📜 Certificados asistencia</a>
+    {% elif que == 'organizadores' %}
+      <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'organizadores' %}">🖨️ Escarapelas organizadores</a>
+      <a target="_blank" class="btn btn-outline-primary btn-sm" href="{% url 'simple:certificados_lote' 'ASISTENCIA' 'organizadores' %}">📜 Certificados asistencia</a>
     {% elif que == 'visitantes' %}
       <a class="btn btn-outline-danger btn-sm" href="/admin/personas/persona/add/?next={% url 'simple:listados' 'visitantes' %}">➕ Nuevo visitante</a>
     {% elif que == 'proyectos' %}

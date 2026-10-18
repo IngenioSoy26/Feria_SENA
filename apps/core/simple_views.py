@@ -887,7 +887,13 @@ def _qs_perfiles_o_fallback(ModeloPerfil, rol_tipo_persona, extra_annotate=None,
     if ModeloPerfil is not None:
         _order = extra_order or 'persona__apellidos'
         try:
-            qs = ModeloPerfil.objects.select_related('persona').order_by(_order).all()
+            qs = (
+                ModeloPerfil.objects
+                .select_related('persona')
+                .filter(persona__tipo_persona=rol_tipo_persona)
+                .order_by(_order)
+                .all()
+            )
             if extra_annotate:
                 qs = qs.annotate(**extra_annotate)
             filas = list(qs)
