@@ -1,0 +1,58 @@
+{% extends "simple/base_simple.html" %}
+{% load static %}
+{% block titulo %}Carnet instructores · Feria SENA{% endblock %}
+{% block contenido %}
+
+<div class="glass-card" style="max-width:720px;margin:0 auto;">
+  <div class="d-flex align-items-start gap-3 mb-4">
+    <div class="ico-big d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#ccfbf1,#99f6e4);color:#0f766e;">
+      <span style="font-size:30px;">🪪</span>
+    </div>
+    <div class="flex-grow-1">
+      <h3 class="card-title mb-0">Carnet instructores</h3>
+      <small class="muted-small">
+        Carnet de <b>5,5 × 8,5 cm</b> · separación fija de <b>3 mm</b> por los 4 lados ·
+        <b>{{ total_instructores }}</b> instructores
+      </small>
+    </div>
+  </div>
+
+  <form method="get" action="{% url 'simple:carnets_instructores' %}" target="_blank">
+    <div class="form-card">
+      <h5 class="mb-3 text-sena-dark">Tamaño del papel</h5>
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label" for="papel_ancho_cm">Ancho (cm)</label>
+          <input class="form-control form-control-lg" type="number" step="0.01" min="1" id="papel_ancho_cm" name="papel_ancho_cm" value="{{ ancho_default_cm }}">
+        </div>
+        <div class="col-6">
+          <label class="form-label" for="papel_alto_cm">Alto (cm)</label>
+          <input class="form-control form-control-lg" type="number" step="0.01" min="1" id="papel_alto_cm" name="papel_alto_cm" value="{{ alto_default_cm }}">
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button type="button" class="btn-outline-sena" style="min-height:44px;padding:8px 16px;" data-ancho="21.59" data-alto="27.94">Carta</button>
+        <button type="button" class="btn-outline-sena" style="min-height:44px;padding:8px 16px;" data-ancho="21.59" data-alto="33.02">Oficio</button>
+        <button type="button" class="btn-outline-sena" style="min-height:44px;padding:8px 16px;" data-ancho="50" data-alto="100">Pliego 50 × 100</button>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <a href="{% url 'simple:listados' 'instructores' %}" class="btn-ghost">← Volver a instructores</a>
+      <button class="btn-sena btn-big" type="submit">🖨️ Generar PDF</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('[data-ancho][data-alto]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('papel_ancho_cm').value = b.dataset.ancho;
+      document.getElementById('papel_alto_cm').value = b.dataset.alto;
+    });
+  });
+</script>
+{% endblock %}

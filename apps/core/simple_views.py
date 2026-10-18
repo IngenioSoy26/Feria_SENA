@@ -2958,6 +2958,22 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
         return resp
 
 
+class ConfigurarCarnetsInstructoresView(LoginRequiredMixin, View):
+    """Pantalla para elegir el tamaño del papel del carnet de instructores."""
+
+    def get(self, request, **_ignorado):
+        total = 0
+        for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
+            _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+            if _per:
+                total += 1
+        return render(request, 'simple/carnet_instructores.html', {
+            'total_instructores': total,
+            'ancho_default_cm': '21.59',
+            'alto_default_cm': '27.94',
+        })
+
+
 class DescargarCarnetsInstructoresView(LoginRequiredMixin, View):
     def get(self, request, **_ignorado):
         evento = _evento_activo()
