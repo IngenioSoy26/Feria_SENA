@@ -19,6 +19,10 @@ from apps.personas.services import QrService
 ESCARAPELA_W = 107 * mm
 ESCARAPELA_H = 130 * mm
 
+CARNET_INSTRUCTOR_W = 55 * mm
+CARNET_INSTRUCTOR_H = 85 * mm
+CARNET_INSTRUCTOR_GAP = 3 * mm
+
 CARTA_W, CARTA_H = letter
 
 # En carta caben 2 x 2. Con W=107mm: 2*107=214mm + gutter.
@@ -157,6 +161,7 @@ POS_CAJA_INFERIOR = {
 _FONDO_CREDENCIAL_BYTESIO = None          # BytesIO PNG ya pad-2200×2600
 _FONDO_CREDENCIAL_MTIME = None            # mtime Credencial.png
 _FONDO_CREDENCIAL_RUTA_STR = None         # ruta que generó la cache
+_FONDO_CREDENCIAL_SIZE = None             # tamaño (w, h) usado para la cache
 
 
 class EscarapelaPDFService:
@@ -171,6 +176,88 @@ class EscarapelaPDFService:
     def _ruta_credencial():
         static_dirs = settings.STATICFILES_DIRS or [settings.BASE_DIR / "static"]
         return Path(static_dirs[0]) / "img" / "Credencial.png"
+
+    @staticmethod
+    def _escalar_layout(layout, sx, sy):
+        escalado = {}
+        for clave, valor in layout.items():
+            if clave in {"size", "size_nombre", "size_institucion", "size_label", "size_valor", "size_valor_solo"}:
+                escalado[clave] = round(float(valor) * min(sx, sy), 2)
+            elif clave.startswith("x") or clave.endswith("_x") or clave.endswith("_w") or clave == "w" or clave == "qr_size":
+                escalado[clave] = valor * sx
+            elif clave.startswith("y") or clave.endswith("_y") or clave.endswith("_h") or clave == "h":
+                escalado[clave] = valor * sy
+            elif clave in {"r", "padding_lados"}:
+                escalado[clave] = valor * min(sx, sy)
+            else:
+                escalado[clave] = valor
+        return escalado
+
+    @staticmethod
+    def _dibujar_imagen_fondo_en_tamano(c, dx, dy, ancho, alto):
+        global _FONDO_CREDENCIAL_BYTESIO, _FONDO_CREDENCIAL_MTIME, _FONDO_CREDENCIAL_RUTA_STR, _FONDO_CREDENCIAL_SIZE
+        ruta = EscarapelaPDFService._ruta_credencial()
+        ruta_str = str(ruta)
+        try:
+            mtime = ruta.stat().st_mtime_ns
+            target_w = int(round(ancho))
+            target_h = int(round(alto))
+            cache_invalida = (
+                _FONDO_CREDENCIAL_BYTESIO is None
+                or _FONDO_CREDENCIAL_RUTA_STR != ruta_str
+                or _FONDO_CREDENCIAL_MTIME != mtime
+                or _FONDO_CREDENCIAL_SIZE != (ancho, alto)
+            )
+            if cache_invalida:
+                with Image.open(ruta) as img:
+                    img = img.convert("RGBA")
+                    alpha = img.getchannel("A")
+                    bbox = alpha.getbbox()
+                    if bbox:
+                        left, top, right, bottom = bbox
+                        margen = 6
+                        left = max(0, left - margen)
+                        top = max(0, top - margen)
+                        right = min(img.width - 1, right + margen)
+                        bottom = min(img.height - 1, bottom + margen)
+                        img = img.crop((left, top, right + 1, bottom + 1))
+                    img = ImageOps.fit(
+                        img,
+                        (target_w, target_h),
+                        method=Image.Resampling.LANCZOS,
+                        centering=(0.5, 0.0),
+                    )
+                    memoria = io.BytesIO()
+                    img.save(memoria, format="PNG", optimize=True)
+                    memoria.seek(0)
+                _FONDO_CREDENCIAL_BYTESIO = memoria
+                _FONDO_CREDENCIAL_RUTA_STR = ruta_str
+                _FONDO_CREDENCIAL_MTIME = mtime
+                _FONDO_CREDENCIAL_SIZE = (ancho, alto)
+            _FONDO_CREDENCIAL_BYTESIO.seek(0)
+            c.drawImage(
+                ImageReader(_FONDO_CREDENCIAL_BYTESIO),
+                dx,
+                dy,
+                width=ancho,
+                height=alto,
+                mask="auto",
+                preserveAspectRatio=False,
+            )
+        except Exception:
+            try:
+                c.drawImage(
+                    ruta_str,
+                    dx,
+                    dy,
+                    width=ancho,
+                    height=alto,
+                    mask="auto",
+                    preserveAspectRatio=False,
+                )
+            except Exception:
+                c.setFillColor(HexColor("#FFF8E7"))
+                c.rect(dx, dy, ancho, alto, fill=1, stroke=0)
 
     @staticmethod
     def _info_persona(persona):
@@ -435,6 +522,7 @@ class EscarapelaPDFService:
             _FONDO_CREDENCIAL_BYTESIO is not None
             and _FONDO_CREDENCIAL_RUTA_STR == ruta_str
             and _FONDO_CREDENCIAL_MTIME == mtime
+            and _FONDO_CREDENCIAL_SIZE == (EscarapelaPDFService.W, EscarapelaPDFService.H)
         ):
             usar_cache = True
 
@@ -454,6 +542,7 @@ class EscarapelaPDFService:
                 _FONDO_CREDENCIAL_BYTESIO = None
                 _FONDO_CREDENCIAL_RUTA_STR = None
                 _FONDO_CREDENCIAL_MTIME = None
+                _FONDO_CREDENCIAL_SIZE = None
 
         # --- Regenerar cache: AUTO-CROP beige + PAD centrado ---
         try:
@@ -543,6 +632,7 @@ class EscarapelaPDFService:
             _FONDO_CREDENCIAL_BYTESIO = memoria
             _FONDO_CREDENCIAL_RUTA_STR = ruta_str
             _FONDO_CREDENCIAL_MTIME = mtime
+            _FONDO_CREDENCIAL_SIZE = (EscarapelaPDFService.W, EscarapelaPDFService.H)
             _FONDO_CREDENCIAL_BYTESIO.seek(0)
             c.drawImage(
                 ImageReader(_FONDO_CREDENCIAL_BYTESIO),
@@ -1036,6 +1126,155 @@ class EscarapelaPDFService:
         c.save()
         buffer.seek(0)
 
+        return buffer
+
+    @staticmethod
+    def _dibujar_carnet_instructor(c, persona, evento, dx=0, dy=0, ancho=None, alto=None):
+        ancho = ancho or CARNET_INSTRUCTOR_W
+        alto = alto or CARNET_INSTRUCTOR_H
+        sx = ancho / ESCARAPELA_W
+        sy = alto / ESCARAPELA_H
+        p_badge = EscarapelaPDFService._escalar_layout(POS_BADGE, sx, sy)
+        p_nombre = EscarapelaPDFService._escalar_layout(POS_CAJA_NOMBRE, sx, sy)
+        p_doc = EscarapelaPDFService._escalar_layout(POS_CAJA_DOC, sx, sy)
+        p_inf = EscarapelaPDFService._escalar_layout(POS_CAJA_INFERIOR, sx, sy)
+        info = EscarapelaPDFService._info_persona(persona)
+        rol = persona.tipo_persona
+        borde = EscarapelaPDFService._color_borde_rol(rol)
+
+        EscarapelaPDFService._dibujar_imagen_fondo_en_tamano(c, dx, dy, ancho, alto)
+
+        color_fondo, color_texto = BADGE_ROL.get(rol, BADGE_ROL["APRENDIZ"])
+        texto_badge = BADGE_ROL_TEXTO.get(rol, (rol or "").upper())
+        x = dx + p_badge["x"]
+        y = dy + p_badge["y"]
+        c.setFillColor(color_fondo)
+        c.roundRect(x, y, p_badge["w"], p_badge["h"], p_badge["r"], fill=1, stroke=0)
+        EscarapelaPDFService._centrar_en_caja(
+            c, texto_badge, x, p_badge["w"], y + (2.45 * mm * sy),
+            "Helvetica-Bold", p_badge["size"], color_texto,
+            max_w=p_badge["w"] - (6 * mm * sx), tam_min=6
+        )
+
+        x = dx + p_nombre["x"]
+        y = dy + p_nombre["y"]
+        w = p_nombre["w"]
+        c.saveState()
+        c.setFillColor(white)
+        c.setFillAlpha(p_nombre["fill_alpha"])
+        c.setStrokeColor(borde)
+        c.setLineWidth(p_nombre["borde_grosor"])
+        c.roundRect(x, y, w, p_nombre["h"], p_nombre["r"], fill=1, stroke=0)
+        c.restoreState()
+        max_w = w - 2 * p_nombre["padding_lados"]
+        EscarapelaPDFService._centrar_en_caja(
+            c, (persona.nombre_completo or "").upper(), x, w, dy + p_nombre["y_nombre"],
+            "Helvetica-Bold", p_nombre["size_nombre"], black, max_w=max_w, tam_min=7
+        )
+        institucion = ""
+        if info["institucion"]:
+            institucion = str(info["institucion"]).upper()
+        elif info["programa"]:
+            institucion = str(info["programa"]).upper()
+        elif info["extra"]:
+            institucion = str(info["extra"]).upper()
+        if institucion:
+            EscarapelaPDFService._centrar_en_caja(
+                c, institucion, x, w, dy + p_nombre["y_institucion"],
+                "Helvetica", p_nombre["size_institucion"], GRIS_OSCURO, max_w=max_w, tam_min=5
+            )
+
+        x = dx + p_doc["x"]
+        y = dy + p_doc["y"]
+        c.saveState()
+        c.setFillColor(white)
+        c.setFillAlpha(p_doc["fill_alpha"])
+        c.setStrokeColor(borde)
+        c.setLineWidth(p_doc["borde_grosor"])
+        c.roundRect(x, y, p_doc["w"], p_doc["h"], p_doc["r"], fill=1, stroke=0)
+        c.restoreState()
+        tipo = (info["tipo_identificacion"] or "").strip().upper()
+        numero = str(info["numero_identificacion"] or "")
+        texto_doc = "{}: {}".format(tipo, numero) if tipo and numero else (numero or tipo).strip()
+        EscarapelaPDFService._centrar_en_caja(
+            c, texto_doc, x, p_doc["w"], dy + p_doc["y_texto"],
+            "Helvetica-Bold", p_doc["size"], black, max_w=p_doc["w"] - (7 * mm * sx), tam_min=6
+        )
+
+        x = dx + p_inf["x"]
+        y = dy + p_inf["y"]
+        c.saveState()
+        c.setFillColor(white)
+        c.setFillAlpha(p_inf["fill_alpha"])
+        c.setStrokeColor(borde)
+        c.setLineWidth(p_inf["borde_grosor"])
+        c.roundRect(x, y, p_inf["w"], p_inf["h"], p_inf["r"], fill=1, stroke=0)
+        c.restoreState()
+        qr_size = p_inf["qr_size"]
+        qr_x = dx + p_inf["qr_centro_x"] - qr_size / 2
+        qr_y = dy + p_inf["qr_y_inf"]
+        ruta_qr = QrService.asegurarse_qr_existe(persona)
+        try:
+            c.saveState()
+            c.setFillColor(white)
+            c.setFillAlpha(0.82)
+            c.rect(
+                qr_x - (1.2 * mm * min(sx, sy)),
+                qr_y - (1.2 * mm * min(sx, sy)),
+                qr_size + (2.4 * mm * min(sx, sy)),
+                qr_size + (2.4 * mm * min(sx, sy)),
+                fill=1,
+                stroke=0,
+            )
+            c.restoreState()
+            c.drawImage(
+                str(ruta_qr),
+                qr_x,
+                qr_y,
+                width=qr_size,
+                height=qr_size,
+                mask="auto",
+                preserveAspectRatio=True,
+            )
+        except Exception:
+            pass
+
+    @staticmethod
+    def generar_carnets_instructores(qs_personas, evento, papel_ancho_mm=None, papel_alto_mm=None):
+        personas = list(qs_personas)
+        buffer = io.BytesIO()
+        papel_w = (papel_ancho_mm or (CARTA_W / mm)) * mm
+        papel_h = (papel_alto_mm or (CARTA_H / mm)) * mm
+        c = canvas.Canvas(buffer, pagesize=(papel_w, papel_h))
+        gap = CARNET_INSTRUCTOR_GAP
+        margen = gap
+        slot_w = CARNET_INSTRUCTOR_W
+        slot_h = CARNET_INSTRUCTOR_H
+        paso_x = slot_w + gap
+        paso_y = slot_h + gap
+        cols = max(1, int((papel_w - 2 * margen + gap) // paso_x))
+        filas = max(1, int((papel_h - 2 * margen + gap) // paso_y))
+        capacidad = max(1, cols * filas)
+        total_w = cols * slot_w + max(0, cols - 1) * gap
+        total_h = filas * slot_h + max(0, filas - 1) * gap
+        origen_x = max(margen, (papel_w - total_w) / 2)
+        origen_y = max(margen, (papel_h - total_h) / 2)
+
+        for i in range(0, len(personas), capacidad):
+            grupo = personas[i:i + capacidad]
+            for idx, persona in enumerate(grupo):
+                fila = filas - 1 - (idx // cols)
+                col = idx % cols
+                dx = origen_x + col * paso_x
+                dy = origen_y + fila * paso_y
+                EscarapelaPDFService._dibujar_carnet_instructor(
+                    c, persona, evento, dx=dx, dy=dy,
+                    ancho=slot_w, alto=slot_h,
+                )
+            c.showPage()
+
+        c.save()
+        buffer.seek(0)
         return buffer
 
     # ========================================================

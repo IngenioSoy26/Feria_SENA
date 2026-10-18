@@ -71,6 +71,7 @@ urlpatterns = [
 
     path('escarapela/<int:persona_id>/', simple_views.DescargarEscarapelaIndividual.as_view(), name='escarapela_persona'),
     path('escarapelas/lote/<slug:grupo>/', simple_views.DescargarEscarapelasLote.as_view(), name='escarapelas_lote'),
+    path('carnets/instructores/', simple_views.DescargarCarnetsInstructoresView.as_view(), name='carnets_instructores'),
 
     path('certificado/editar/<int:persona_id>/<slug:tipo>/', simple_views.EditarCertificadoView.as_view(), name='certificado_editar'),
     path('certificado/lote/<slug:tipo>/<slug:grupo>/', simple_views.DescargarCertificadosLoteView.as_view(), name='certificados_lote'),

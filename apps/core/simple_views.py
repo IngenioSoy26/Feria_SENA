@@ -2958,6 +2958,54 @@ class DescargarEscarapelasLote(LoginRequiredMixin, View):
         return resp
 
 
+class DescargarCarnetsInstructoresView(LoginRequiredMixin, View):
+    def get(self, request, **_ignorado):
+        evento = _evento_activo()
+        instructores = []
+        for i in _qs_perfiles_o_fallback(Instructor, 'INSTRUCTOR'):
+            _per = getattr(i, 'persona', None) or (i.get('persona') if isinstance(i, dict) else None)
+            if _per:
+                instructores.append(_per)
+
+        if not instructores:
+            messages.warning(request, 'No hay instructores para generar carnets.')
+            return redirect('simple:listados', que='instructores')
+
+        def _leer_medida(nombre_cm, nombre_mm, default_mm):
+            raw_cm = (request.GET.get(nombre_cm, '') or '').strip().replace(',', '.')
+            raw_mm = (request.GET.get(nombre_mm, '') or '').strip().replace(',', '.')
+            try:
+                if raw_mm:
+                    valor_mm = float(raw_mm)
+                    return valor_mm if valor_mm > 0 else default_mm
+            except Exception:
+                pass
+            try:
+                if raw_cm:
+                    valor_cm = float(raw_cm)
+                    return (valor_cm * 10.0) if valor_cm > 0 else default_mm
+            except Exception:
+                pass
+            return default_mm
+
+        papel_ancho_mm = _leer_medida('papel_ancho_cm', 'papel_ancho_mm', None)
+        papel_alto_mm = _leer_medida('papel_alto_cm', 'papel_alto_mm', None)
+
+        from apps.escarapelas.services import EscarapelaPDFService
+        buffer = EscarapelaPDFService.generar_carnets_instructores(
+            instructores,
+            evento=evento,
+            papel_ancho_mm=papel_ancho_mm,
+            papel_alto_mm=papel_alto_mm,
+        )
+        resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        resp['Content-Disposition'] = 'inline; filename="carnet_instructores.pdf"'
+        resp['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp['Pragma'] = 'no-cache'
+        resp['Expires'] = '0'
+        return resp
+
+
 # ============================================================
 # CERTIFICADOS - Formulario de EDICIÓN (previa) y Descarga
 # ============================================================
