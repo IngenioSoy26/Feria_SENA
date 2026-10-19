@@ -500,7 +500,7 @@ class EscarapelaPDFService:
           (subes nueva plantilla).
         + Fallback drawImage directo SIN Pillow = nunca pantalla negra.
         """
-        global _FONDO_CREDENCIAL_BYTESIO, _FONDO_CREDENCIAL_MTIME, _FONDO_CREDENCIAL_RUTA_STR
+        global _FONDO_CREDENCIAL_BYTESIO, _FONDO_CREDENCIAL_MTIME, _FONDO_CREDENCIAL_RUTA_STR, _FONDO_CREDENCIAL_SIZE
         ruta = EscarapelaPDFService._ruta_credencial()
 
         if not ruta.exists():
