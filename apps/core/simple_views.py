@@ -64,15 +64,17 @@ _CP_TABLE_EXISTS_CACHE = None
 
 def _cp_tabla_existe():
     global _CP_TABLE_EXISTS_CACHE
-    if _CP_TABLE_EXISTS_CACHE is not None:
-        return _CP_TABLE_EXISTS_CACHE
+    if _CP_TABLE_EXISTS_CACHE is True:
+        return True
     try:
         with _conn_db_global.cursor() as cursor:
             tablas = _conn_db_global.introspection.table_names(cursor)
-        _CP_TABLE_EXISTS_CACHE = 'certificados_certificadoproyecto' in set(tablas)
+        existe = 'certificados_certificadoproyecto' in set(tablas)
+        _CP_TABLE_EXISTS_CACHE = True if existe else None
+        return existe
     except Exception:
-        _CP_TABLE_EXISTS_CACHE = False
-    return _CP_TABLE_EXISTS_CACHE
+        _CP_TABLE_EXISTS_CACHE = None
+        return False
 
 
 def _cp_count_entregados(evento):
