@@ -109,6 +109,57 @@ def _cp_buscar_por_token_o_codigo(evento, token):
     return None
 
 
+def _normalizar_token_qr(raw_token):
+    token = str(raw_token or '').strip()
+    if not token:
+        return ''
+
+    m_uuid = _re.search(
+        r'([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})',
+        token,
+    )
+    if m_uuid:
+        return m_uuid.group(1)
+
+    if '/' in token:
+        partes = [p.strip() for p in token.split('/') if p.strip()]
+        if partes:
+            return partes[-1]
+
+    return token
+
+
+def _registrar_entrega_certificado_proyecto(cert_proy, operador, medio):
+    if cert_proy.estado == 'ENTREGADO':
+        return JsonResponse({
+            'ok': True, 'status': 'AMARILLO',
+            'mensaje': f'⚠ Certificado ya entregado. Proyecto: {cert_proy.proyecto.nombre}',
+            'nombre': cert_proy.proyecto.nombre,
+            'rol': 'Proyecto',
+            'tipo_asistente': 'Proyecto',
+            'tipo_documento': 'CÓD',
+            'numero_documento': cert_proy.proyecto.codigo or '',
+            'es_duplicado': True, 'es_nuevo': False,
+        })
+
+    from django.utils import timezone
+    cert_proy.estado = 'ENTREGADO'
+    cert_proy.fecha_hora_entrega = timezone.now()
+    cert_proy.operador = operador
+    cert_proy.medio = medio
+    cert_proy.save()
+    return JsonResponse({
+        'ok': True, 'status': 'VERDE',
+        'mensaje': f'✅ Certificado entregado. Proyecto: {cert_proy.proyecto.nombre}',
+        'nombre': cert_proy.proyecto.nombre,
+        'rol': 'Proyecto',
+        'tipo_asistente': 'Proyecto',
+        'tipo_documento': 'CÓD',
+        'numero_documento': cert_proy.proyecto.codigo or '',
+        'es_duplicado': False, 'es_nuevo': True,
+    })
+
+
 # ============================================================
 # FORM · Guardar Persona PÚBLICA (Invitado / Instructor / Organizador)
 # ============================================================
@@ -2113,7 +2164,7 @@ class RegistrarOperadorAjax(View):
             body = json.loads(request.body or '{}')
         except Exception:
             body = request.POST.dict()
-        token = (body.get('token') or body.get('qr_token') or '').strip()
+        token = _normalizar_token_qr(body.get('token') or body.get('qr_token') or '')
         numero_documento_req = (body.get('numero_documento') or '').strip()
         codigo_manual_req = (
             body.get('codigo_manual')
@@ -2144,40 +2195,13 @@ class RegistrarOperadorAjax(View):
 
         # === CASO A) QR TOKEN (método normal) ===
         if token:
+            if tipo == 'certificados':
+                cert_proy = _cp_buscar_por_token_o_codigo(evento, token)
+                if cert_proy:
+                    return _registrar_entrega_certificado_proyecto(cert_proy, operador, medio)
+
             persona = Persona.objects.filter(qr_token=token).first()
             if not persona:
-                # Para certificados: el QR puede ser el token_verificacion de un CertificadoProyecto
-                if tipo == 'certificados':
-                    cert_proy = _cp_buscar_por_token_o_codigo(evento, token)
-                    if cert_proy:
-                        # Entregar el certificado del proyecto
-                        if cert_proy.estado == 'ENTREGADO':
-                            return JsonResponse({
-                                'ok': True, 'status': 'AMARILLO',
-                                'mensaje': f'⚠ Certificado ya entregado. Proyecto: {cert_proy.proyecto.nombre}',
-                                'nombre': cert_proy.proyecto.nombre,
-                                'rol': 'Proyecto',
-                                'tipo_asistente': 'Proyecto',
-                                'tipo_documento': 'CÓD',
-                                'numero_documento': cert_proy.proyecto.codigo or '',
-                                'es_duplicado': True, 'es_nuevo': False,
-                            })
-                        from django.utils import timezone
-                        cert_proy.estado = 'ENTREGADO'
-                        cert_proy.fecha_hora_entrega = timezone.now()
-                        cert_proy.operador = operador
-                        cert_proy.medio = medio
-                        cert_proy.save()
-                        return JsonResponse({
-                            'ok': True, 'status': 'VERDE',
-                            'mensaje': f'✅ Certificado entregado. Proyecto: {cert_proy.proyecto.nombre}',
-                            'nombre': cert_proy.proyecto.nombre,
-                            'rol': 'Proyecto',
-                            'tipo_asistente': 'Proyecto',
-                            'tipo_documento': 'CÓD',
-                            'numero_documento': cert_proy.proyecto.codigo or '',
-                            'es_duplicado': False, 'es_nuevo': True,
-                        })
                 return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Código QR no registrado en el sistema.'})
         # === CASO B) INGRESO MANUAL ===
         elif tipo == 'certificados' and codigo_manual_req:
@@ -2213,22 +2237,7 @@ class RegistrarOperadorAjax(View):
                     'numero_documento': cert_proy.proyecto.codigo or '',
                     'es_duplicado': True, 'es_nuevo': False,
                 })
-            from django.utils import timezone
-            cert_proy.estado = 'ENTREGADO'
-            cert_proy.fecha_hora_entrega = timezone.now()
-            cert_proy.operador = operador
-            cert_proy.medio = 'MANUAL'
-            cert_proy.save()
-            return JsonResponse({
-                'ok': True, 'status': 'VERDE',
-                'mensaje': f'✅ Certificado entregado. Proyecto: {cert_proy.proyecto.nombre}',
-                'nombre': cert_proy.proyecto.nombre,
-                'rol': 'Proyecto',
-                'tipo_asistente': 'Proyecto',
-                'tipo_documento': 'CÓD',
-                'numero_documento': cert_proy.proyecto.codigo or '',
-                'es_duplicado': False, 'es_nuevo': True,
-            })
+            return _registrar_entrega_certificado_proyecto(cert_proy, operador, 'MANUAL')
         elif numero_documento_req:
             import re
             _numdoc = re.sub(r'\D', '', numero_documento_req or '')
@@ -2300,21 +2309,33 @@ class RegistrarOperadorAjax(View):
                 status = 'VERDE' if created else 'AMARILLO'
                 mensaje = f'{svc.nombre} entregado ✔' if created else '⚠ Ya se le había entregado'
             elif tipo == 'certificados':
-                # Los certificados SOLO se entregan a aprendices (por proyecto)
                 if (persona.tipo_persona or '').strip().upper() != 'APRENDIZ':
                     return JsonResponse({
                         'ok': False, 'status': 'ROJO',
                         'mensaje': f'⛔ Certificados solo para aprendices. {label} es {persona.tipo_persona or "Persona"}.',
                         'nombre': label, 'rol': (persona.tipo_persona or '').title(),
                     })
-                obj, created = Certificado.objects.get_or_create(
-                    evento=evento, persona=persona,
-                    defaults={'operador': operador, 'medio': medio},
-                )
-                if not obj.codigo_unico:
-                    obj.save()
-                status = 'VERDE'
-                mensaje = 'Certificado entregado ✔ Código: ' + obj.codigo_unico
+                proyecto_persona = None
+                try:
+                    if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz:
+                        proyecto_persona = persona.perfil_aprendiz.proyecto
+                except Exception:
+                    proyecto_persona = None
+
+                if not proyecto_persona:
+                    return JsonResponse({
+                        'ok': False, 'status': 'ROJO',
+                        'mensaje': f'⛔ {label} no tiene un proyecto asociado para la entrega del certificado.',
+                        'nombre': label, 'rol': (persona.tipo_persona or '').title(),
+                    })
+
+                cert_proy = _cp_get_or_create_seguro(evento, proyecto_persona)
+                if not cert_proy:
+                    return JsonResponse({
+                        'ok': False, 'status': 'ROJO',
+                        'mensaje': 'La tabla de certificados de proyecto aun no existe en la base de datos de produccion.',
+                    })
+                return _registrar_entrega_certificado_proyecto(cert_proy, operador, medio)
             else:
                 return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Tipo desconocido.'})
         except Exception as e:
