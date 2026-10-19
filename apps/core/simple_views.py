@@ -60,6 +60,55 @@ except Exception:
     _UsuarioSistema = None
 
 
+def _cp_count_entregados(evento):
+    try:
+        return CertificadoProyecto.objects.filter(
+            evento=evento,
+            estado='ENTREGADO',
+        ).count()
+    except Exception:
+        return 0
+
+
+def _cp_get_or_create_seguro(evento, proyecto):
+    try:
+        obj, _ = CertificadoProyecto.objects.get_or_create(
+            evento=evento,
+            proyecto=proyecto,
+        )
+        return obj
+    except Exception:
+        return None
+
+
+def _cp_buscar_por_token_o_codigo(evento, token):
+    try:
+        cert_proy = (
+            CertificadoProyecto.objects
+            .select_related('proyecto')
+            .filter(
+                _models_django.Q(token_verificacion=token)
+                | _models_django.Q(proyecto__codigo__iexact=token)
+                | _models_django.Q(codigo_unico__iexact=token)
+            )
+            .first()
+        )
+        if cert_proy:
+            return cert_proy
+    except Exception:
+        pass
+    try:
+        proyecto_qr = Proyecto.objects.filter(
+            evento=evento,
+            codigo__iexact=token,
+        ).first()
+        if proyecto_qr:
+            return _cp_get_or_create_seguro(evento, proyecto_qr)
+    except Exception:
+        pass
+    return None
+
+
 # ============================================================
 # FORM · Guardar Persona PÚBLICA (Invitado / Instructor / Organizador)
 # ============================================================
@@ -1921,10 +1970,7 @@ class OperadorMobileView(View):
                 elif tipo == 'certificados':
                     # Los certificados son 1 por PROYECTO (no por persona)
                     total = Proyecto.objects.filter(evento=evento).count()
-                    ingresaron = CertificadoProyecto.objects.filter(
-                        evento=evento,
-                        estado='ENTREGADO',
-                    ).count()
+                    ingresaron = _cp_count_entregados(evento)
                 faltan = max(total - ingresaron, 0)
                 porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             except Exception:
@@ -1984,10 +2030,7 @@ class StatsOperadorAjax(View):
             elif tipo == 'certificados':
                 # Los certificados son 1 por PROYECTO (no por persona)
                 total = Proyecto.objects.filter(evento=evento).count()
-                ingresaron = CertificadoProyecto.objects.filter(
-                    evento=evento,
-                    estado='ENTREGADO',
-                ).count()
+                ingresaron = _cp_count_entregados(evento)
             else:
                 ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
                 ingresaron = len(ids_ingresados)
@@ -2032,10 +2075,7 @@ class StatsOperativosAjax(LoginRequiredMixin, RoleRequiredMixin, View):
             faltan = max(total - ingresaron, 0)
             svc = _servicio_almuerzo(evento)
             refrigerios = EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).count() if svc else 0
-            certificados = CertificadoProyecto.objects.filter(
-                evento=evento,
-                estado='ENTREGADO',
-            ).count()
+            certificados = _cp_count_entregados(evento)
             porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             from datetime import datetime
             return JsonResponse({
@@ -2108,22 +2148,7 @@ class RegistrarOperadorAjax(View):
             if not persona:
                 # Para certificados: el QR puede ser el token_verificacion de un CertificadoProyecto
                 if tipo == 'certificados':
-                    cert_proy = (
-                        CertificadoProyecto.objects
-                        .select_related('proyecto')
-                        .filter(_models_django.Q(token_verificacion=token) | _models_django.Q(proyecto__codigo__iexact=token) | _models_django.Q(codigo_unico__iexact=token))
-                        .first()
-                    )
-                    if not cert_proy:
-                        proyecto_qr = Proyecto.objects.filter(
-                            evento=evento,
-                            codigo__iexact=token,
-                        ).first()
-                        if proyecto_qr:
-                            cert_proy, _ = CertificadoProyecto.objects.get_or_create(
-                                evento=evento,
-                                proyecto=proyecto_qr,
-                            )
+                    cert_proy = _cp_buscar_por_token_o_codigo(evento, token)
                     if cert_proy:
                         # Entregar el certificado del proyecto
                         if cert_proy.estado == 'ENTREGADO':
@@ -2171,10 +2196,12 @@ class RegistrarOperadorAjax(View):
                     'ok': False, 'status': 'ROJO',
                     'mensaje': f'No existe ningún proyecto del evento con el código "{codigo_proyecto}".'
                 })
-            cert_proy, _ = CertificadoProyecto.objects.get_or_create(
-                evento=evento,
-                proyecto=proyecto,
-            )
+            cert_proy = _cp_get_or_create_seguro(evento, proyecto)
+            if not cert_proy:
+                return JsonResponse({
+                    'ok': False, 'status': 'ROJO',
+                    'mensaje': 'La tabla de certificados de proyecto aun no existe en la base de datos de produccion. Genera la migracion pendiente o vuelve a imprimir los certificados despues de aplicarla.'
+                })
             if cert_proy.estado == 'ENTREGADO':
                 return JsonResponse({
                     'ok': True, 'status': 'AMARILLO',
@@ -3195,10 +3222,7 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
 
             if evento:
                 for proyecto in qs_proyectos:
-                    CertificadoProyecto.objects.get_or_create(
-                        evento=evento,
-                        proyecto=proyecto,
-                    )
+                    _cp_get_or_create_seguro(evento, proyecto)
 
             buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
             resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
@@ -3270,10 +3294,7 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
 
         if evento:
             for proyecto in qs_proyectos:
-                CertificadoProyecto.objects.get_or_create(
-                    evento=evento,
-                    proyecto=proyecto,
-                )
+                _cp_get_or_create_seguro(evento, proyecto)
 
         buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
         resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
