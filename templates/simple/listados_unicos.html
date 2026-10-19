@@ -40,7 +40,7 @@
     {% elif columnas_especiales == 'entrega' %}
       <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/refrigerios/entregaservicio/">🛠️ Admin Refrigerios</a>
     {% elif columnas_especiales == 'certificado' %}
-      <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/certificados/certificado/">🛠️ Admin Certificados</a>
+      <a target="_blank" class="btn btn-outline-dark btn-sm" href="/admin/certificados/certificadoproyecto/">🛠️ Admin Certificados</a>
     {% elif que == 'colegios' %}
       <a target="_blank" class="btn btn-outline-success btn-sm" href="{% url 'simple:escarapelas_lote' 'todos' %}">🖨️ Todas escarapelas</a>
     {% elif que == 'aprendices' %}
@@ -101,7 +101,7 @@
                 <th>Servicio</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Fecha / Hora</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th class="no-print" style="width:150px;">Acciones</th>{% endif %}
               {% elif columnas_especiales == 'certificado' %}
                 {% if puede_editar %}<th class="no-print" style="width:44px;"><input type="checkbox" onclick="var cs=this.checked;document.querySelectorAll('input[name=&quot;ids&quot;]').forEach(function(c){c.checked=cs;});" title="Seleccionar todos"></th>{% endif %}
-                <th>Código</th><th>Documento</th><th>Persona</th><th>Rol</th><th>Entregado</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th class="no-print" style="width:150px;">Acciones</th>{% endif %}
+                <th>Código</th><th>Proyecto</th><th>Institución</th><th>Estado</th><th>Entregado</th><th>Medio</th><th>¿Quién lo entregó?</th>{% if puede_editar %}<th class="no-print" style="width:170px;">Acciones</th>{% endif %}
               {% elif que == 'colegios' %}
                 <th>Institución Educativa</th><th>Municipio</th><th>Proyectos</th>{% if puede_editar %}<th class="no-print">Acciones</th>{% endif %}
               {% elif que == 'programas' %}
@@ -174,26 +174,33 @@
                 {% endif %}
               {% elif columnas_especiales == 'certificado' %}
                 {% if puede_editar %}<td class="no-print"><input type="checkbox" name="ids" value="{{ fila.pk }}"></td>{% endif %}
-                <td><code style="background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:6px;">{{ fila.codigo_unico }}</code></td>
-                <td><b>{{ fila.persona.numero_identificacion }}</b></td>
-                <td>{{ fila.persona.nombre_completo }}</td>
+                <td><code style="background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:6px;">{{ fila.proyecto.codigo|default:fila.codigo_unico }}</code></td>
                 <td>
-                  {% if fila.persona.tipo_persona == 'APRENDIZ' %}<span class="badge" style="background:#16a34a;">APRENDIZ</span>
-                  {% elif fila.persona.tipo_persona == 'INSTRUCTOR' %}<span class="badge" style="background:#0ea5e9;">INSTRUCTOR</span>
-                  {% elif fila.persona.tipo_persona == 'INVITADO' %}<span class="badge" style="background:#a855f7;">INVITADO</span>
-                  {% elif fila.persona.tipo_persona == 'ORGANIZADOR' %}<span class="badge" style="background:#f59e0b;">ORGANIZADOR</span>
-                  {% else %}{{ fila.persona.tipo_persona|default:"-" }}{% endif %}
+                  <b>{{ fila.proyecto.nombre }}</b>
+                  <div class="text-muted" style="font-size:.78rem;">{{ fila.codigo_unico }}</div>
+                </td>
+                <td>{{ fila.proyecto.institucion.nombre|default:"-" }}</td>
+                <td>
+                  {% if fila.estado == 'ENTREGADO' %}
+                    <span class="badge" style="background:#16a34a;">ENTREGADO</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ fila.estado|default:"-" }}</span>
+                  {% endif %}
                 </td>
                 <td style="white-space:nowrap;">{{ fila.fecha_hora_entrega|date:"d/m/Y H:i" }}</td>
                 <td><span class="badge{% if fila.medio == 'QR' %} text-bg-primary{% else %} text-bg-secondary{% endif %}">{{ fila.medio }}</span></td>
                 <td style="font-size:.85rem;">
-                  {{ fila.operador.get_full_name|default:fila.operador.username }}
-                  {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
+                  {% if fila.operador %}
+                    {{ fila.operador.get_full_name|default:fila.operador.username }}
+                    {% if fila.operador.rol_sistema %}<span class="text-muted d-block" style="font-size:.74rem;">· [{{ fila.operador.rol_sistema }}]</span>{% endif %}
+                  {% else %}
+                    -
+                  {% endif %}
                 </td>
                 {% if puede_editar %}
                 <td class="no-print">
                   <button type="submit" name="eliminar" value="{{ fila.pk }}" class="btn btn-sm btn-outline-danger"
-                          onclick="return confirm('¿Quitar este certificado entregado?');return true;">🗑️ Quitar</button>
+                          onclick="return confirm('¿Revertir esta entrega de certificado? El proyecto volvera a estado pendiente.');return true;">↩️ Revertir</button>
                 </td>
                 {% endif %}
               {% elif que == 'colegios' %}

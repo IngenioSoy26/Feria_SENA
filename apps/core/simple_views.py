@@ -89,6 +89,20 @@ def _cp_count_entregados(evento):
         return 0
 
 
+def _cp_qs_entregados(evento=None):
+    if not _cp_tabla_existe():
+        return CertificadoProyecto.objects.none()
+    qs = (
+        CertificadoProyecto.objects
+        .select_related('proyecto', 'evento', 'operador', 'proyecto__institucion')
+        .filter(estado='ENTREGADO')
+        .order_by('-fecha_hora_entrega')
+    )
+    if evento:
+        qs = qs.filter(evento=evento)
+    return qs
+
+
 def _cp_get_or_create_seguro(evento, proyecto):
     if not _cp_tabla_existe():
         return None
@@ -1328,7 +1342,7 @@ class PanelAdminDashboardView(LoginRequiredMixin, RoleRequiredMixin, View):
                 c['asistencias'] = AsistenciaEvento.objects.filter(evento=ev).count()
                 svc = _servicio_almuerzo(ev)
                 c['refrigerios'] = EntregaServicio.objects.filter(evento=ev, tipo_servicio=svc).count()
-                c['certificados'] = Certificado.objects.filter(evento=ev).count()
+                c['certificados'] = _cp_count_entregados(ev)
         except Exception:
             pass
 
@@ -2559,13 +2573,12 @@ class DashboardSimpleView(LoginRequiredMixin, View):
         _tipos_activos_qs = list(TipoServicio.objects.filter(evento=evento, activo=True).order_by('orden', 'nombre').values_list('nombre', flat=True))
         tipos_servicio_activos = [str(x) for x in _tipos_activos_qs if x]
 
-        qs_certificados = Certificado.objects.filter(evento=evento).select_related('persona', 'operador')
+        qs_certificados = _cp_qs_entregados(evento)
         certificados_entregados = qs_certificados.count()
-        cert_por_rol = dict(qs_certificados.values_list('persona__tipo_persona').annotate(c=Count('id')))
-        cert_aprendices = cert_por_rol.get('APRENDIZ', 0)
-        cert_instructores = cert_por_rol.get('INSTRUCTOR', 0)
-        cert_invitados = cert_por_rol.get('INVITADO', 0)
-        cert_organizadores = cert_por_rol.get('ORGANIZADOR', 0)
+        cert_aprendices = certificados_entregados
+        cert_instructores = 0
+        cert_invitados = 0
+        cert_organizadores = 0
         cert_qr = qs_certificados.filter(medio='QR').count()
         cert_manual = qs_certificados.filter(medio='MANUAL').count()
         # Certificados pendientes: proyectos donde al menos 1 aprendiz asistió pero aún no hay certificado
@@ -2574,11 +2587,7 @@ class DashboardSimpleView(LoginRequiredMixin, View):
             Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_asistieron)
             .values_list('id', flat=True)
         )
-        _ids_con_cert = set(Certificado.objects.filter(evento=evento).values_list('persona_id', flat=True))
-        _proy_con_cert_ids = set(
-            Proyecto.objects.filter(evento=evento, aprendices__persona_id__in=_ids_con_cert)
-            .values_list('id', flat=True)
-        )
+        _proy_con_cert_ids = set(qs_certificados.values_list('proyecto_id', flat=True))
         proyectos_elegibles = len(_proy_elegibles_ids)
         proyectos_con_certificado = len(_proy_con_cert_ids)
         certificados_pendientes = proyectos_elegibles - proyectos_con_certificado
@@ -2630,15 +2639,14 @@ class DashboardSimpleView(LoginRequiredMixin, View):
                     'op_rol': (getattr(op, 'rol_sistema', '') or '').strip(),
                 })
             for obj in qs_certificados.order_by('-fecha_hora_entrega')[:5]:
-                p = obj.persona
                 op = obj.operador
                 actividad.append({
                     'entrega': obj.fecha_hora_entrega,
                     'tipo': 'CERTIFICADO',
-                    'doc': getattr(p, 'numero_identificacion', '') or '',
-                    'nombres': getattr(p, 'nombres', '') or '',
-                    'apellidos': getattr(p, 'apellidos', '') or '',
-                    'rol': getattr(p, 'tipo_persona', '') or '',
+                    'doc': getattr(obj.proyecto, 'codigo', '') or '',
+                    'nombres': getattr(obj.proyecto, 'nombre', '') or '',
+                    'apellidos': getattr(getattr(obj.proyecto, 'institucion', None), 'nombre', '') or '',
+                    'rol': 'PROYECTO',
                     'medio': (getattr(obj, 'medio', '') or '').strip(),
                     'op_nom': (getattr(op, 'first_name', '') or '').strip() + ' ' + (getattr(op, 'last_name', '') or '').strip(),
                     'op_rol': (getattr(op, 'rol_sistema', '') or '').strip(),
@@ -2795,18 +2803,25 @@ class ListadoUnicosView(LoginRequiredMixin, RoleRequiredMixin, View):
                 messages.warning(request, '⚠ Selecciona entregas para eliminar.')
             return redirect('simple:listados', que='refrigerios')
         if que_normalizado == 'certificados':
-            qs_total = Certificado.objects.all()
-            if evento:
-                qs_total = qs_total.filter(evento=evento)
+            qs_total = _cp_qs_entregados(evento)
             if pk_sencillo:
                 qs = qs_total.filter(pk=pk_sencillo)
-                qs.delete()
-                messages.success(request, f'✅ Se eliminó 1 certificado entregado.')
+                n = qs.update(
+                    estado='PENDIENTE',
+                    fecha_hora_entrega=None,
+                    operador=None,
+                    medio='QR',
+                )
+                messages.success(request, f'✅ Se revirtió {n} entrega de certificado.')
             elif accion == 'eliminar' and ids:
                 qs = qs_total.filter(pk__in=ids)
-                n = qs.count()
-                qs.delete()
-                messages.success(request, f'✅ Se eliminaron {n} certificado(s) entregado(s).')
+                n = qs.update(
+                    estado='PENDIENTE',
+                    fecha_hora_entrega=None,
+                    operador=None,
+                    medio='QR',
+                )
+                messages.success(request, f'✅ Se revirtieron {n} entrega(s) de certificado.')
             else:
                 messages.warning(request, '⚠ Selecciona certificados para eliminar.')
             return redirect('simple:listados', que='certificados')
@@ -2879,9 +2894,7 @@ class ListadoUnicosView(LoginRequiredMixin, RoleRequiredMixin, View):
             columnas_especiales = 'entrega'
         elif que_normalizado in ('certificados', 'certificados_entregados'):
             titulo = 'Certificados Entregados'
-            qs = Certificado.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora_entrega')
-            if evento:
-                qs = qs.filter(evento=evento)
+            qs = _cp_qs_entregados(evento)
             data = qs
             columnas_especiales = 'certificado'
         # IDs de personas que asistieron al evento (para columna "Asistió")
@@ -2964,9 +2977,7 @@ def _obtener_datos_listado(que_normalizado, evento):
         columnas_especiales = 'entrega'
     elif que_normalizado in ('certificados', 'certificados_entregados'):
         titulo = 'Certificados Entregados'
-        qs = Certificado.objects.select_related('persona', 'evento', 'operador').order_by('-fecha_hora_entrega')
-        if evento:
-            qs = qs.filter(evento=evento)
+        qs = _cp_qs_entregados(evento)
         data = qs
         columnas_especiales = 'certificado'
     return titulo, data, columnas_especiales
