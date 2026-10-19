@@ -59,8 +59,25 @@ try:
 except Exception:
     _UsuarioSistema = None
 
+_CP_TABLE_EXISTS_CACHE = None
+
+
+def _cp_tabla_existe():
+    global _CP_TABLE_EXISTS_CACHE
+    if _CP_TABLE_EXISTS_CACHE is not None:
+        return _CP_TABLE_EXISTS_CACHE
+    try:
+        with _conn_db_global.cursor() as cursor:
+            tablas = _conn_db_global.introspection.table_names(cursor)
+        _CP_TABLE_EXISTS_CACHE = 'certificados_certificadoproyecto' in set(tablas)
+    except Exception:
+        _CP_TABLE_EXISTS_CACHE = False
+    return _CP_TABLE_EXISTS_CACHE
+
 
 def _cp_count_entregados(evento):
+    if not _cp_tabla_existe():
+        return 0
     try:
         return CertificadoProyecto.objects.filter(
             evento=evento,
@@ -71,6 +88,8 @@ def _cp_count_entregados(evento):
 
 
 def _cp_get_or_create_seguro(evento, proyecto):
+    if not _cp_tabla_existe():
+        return None
     try:
         obj, _ = CertificadoProyecto.objects.get_or_create(
             evento=evento,
@@ -82,6 +101,8 @@ def _cp_get_or_create_seguro(evento, proyecto):
 
 
 def _cp_buscar_por_token_o_codigo(evento, token):
+    if not _cp_tabla_existe():
+        return None
     try:
         cert_proy = (
             CertificadoProyecto.objects
@@ -2196,6 +2217,12 @@ class RegistrarOperadorAjax(View):
         # === CASO A) QR TOKEN (método normal) ===
         if token:
             if tipo == 'certificados':
+                if not _cp_tabla_existe():
+                    return JsonResponse({
+                        'ok': False,
+                        'status': 'ROJO',
+                        'mensaje': 'La entrega QR de certificados por proyecto aun no esta disponible en produccion porque falta aplicar la migracion de la tabla de certificados de proyecto.',
+                    })
                 cert_proy = _cp_buscar_por_token_o_codigo(evento, token)
                 if cert_proy:
                     return _registrar_entrega_certificado_proyecto(cert_proy, operador, medio)
