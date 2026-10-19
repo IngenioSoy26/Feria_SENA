@@ -376,7 +376,7 @@ def _draw_certificado_individual(canvas, page_w, page_h, persona, proyecto=None)
 
 
 # =======================================================================
-# CERTIFICADOS POR PROYECTO — Media carta (2 por hoja carta)
+# CERTIFICADOS POR PROYECTO — Carta horizontal (1 por hoja)
 # Usa la imagen 'Certificado FERIA SENA.png' como fondo y superpone
 # el nombre del proyecto, la institución y el QR.
 # =======================================================================
@@ -384,7 +384,7 @@ def _draw_certificado_individual(canvas, page_w, page_h, persona, proyecto=None)
 
 def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_token=None):
     """Dibuja un certificado usando la imagen de fondo y superponiendo datos dinámicos.
-    El área (w, h) es media carta (612x396), mismo ratio que la imagen de fondo."""
+    El área (w, h) mantiene la proporción del arte (1.5451)."""
     from reportlab.lib.colors import HexColor, black, white
     from reportlab.lib.units import mm
     from reportlab.pdfbase.pdfmetrics import stringWidth
@@ -464,19 +464,24 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
 
 
 def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
-    """Genera un PDF con certificados de proyectos, 2 por hoja carta (media carta).
+    """Genera un PDF con certificados de proyectos, 1 por hoja carta horizontal (apaisado).
+    El certificado ocupa todo el ancho manteniendo la proporción del arte (márgenes mínimos).
     El QR de cada certificado es el token_verificacion del CertificadoProyecto."""
-    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.pagesizes import letter, landscape
     from reportlab.pdfgen import canvas as canvas_mod
 
     if buffer is None:
         buffer = BytesIO()
 
-    page_w, page_h = letter  # 612 x 792 pt = 215.9 x 279.4 mm
+    medidas = landscape(letter)  # 792 x 612 pt = 279.4 x 215.9 mm (carta horizontal)
+    page_w, page_h = medidas
+    # Certificado a todo el ancho, altura según la proporción de la imagen (1559x1009 -> 1.5451)
     cert_w = page_w
-    cert_h = page_h / 2  # media carta = 396 pt = 139.7 mm
+    cert_h = cert_w / 1.5451
+    x = 0
+    y = (page_h - cert_h) / 2  # centrado vertical: margen mínimo arriba y abajo
 
-    c = canvas_mod.Canvas(buffer, pagesize=letter)
+    c = canvas_mod.Canvas(buffer, pagesize=medidas)
 
     # Obtener los tokens de certificado de todos los proyectos en una sola consulta
     proyecto_ids = [p.id for p in proyectos]
@@ -498,22 +503,11 @@ def generar_certificados_proyectos_pdf(proyectos, evento=None, buffer=None):
             # Fallback al código del proyecto si no hay token (por tabla faltante o no generado)
             qr_token = proyecto.codigo or f"PROY-{proyecto.id}"
 
-        # Posición: par = arriba, impar = abajo
-        pos_in_page = idx % 2
-        if pos_in_page == 0:
-            x, y = 0, cert_h  # certificado superior
-        else:
-            x, y = 0, 0  # certificado inferior
-
         _draw_certificado_proyecto(c, x, y, cert_w, cert_h, proyecto, evento=evento, qr_token=qr_token)
 
-        # Si es el segundo de la página (impar), pasar de página
-        if pos_in_page == 1 and idx < len(proyectos) - 1:
+        # Un certificado por página
+        if idx < len(proyectos) - 1:
             c.showPage()
-
-    # Si el último quedó solo (posición 0), asegurarse de mostrar la página
-    if len(proyectos) % 2 == 1:
-        c.showPage()
 
     c.save()
     buffer.seek(0)

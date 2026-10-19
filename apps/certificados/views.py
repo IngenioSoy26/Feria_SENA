@@ -527,7 +527,7 @@ class BuscarManualCertificadoView(RoleRequiredMixin, FormView):
 
 
 class GenerarCertificadosProyectosPdfView(RoleRequiredMixin, View):
-    """Genera un PDF con certificados de proyectos (2 por hoja carta).
+    """Genera un PDF con certificados de proyectos (1 por hoja carta horizontal).
     Crea el registro CertificadoProyecto en BD si no existe (con su QR único)."""
     roles_requeridos = ['ADMINISTRADOR', 'OPERADOR_CERTIFICADO', 'REGISTRO']
     http_method_names = ['get']

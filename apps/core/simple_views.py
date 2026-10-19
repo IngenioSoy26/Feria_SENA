@@ -3100,7 +3100,7 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         evento = _evento_activo()
         tipo = (tipo or 'ASISTENCIA').upper()
         
-        # Lógica especial para certificados de proyectos (2 por hoja)
+        # Lógica especial para certificados de proyectos (1 por hoja carta horizontal)
         if tipo == 'PARTICIPACION' and grupo == 'aprendices':
             qs_proyectos = Proyecto.objects.all()
             if evento:
