@@ -1,4 +1,5 @@
 import os
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -36,6 +37,16 @@ SENA_AZUL = HexColor('#0067B1')
 SENA_NARANJA = HexColor('#F57C00')
 SENA_GRIS = HexColor('#555555')
 SENA_BG_LIGHT = HexColor('#EEF8E7')
+
+
+def _limpiar_nombre_institucion(nombre):
+    nombre = (nombre or '').strip()
+    if not nombre:
+        return ''
+    nombre = re.sub(r'\bINSTITUCI(?:O|Ó)N\s+EDUCATIVA\b', '', nombre, flags=re.IGNORECASE)
+    nombre = re.sub(r'\bINSTITUCI(?:O|Ó)N\b', '', nombre, flags=re.IGNORECASE)
+    nombre = re.sub(r'\s{2,}', ' ', nombre)
+    return nombre.strip(' ,.-')
 
 
 def _path_logo():
@@ -155,7 +166,7 @@ def _reemplazar_plantilla(plantilla, persona, evento=None, proyecto=None, overri
         nombre_proyecto = proyecto.nombre or ''
         codigo_proyecto = proyecto.codigo or ''
         if proyecto.institucion:
-            nombre_institucion = proyecto.institucion.nombre or ''
+            nombre_institucion = _limpiar_nombre_institucion(proyecto.institucion.nombre or '')
     elif persona.tipo_persona == 'APRENDIZ':
         try:
             if hasattr(persona, 'perfil_aprendiz') and persona.perfil_aprendiz and persona.perfil_aprendiz.proyecto:
@@ -163,7 +174,7 @@ def _reemplazar_plantilla(plantilla, persona, evento=None, proyecto=None, overri
                 nombre_proyecto = p.nombre or ''
                 codigo_proyecto = p.codigo or ''
                 if p.institucion:
-                    nombre_institucion = p.institucion.nombre or ''
+                    nombre_institucion = _limpiar_nombre_institucion(p.institucion.nombre or '')
         except Exception:
             pass
 
@@ -237,7 +248,9 @@ def generar_certificado_pdf(persona, tipo='ASISTENCIA', evento=None, proyecto=No
         if proyecto:
             texto_secundario = (getattr(proyecto, 'nombre', '') or '').strip().upper()
         elif getattr(persona, 'institucion', None) and persona.institucion:
-            texto_secundario = (getattr(persona.institucion, 'nombre', '') or '').strip().upper()
+            texto_secundario = _limpiar_nombre_institucion(
+                (getattr(persona.institucion, 'nombre', '') or '').strip()
+            ).upper()
     except Exception:
         pass
     fs2 = 13
@@ -339,7 +352,9 @@ def _draw_certificado_individual(canvas, page_w, page_h, persona, proyecto=None)
         if proyecto:
             texto_secundario = (getattr(proyecto, 'nombre', '') or '').strip().upper()
         elif getattr(persona, 'institucion', None) and persona.institucion:
-            texto_secundario = (getattr(persona.institucion, 'nombre', '') or '').strip().upper()
+            texto_secundario = _limpiar_nombre_institucion(
+                (getattr(persona.institucion, 'nombre', '') or '').strip()
+            ).upper()
     except Exception:
         pass
     fs2 = 13
@@ -417,7 +432,9 @@ def _draw_certificado_proyecto(canvas, x, y, w, h, proyecto, evento=None, qr_tok
     nombre_inst = ''
     try:
         if getattr(proyecto, 'institucion_id', None) and proyecto.institucion:
-            nombre_inst = (getattr(proyecto.institucion, 'nombre', '') or '').strip().upper()
+            nombre_inst = _limpiar_nombre_institucion(
+                (getattr(proyecto.institucion, 'nombre', '') or '').strip()
+            ).upper()
     except Exception:
         pass
     fs2 = 11
