@@ -127,7 +127,7 @@
   </div>
 </div>
 
-{# ===== PANEL INGRESO MANUAL POR N° DE DOCUMENTO (fallback sin escarapela) ===== #}
+{# ===== PANEL INGRESO MANUAL (fallback sin QR) ===== #}
 <div id="panel-manual-overlay" class="d-none"
      style="position:fixed;inset:0;z-index:1070;background:rgba(0,0,0,0.58);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;padding:8px 10px 10px 10px;">
   <div id="panel-manual" style="width:100%;max-width:460px;border-radius:22px;background:#ffffff;box-shadow:0 24px 80px rgba(0,0,0,0.55);padding:16px 16px 14px;animation:slideUpFade .32s cubic-bezier(.2,.8,.2,1) both;">
@@ -141,7 +141,7 @@
         <div class="fw-bold" style="font-size:1.05rem;line-height:1.1;color:#202124;">
           {% if tipo == 'asistencia' %}Ingreso Manual · N° de Documento
           {% elif tipo == 'refrigerios' %}Entrega Manual de Refrigerio · N° de Documento
-          {% else %}Entrega Manual de Certificado · N° de Documento{% endif %}
+          {% else %}Entrega Manual de Certificado · Código del Proyecto{% endif %}
         </div>
         <div class="opacity-65" style="font-size:.76rem;line-height:1.15;color:#5f6368;">
           Usa esta opción cuando el asistente NO lleve su escarapela física.
@@ -150,9 +150,9 @@
       <button id="panel-manual-cerrar" type="button" class="btn btn-sm flex-shrink-0" style="min-height:34px;background:rgba(0,0,0,.06);border-radius:10px;padding:2px 9px;font-size:.95rem;color:#4a4a4a;">✖</button>
     </div>
     <div style="padding:12px;border-radius:16px;background:linear-gradient(160deg,#f8fff2,#eefce3);border:1.5px solid #b7eba0;">
-      <label for="manual-num-doc" class="form-label fw-semibold mb-1" style="font-size:.9rem;color:#0f3c00;">N° de Documento de Identidad</label>
-      <input id="manual-num-doc" inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" autocomplete="off" spellcheck="false" type="tel"
-             placeholder="Escribe cédula (sólo números) — ej: 123456789"
+      <label for="manual-num-doc" class="form-label fw-semibold mb-1" style="font-size:.9rem;color:#0f3c00;">{% if tipo == 'certificados' %}Código del Proyecto{% else %}N° de Documento de Identidad{% endif %}</label>
+      <input id="manual-num-doc" {% if tipo == 'certificados' %}inputmode="text" pattern="[A-Za-z0-9\\-]{1,40}" minlength="1" maxlength="40" type="text"{% else %}inputmode="numeric" pattern="\d{5,15}" minlength="5" maxlength="15" type="tel"{% endif %} autocomplete="off" spellcheck="false"
+             placeholder="{% if tipo == 'certificados' %}Escribe el código impreso en el certificado{% else %}Escribe cédula (sólo números) — ej: 123456789{% endif %}"
              style="width:100%;min-height:58px;padding:0 14px;border-radius:14px;border:2px solid #b7eba0;font-size:1.15rem;font-family:ui-monospace,Consolas,monospace;letter-spacing:0.5px;background:white;color:#1b1b1b;outline:none;">
       <div id="manual-error" class="mt-2 p-2 rounded-3 text-center fw-semibold d-none" style="font-size:.86rem;background:rgba(198,40,40,.12);color:#a32424;"></div>
       <button id="manual-validar-btn" type="button" class="mt-3 w-100 text-white fw-bold" style="min-height:60px;border:none;border-radius:16px;font-size:1.05rem;background:linear-gradient(160deg,#39A900,#2e7a00);box-shadow:0 10px 30px rgba(57,169,0,.35);letter-spacing:0.25px;line-height:1.05;display:flex;align-items:center;justify-content:center;gap:10px;">
@@ -162,7 +162,11 @@
       </button>
     </div>
     <div class="mt-3 text-center opacity-65" style="font-size:.7rem;color:#5f6368;line-height:1.2;">
+      {% if tipo == 'certificados' %}
+      El registro manual usa el <b>código impreso en el certificado</b> y quedará con la marca <b>medio = MANUAL</b>.
+      {% else %}
       El registro tendrá la marca <b>medio = MANUAL</b> para auditoría.
+      {% endif %}
     </div>
   </div>
 </div>
@@ -327,10 +331,12 @@
       if(ev && (ev.key==='Enter' || ev.keyCode===13)){ ev.preventDefault(); if(mSubmit) mSubmit.click(); return false; }
     });
     mInput.addEventListener('input', function(){
-      // live filter: borrar caracteres no numéricos al escribir
+      // Filtro en vivo: para certificados se conserva el codigo; para el resto, solo numeros.
       try{
         const raw = mInput.value || '';
-        const limpio = raw.replace(/[^0-9]/g, '').slice(0,15);
+        const limpio = (TIPO_OP === 'certificados')
+          ? raw.toUpperCase().replace(/[^A-Z0-9\-]/g, '').slice(0,40)
+          : raw.replace(/[^0-9]/g, '').slice(0,15);
         if(limpio !== raw) mInput.value = limpio;
         if(mError && !mError.classList.contains('d-none')){
           mError.textContent=''; mError.classList.add('d-none');
@@ -342,13 +348,16 @@
     mSubmit.addEventListener('click', async function(){
       if(_mSubmitBloqueado) return;
       const raw = String((mInput && mInput.value) || '').trim();
-      const numdoc = raw.replace(/\D/g,'');
-      if(!numdoc || numdoc.length < 5 || numdoc.length > 15){
+      const esCertificados = TIPO_OP === 'certificados';
+      const valorManual = esCertificados ? raw.toUpperCase() : raw.replace(/\D/g,'');
+      if(!valorManual || (!esCertificados && (valorManual.length < 5 || valorManual.length > 15))){
         if(mError){
-          mError.textContent = (
-            'N° inválido: "' + (numdoc || '(vacío)') + '". ' +
-            'Deben ser entre 5 y 15 dígitos numéricos (solo números).'
-          );
+          mError.textContent = esCertificados
+            ? ('Código inválido: "' + (valorManual || '(vacío)') + '".')
+            : (
+                'N° inválido: "' + (valorManual || '(vacío)') + '". ' +
+                'Deben ser entre 5 y 15 dígitos numéricos (solo números).'
+              );
           mError.classList.remove('d-none');
         }
         if(mInput){ try{ mInput.focus(); mInput.select(); }catch(_){} }
@@ -362,11 +371,10 @@
         mSubmit.textContent = '🔍 Buscando y validando...';
         if(mError){ mError.textContent=''; mError.classList.add('d-none'); }
 
-        const resp = await fetch(ENDPOINT, _fetchOptions('POST', {
-          numero_documento: numdoc,
-          tipo: TIPO_OP,
-          medio: 'MANUAL',
-        }));
+        const payload = esCertificados
+          ? {codigo_manual: valorManual, tipo: TIPO_OP, medio: 'MANUAL'}
+          : {numero_documento: valorManual, tipo: TIPO_OP, medio: 'MANUAL'};
+        const resp = await fetch(ENDPOINT, _fetchOptions('POST', payload));
         let data = {ok:false,status:'ROJO',mensaje:'Respuesta inválida del servidor (ingreso manual).'};
         try{
           const ct = resp.headers.get('Content-Type') || '';
@@ -409,12 +417,12 @@
 
   function textoCasoYaRegistrado(){
     if(TIPO_OP==='refrigerios'){return '⚠️ El refrigerio ya fue entregado anteriormente a esta persona.';}
-    if(TIPO_OP==='certificados'){return '⚠️ El certificado ya fue entregado anteriormente a esta persona.';}
+    if(TIPO_OP==='certificados'){return '⚠️ El certificado ya fue entregado anteriormente a este proyecto.';}
     return '⚠️ La asistencia ya fue registrada anteriormente.';
   }
   function textoCasoNoExiste(){
     if(TIPO_OP==='refrigerios'){return '❌ La persona no se encuentra registrada para entrega de refrigerios en este evento.';}
-    if(TIPO_OP==='certificados'){return '❌ La persona no se encuentra registrada para entrega de certificados en este evento.';}
+    if(TIPO_OP==='certificados'){return '❌ El código o QR del certificado no se encuentra registrado para este evento.';}
     return '❌ La persona no se encuentra registrada en el evento.';
   }
 

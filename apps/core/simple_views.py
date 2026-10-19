@@ -35,7 +35,7 @@ except Exception:
     _Organizador = None
 from apps.asistencia.models import AsistenciaEvento
 from apps.refrigerios.models import EntregaServicio
-from apps.certificados.models import Certificado
+from apps.certificados.models import Certificado, CertificadoProyecto
 from apps.reportes.services.importacion_excel import (
     ImportacionExcelService,
     TIPOS_IMPORTACION,
@@ -1921,7 +1921,10 @@ class OperadorMobileView(View):
                 elif tipo == 'certificados':
                     # Los certificados son 1 por PROYECTO (no por persona)
                     total = Proyecto.objects.filter(evento=evento).count()
-                    ingresaron = Certificado.objects.filter(evento=evento).count()
+                    ingresaron = CertificadoProyecto.objects.filter(
+                        evento=evento,
+                        estado='ENTREGADO',
+                    ).count()
                 faltan = max(total - ingresaron, 0)
                 porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             except Exception:
@@ -1981,7 +1984,10 @@ class StatsOperadorAjax(View):
             elif tipo == 'certificados':
                 # Los certificados son 1 por PROYECTO (no por persona)
                 total = Proyecto.objects.filter(evento=evento).count()
-                ingresaron = Certificado.objects.filter(evento=evento).count()
+                ingresaron = CertificadoProyecto.objects.filter(
+                    evento=evento,
+                    estado='ENTREGADO',
+                ).count()
             else:
                 ids_ingresados = set(AsistenciaEvento.objects.filter(evento=evento).values_list('persona_id', flat=True))
                 ingresaron = len(ids_ingresados)
@@ -2026,7 +2032,10 @@ class StatsOperativosAjax(LoginRequiredMixin, RoleRequiredMixin, View):
             faltan = max(total - ingresaron, 0)
             svc = _servicio_almuerzo(evento)
             refrigerios = EntregaServicio.objects.filter(evento=evento, tipo_servicio=svc).count() if svc else 0
-            certificados = Certificado.objects.filter(evento=evento).count()
+            certificados = CertificadoProyecto.objects.filter(
+                evento=evento,
+                estado='ENTREGADO',
+            ).count()
             porcentaje = round((ingresaron / total) * 100, 1) if total > 0 else 0
             from datetime import datetime
             return JsonResponse({
@@ -2066,6 +2075,11 @@ class RegistrarOperadorAjax(View):
             body = request.POST.dict()
         token = (body.get('token') or body.get('qr_token') or '').strip()
         numero_documento_req = (body.get('numero_documento') or '').strip()
+        codigo_manual_req = (
+            body.get('codigo_manual')
+            or body.get('codigo_certificado')
+            or ''
+        ).strip()
         medio = (body.get('medio') or 'QR').strip()[:20] or 'QR'
         tipo = body.get('tipo') or 'asistencia'
         evento = _evento_activo()
@@ -2073,7 +2087,8 @@ class RegistrarOperadorAjax(View):
 
         # Auditoría: registrar cada intento de operación con IP (en logs de Railway)
         try:
-            print(f'[OPERADOR_REGISTRO] ip={ip_op} | tipo={tipo} | medio={medio} | token={token[:8] if token else "N/A"} | doc={numero_documento_req[:8] if numero_documento_req else "N/A"}', flush=True)
+            manual_log = codigo_manual_req if tipo == 'certificados' else numero_documento_req
+            print(f'[OPERADOR_REGISTRO] ip={ip_op} | tipo={tipo} | medio={medio} | token={token[:8] if token else "N/A"} | manual={manual_log[:12] if manual_log else "N/A"}', flush=True)
         except Exception:
             pass
 
@@ -2093,8 +2108,22 @@ class RegistrarOperadorAjax(View):
             if not persona:
                 # Para certificados: el QR puede ser el token_verificacion de un CertificadoProyecto
                 if tipo == 'certificados':
-                    from apps.certificados.models import CertificadoProyecto
-                    cert_proy = CertificadoProyecto.objects.filter(token_verificacion=token).first()
+                    cert_proy = (
+                        CertificadoProyecto.objects
+                        .select_related('proyecto')
+                        .filter(_models_django.Q(token_verificacion=token) | _models_django.Q(proyecto__codigo__iexact=token) | _models_django.Q(codigo_unico__iexact=token))
+                        .first()
+                    )
+                    if not cert_proy:
+                        proyecto_qr = Proyecto.objects.filter(
+                            evento=evento,
+                            codigo__iexact=token,
+                        ).first()
+                        if proyecto_qr:
+                            cert_proy, _ = CertificadoProyecto.objects.get_or_create(
+                                evento=evento,
+                                proyecto=proyecto_qr,
+                            )
                     if cert_proy:
                         # Entregar el certificado del proyecto
                         if cert_proy.estado == 'ENTREGADO':
@@ -2103,6 +2132,9 @@ class RegistrarOperadorAjax(View):
                                 'mensaje': f'⚠ Certificado ya entregado. Proyecto: {cert_proy.proyecto.nombre}',
                                 'nombre': cert_proy.proyecto.nombre,
                                 'rol': 'Proyecto',
+                                'tipo_asistente': 'Proyecto',
+                                'tipo_documento': 'CÓD',
+                                'numero_documento': cert_proy.proyecto.codigo or '',
                                 'es_duplicado': True, 'es_nuevo': False,
                             })
                         from django.utils import timezone
@@ -2116,10 +2148,60 @@ class RegistrarOperadorAjax(View):
                             'mensaje': f'✅ Certificado entregado. Proyecto: {cert_proy.proyecto.nombre}',
                             'nombre': cert_proy.proyecto.nombre,
                             'rol': 'Proyecto',
+                            'tipo_asistente': 'Proyecto',
+                            'tipo_documento': 'CÓD',
+                            'numero_documento': cert_proy.proyecto.codigo or '',
                             'es_duplicado': False, 'es_nuevo': True,
                         })
                 return JsonResponse({'ok': False, 'status': 'ROJO', 'mensaje': 'Código QR no registrado en el sistema.'})
-        # === CASO B) INGRESO MANUAL POR NÚMERO DE DOCUMENTO (fallback sin escarapela) ===
+        # === CASO B) INGRESO MANUAL ===
+        elif tipo == 'certificados' and codigo_manual_req:
+            codigo_proyecto = (codigo_manual_req or '').strip().upper()
+            if not codigo_proyecto:
+                return JsonResponse({
+                    'ok': False, 'status': 'ROJO',
+                    'mensaje': 'Código del proyecto inválido.'
+                })
+            proyecto = Proyecto.objects.filter(
+                evento=evento,
+                codigo__iexact=codigo_proyecto,
+            ).first()
+            if not proyecto:
+                return JsonResponse({
+                    'ok': False, 'status': 'ROJO',
+                    'mensaje': f'No existe ningún proyecto del evento con el código "{codigo_proyecto}".'
+                })
+            cert_proy, _ = CertificadoProyecto.objects.get_or_create(
+                evento=evento,
+                proyecto=proyecto,
+            )
+            if cert_proy.estado == 'ENTREGADO':
+                return JsonResponse({
+                    'ok': True, 'status': 'AMARILLO',
+                    'mensaje': f'⚠ Certificado ya entregado. Proyecto: {cert_proy.proyecto.nombre}',
+                    'nombre': cert_proy.proyecto.nombre,
+                    'rol': 'Proyecto',
+                    'tipo_asistente': 'Proyecto',
+                    'tipo_documento': 'CÓD',
+                    'numero_documento': cert_proy.proyecto.codigo or '',
+                    'es_duplicado': True, 'es_nuevo': False,
+                })
+            from django.utils import timezone
+            cert_proy.estado = 'ENTREGADO'
+            cert_proy.fecha_hora_entrega = timezone.now()
+            cert_proy.operador = operador
+            cert_proy.medio = 'MANUAL'
+            cert_proy.save()
+            return JsonResponse({
+                'ok': True, 'status': 'VERDE',
+                'mensaje': f'✅ Certificado entregado. Proyecto: {cert_proy.proyecto.nombre}',
+                'nombre': cert_proy.proyecto.nombre,
+                'rol': 'Proyecto',
+                'tipo_asistente': 'Proyecto',
+                'tipo_documento': 'CÓD',
+                'numero_documento': cert_proy.proyecto.codigo or '',
+                'es_duplicado': False, 'es_nuevo': True,
+            })
         elif numero_documento_req:
             import re
             _numdoc = re.sub(r'\D', '', numero_documento_req or '')
@@ -2138,7 +2220,7 @@ class RegistrarOperadorAjax(View):
         else:
             return JsonResponse({
                 'ok': False, 'status': 'ROJO',
-                'mensaje': 'Proporcione un código QR o un N° de documento.'
+                'mensaje': 'Proporcione un código QR o un dato manual válido.'
             })
 
         label = persona.get_full_name()
@@ -3110,7 +3192,14 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
             if not qs_proyectos.exists():
                 messages.warning(request, 'No hay proyectos para generar certificados.')
                 return redirect('simple:dashboard')
-                
+
+            if evento:
+                for proyecto in qs_proyectos:
+                    CertificadoProyecto.objects.get_or_create(
+                        evento=evento,
+                        proyecto=proyecto,
+                    )
+
             buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
             resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
             resp['Content-Disposition'] = 'inline; filename="certificados_proyectos.pdf"'
@@ -3178,6 +3267,13 @@ class DescargarCertificadosLoteView(LoginRequiredMixin, View):
         if not lista:
             messages.warning(request, 'No hay certificados para generar.')
             return redirect('simple:dashboard')
+
+        if evento:
+            for proyecto in qs_proyectos:
+                CertificadoProyecto.objects.get_or_create(
+                    evento=evento,
+                    proyecto=proyecto,
+                )
 
         buffer = generar_certificados_proyectos_pdf(qs_proyectos, evento=evento)
         resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
